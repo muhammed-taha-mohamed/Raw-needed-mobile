@@ -108,7 +108,15 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const bottomNavItems = useMemo(() => {
     let items = [];
     
-    if (isSupplier) {
+    if (isAdmin) {
+      items = [
+        { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
+        { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
+        { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
+        { name: lang === 'ar' ? 'الموافقات' : 'Approvals', icon: 'verified', path: '/approvals' },
+        { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
+      ];
+    } else if (isSupplier) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'منتجاتي' : 'Products', icon: 'inventory_2', path: '/products' },
@@ -138,7 +146,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       ...item,
       disabled: isStaff && item.path !== 'SIDEBAR_TRIGGER' && !allowedScreens.includes(item.path)
     }));
-  }, [lang, isCustomer, isSupplier, isStaff, allowedScreens]);
+  }, [lang, isAdmin, isCustomer, isSupplier, isStaff, allowedScreens]);
 
   const pageInfo = useMemo(() => {
     const path = location.pathname;
@@ -175,17 +183,20 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark transition-colors duration-300 font-display text-slate-800 dark:text-slate-100">
       
+      {/* Backdrop: mobile only (on desktop sidebar is always visible) */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 z-[190] bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300"
+          className="fixed inset-0 z-[190] bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
+      {/* Sidebar: on mobile slides in/out; on lg+ always visible */}
       <aside className={`
         fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-[200] flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 ease-in-out border-primary/60 shadow-xl ${lang === 'ar' ? 'border-l' : 'border-r'}
         ${isSidebarOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}
-        w-[85%] sm:w-80
+        lg:translate-x-0
+        w-[85%] sm:w-80 lg:w-64
       `}>
         
         <div className="p-6 flex items-center gap-4 pt-12 md:pt-6">
@@ -281,7 +292,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      {/* Main content: on lg+ add margin so content is beside sidebar */}
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${lang === 'ar' ? 'lg:mr-64' : 'lg:ml-64'}`}>
         <header className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-primary/30 px-6 flex items-end md:items-center justify-between shrink-0 shadow-sm mobile-header-safe-height pb-4 md:pb-0 md:h-20">
           
           <div className="flex items-center gap-4 min-w-0">
@@ -326,11 +338,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-32">
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-32 lg:pb-8">
           <Outlet />
         </main>
 
-        <div className="fixed bottom-6 left-6 right-6 z-[120] pointer-events-none">
+        {/* Bottom nav: mobile only; hidden on desktop (lg+) */}
+        <div className="fixed bottom-6 left-6 right-6 z-[120] pointer-events-none lg:hidden">
           <div className="relative w-full max-w-[450px] mx-auto h-[85px] pointer-events-auto">
             <svg className="absolute inset-0 w-full h-full drop-shadow-[0_-8px_25px_rgba(0,0,0,0.12)]" viewBox="0 0 350 85" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path 

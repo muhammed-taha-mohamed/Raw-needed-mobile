@@ -153,7 +153,7 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[200] flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -446,8 +446,8 @@ const Categories: React.FC = () => {
                   type="text" 
                   value={newCat.name}
                   onChange={(e) => setNewCat({...newCat, name: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300"
-                  placeholder="Example: Raw Materials"
+                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
                   required
                 />
               </div>
@@ -457,9 +457,9 @@ const Categories: React.FC = () => {
                   type="text" 
                   value={newCat.arabicName}
                   onChange={(e) => setNewCat({...newCat, arabicName: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300"
+                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                   dir="rtl"
-                  placeholder="مثال: المواد الخام"
+                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
                   required
                 />
               </div>
@@ -505,8 +505,8 @@ const Categories: React.FC = () => {
                   type="text" 
                   value={newSub.name}
                   onChange={(e) => setNewSub({...newSub, name: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300"
-                  placeholder="e.g. Copper wire"
+                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
                   required
                 />
               </div>
@@ -516,9 +516,9 @@ const Categories: React.FC = () => {
                   type="text" 
                   value={newSub.arabicName}
                   onChange={(e) => setNewSub({...newSub, arabicName: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300"
+                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                   dir="rtl"
-                  placeholder="مثال: أسلاك النحاس"
+                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
                   required
                 />
               </div>

@@ -190,8 +190,31 @@ const Orders: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
       
+      {/* Top Filter Bar - Web only */}
+      <div className="hidden md:flex flex-wrap items-center gap-2 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+        <span className="text-xs font-black text-slate-400 mr-2">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+        {filterOptions.map((opt) => (
+          <button
+            key={opt.id as any}
+            onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
+            className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
+              statusFilter === opt.id
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {statusFilter && (
+          <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-xs font-black text-red-500 hover:underline ml-2">
+            {lang === 'ar' ? 'مسح' : 'Clear'}
+          </button>
+        )}
+      </div>
+
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-xs animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
            {toast.message}
@@ -203,14 +226,14 @@ const Orders: React.FC = () => {
         {isLoading && orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-40">
              <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-slate-400 font-black text-[10px]  opacity-50">Loading...</p>
+             <p className="text-slate-400 font-black text-[10px] md:text-xs opacity-50">Loading...</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700">
              <span className="material-symbols-outlined text-7xl">receipt_long</span>
              <div className="space-y-1">
-               <h3 className="text-xl font-black">{lang === 'ar' ? 'لا يوجد طلبات' : 'No Orders Found'}</h3>
-               <p className="text-sm font-bold">{lang === 'ar' ? 'لم تقم بإرسال أي طلبات عروض أسعار بعد.' : 'You haven\'t sent any RFQs yet.'}</p>
+               <h3 className="text-xl md:text-2xl font-black">{lang === 'ar' ? 'لا يوجد طلبات' : 'No Orders Found'}</h3>
+               <p className="text-sm md:text-base font-bold">{lang === 'ar' ? 'لم تقم بإرسال أي طلبات عروض أسعار بعد.' : 'You haven\'t sent any RFQs yet.'}</p>
              </div>
           </div>
         ) : (
@@ -227,12 +250,12 @@ const Orders: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2.5 mb-1">
-                        <h3 className="text-sm font-black text-slate-800 dark:text-white tabular-nums ">#{order.orderNumber}</h3>
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black border ${status.bg}`}>
+                        <h3 className="text-sm md:text-base font-black text-slate-800 dark:text-white tabular-nums ">#{order.orderNumber}</h3>
+                        <span className={`px-2 py-0.5 rounded-lg text-[9px] md:text-xs font-black border ${status.bg}`}>
                           {status.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400">
+                      <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-slate-400">
                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">inventory_2</span> {order.numberOfLines} {lang === 'ar' ? 'مواد' : 'Items'}</span>
                          <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span>
                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">calendar_today</span> {formatDate(order.createdAt)}</span>
@@ -251,7 +274,7 @@ const Orders: React.FC = () => {
                     </button>
                     <button 
                       onClick={() => fetchOrderDetails(order)} 
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-black text-[10px] hover:bg-slate-900 dark:hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-primary/10  "
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-black text-[10px] md:text-xs hover:bg-slate-900 dark:hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-primary/10  "
                     >
                       <span className="material-symbols-outlined text-base">visibility</span>
                       {lang === 'ar' ? 'التفاصيل' : 'Details'}
@@ -264,8 +287,8 @@ const Orders: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Filter FAB - Primary Color */}
-      <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+      {/* Floating Filter FAB - Mobile only */}
+      <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
         <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
           <div className="relative" ref={filterRef}>
             <button 
@@ -317,7 +340,7 @@ const Orders: React.FC = () => {
            <div className="flex items-center gap-1">
               <button 
                 onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}
-                className="size-8 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                className="size-8 md:size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
               >
                 <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
               </button>
@@ -329,7 +352,7 @@ const Orders: React.FC = () => {
                     return (
                       <button
                         key={pageNum} onClick={() => handlePageChange(pageNum)}
-                        className={`size-8 rounded-full font-black text-[11px] transition-all ${
+                        className={`size-8 md:size-9 rounded-full font-black text-[11px] md:text-xs transition-all ${
                           currentPage === pageNum 
                           ? 'bg-primary text-white shadow-md shadow-primary/20' 
                           : 'bg-white dark:bg-slate-900 text-slate-400 hover:text-primary hover:bg-primary/5'
@@ -343,7 +366,7 @@ const Orders: React.FC = () => {
 
               <button 
                 onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}
-                className="size-8 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                className="size-8 md:size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
               >
                 <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
               </button>
@@ -352,7 +375,7 @@ const Orders: React.FC = () => {
            <div className="h-5 w-px bg-slate-100 dark:bg-slate-800 mx-1"></div>
 
            <div className="px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
-              <span className="text-[10px] font-black text-slate-500 tabular-nums">
+              <span className="text-[10px] md:text-xs font-black text-slate-500 tabular-nums">
                 {orders.length} / {totalElements}
               </span>
            </div>
@@ -363,12 +386,12 @@ const Orders: React.FC = () => {
       {selectedOrder && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 flex flex-col h-[85vh]">
-              <div className="p-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+                 <div className="p-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-11 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-xl">fact_check</span></div>
                     <div>
-                       <h3 className="text-base font-black text-slate-900 dark:text-white leading-none">#{selectedOrder.orderNumber}</h3>
-                       <p className="text-[9px] font-black text-slate-400    mt-2  ">{lang === 'ar' ? 'تفاصيل بنود العرض' : 'RFQ Items & Responses'}</p>
+                       <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-none">#{selectedOrder.orderNumber}</h3>
+                       <p className="text-[9px] md:text-xs font-black text-slate-400    mt-2  ">{lang === 'ar' ? 'تفاصيل بنود العرض' : 'RFQ Items & Responses'}</p>
                     </div>
                  </div>
                  <button onClick={() => setSelectedOrder(null)} className="size-9 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90"><span className="material-symbols-outlined text-lg">close</span></button>
@@ -384,23 +407,23 @@ const Orders: React.FC = () => {
                            <div className="flex items-center gap-4 flex-1">
                               <div className="size-14 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0 shadow-inner">{line.productImage ? <img src={line.productImage} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-slate-200"><span className="material-symbols-outlined text-2xl">inventory_2</span></div>}</div>
                               <div className="min-w-0">
-                                 <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{line.productName}</h4>
-                                 <p className="text-[10px] font-bold text-slate-500">{lang === 'ar' ? 'المورد: ' : 'Supplier: '} {line.supplierOrganizationName || line.supplierName}</p>
-                                 <p className="text-[10px] font-black text-primary mt-1">{lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity}</p>
+                                 <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white truncate">{line.productName}</h4>
+                                 <p className="text-[10px] md:text-xs font-bold text-slate-500">{lang === 'ar' ? 'المورد: ' : 'Supplier: '} {line.supplierOrganizationName || line.supplierName}</p>
+                                 <p className="text-[10px] md:text-xs font-black text-primary mt-1">{lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity}</p>
                               </div>
                            </div>
                            
                            <div className="flex items-center gap-3">
                               {line.supplierResponse ? (
                                 <div className="flex-1 bg-primary/5 dark:bg-slate-800 rounded-2xl p-3 border border-primary/10 shadow-sm min-w-[180px]">
-                                   <div className="flex justify-between items-center mb-1.5"><span className="text-[9px] font-black text-emerald-500   ">{lang === 'ar' ? 'عرض السعر' : 'Quote Received'}</span><span className="text-base font-black tabular-nums text-slate-900 dark:text-white">{line.supplierResponse.price} <span className="text-[10px] font-bold opacity-50">EGP</span></span></div>
+                                   <div className="flex justify-between items-center mb-1.5"><span className="text-[9px] md:text-xs font-black text-emerald-500   ">{lang === 'ar' ? 'عرض السعر' : 'Quote Received'}</span><span className="text-base md:text-lg font-black tabular-nums text-slate-900 dark:text-white">{line.supplierResponse.price} <span className="text-[10px] md:text-xs font-bold opacity-50">EGP</span></span></div>
                                    <div className="grid grid-cols-2 gap-3 pt-1.5 border-t border-primary/5 dark:border-slate-800">
-                                      <div><p className="text-[8px] font-bold text-slate-400">{lang === 'ar' ? 'الشحن' : 'Shipping'}</p><p className="text-[10px] font-black text-slate-700 dark:text-slate-200 tabular-nums">{line.supplierResponse.shippingCost} EGP</p></div>
-                                      <div><p className="text-[8px] font-bold text-slate-400">{lang === 'ar' ? 'التسليم' : 'Delivery'}</p><p className="text-[10px] font-black text-slate-700 dark:text-slate-200 tabular-nums">{formatDate(line.supplierResponse.estimatedDelivery)}</p></div>
+                                      <div><p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'الشحن' : 'Shipping'}</p><p className="text-[10px] md:text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{line.supplierResponse.shippingCost} EGP</p></div>
+                                      <div><p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'التسليم' : 'Delivery'}</p><p className="text-[10px] md:text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{formatDate(line.supplierResponse.estimatedDelivery)}</p></div>
                                    </div>
                                 </div>
                               ) : (
-                                <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-700 text-center min-w-[180px] flex items-center justify-center"><p className="text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'في انتظار رد المورد...' : 'Waiting for supplier...'}</p></div>
+                                <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-700 text-center min-w-[180px] flex items-center justify-center"><p className="text-[10px] md:text-xs font-bold text-slate-400">{lang === 'ar' ? 'في انتظار رد المورد...' : 'Waiting for supplier...'}</p></div>
                               )}
                               
                               <div className="flex flex-col gap-2">
@@ -428,11 +451,11 @@ const Orders: React.FC = () => {
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-8 text-center animate-in zoom-in-95">
               <div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-4xl">warning</span></div>
-              <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'إلغاء الطلب؟' : 'Cancel Order?'}</h3>
-              <p className="text-sm text-slate-500 font-bold mb-8">{lang === 'ar' ? 'هل أنت متأكد من رغبتك في إلغاء الطلب بالكامل؟' : 'Are you sure you want to cancel the entire request?'}</p>
+              <h3 className="text-xl md:text-2xl font-black mb-2">{lang === 'ar' ? 'إلغاء الطلب؟' : 'Cancel Order?'}</h3>
+              <p className="text-sm md:text-base text-slate-500 font-bold mb-8">{lang === 'ar' ? 'هل أنت متأكد من رغبتك في إلغاء الطلب بالكامل؟' : 'Are you sure you want to cancel the entire request?'}</p>
               <div className="flex gap-4">
-                 <button onClick={() => setOrderToCancel(null)} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all    text-[10px]  ">{t.team.cancel}</button>
-                 <button onClick={handleCancelOrder} disabled={isCancelling} className="flex-1 py-3.5 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all active:scale-95 flex items-center justify-center text-[10px]     ">
+                 <button onClick={() => setOrderToCancel(null)} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all    text-[10px] md:text-xs  ">{t.team.cancel}</button>
+                 <button onClick={handleCancelOrder} disabled={isCancelling} className="flex-1 py-3.5 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-xs     ">
                    {isCancelling ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'تأكيد الإلغاء' : 'Confirm Cancel')}
                  </button>
               </div>
@@ -445,11 +468,11 @@ const Orders: React.FC = () => {
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-8 text-center animate-in zoom-in-95">
               <div className="size-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6"><span className="material-symbols-outlined text-4xl">verified</span></div>
-              <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'اعتماد عرض السعر؟' : 'Approve Offer?'}</h3>
-              <p className="text-sm text-slate-500 font-bold mb-8">{lang === 'ar' ? 'بمجرد الاعتماد، ستتحول الحالة لمرحلة التأكيد النهائية.' : 'Once approved, the status will move to final confirmation.'}</p>
+              <h3 className="text-xl md:text-2xl font-black mb-2">{lang === 'ar' ? 'اعتماد عرض السعر؟' : 'Approve Offer?'}</h3>
+              <p className="text-sm md:text-base text-slate-500 font-bold mb-8">{lang === 'ar' ? 'بمجرد الاعتماد، ستتحول الحالة لمرحلة التأكيد النهائية.' : 'Once approved, the status will move to final confirmation.'}</p>
               <div className="flex gap-4">
-                 <button onClick={() => setLineToApprove(null)} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all    text-[10px]  ">{t.team.cancel}</button>
-                 <button onClick={handleApproveConfirm} disabled={!!processingLineId} className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-black shadow-lg hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center text-[10px]     ">
+                 <button onClick={() => setLineToApprove(null)} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all    text-[10px] md:text-xs  ">{t.team.cancel}</button>
+                 <button onClick={handleApproveConfirm} disabled={!!processingLineId} className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-black shadow-lg hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-xs     ">
                    {processingLineId ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'تأكيد الاعتماد' : 'Confirm Approval')}
                  </button>
               </div>

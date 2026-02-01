@@ -159,7 +159,7 @@ const Cart: React.FC = () => {
 
   if (checkoutSuccess) {
     return (
-      <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
+      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
         <div className="size-40 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center text-emerald-500 mb-10 shadow-inner ring-8 ring-emerald-50/50">
            <span className="material-symbols-outlined text-8xl">verified</span>
         </div>
@@ -180,7 +180,7 @@ const Cart: React.FC = () => {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
+      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
         <div className="size-32 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-200 dark:text-slate-700 mb-10">
            <span className="material-symbols-outlined text-7xl">shopping_cart</span>
         </div>
@@ -194,7 +194,7 @@ const Cart: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
       
       {/* Top Header Controls */}
       <div className="flex justify-between items-center mb-8 bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] shadow-sm border border-primary/5">

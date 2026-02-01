@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
+import Dropdown from '../../components/Dropdown';
 
 const PaymentInfo: React.FC = () => {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [list, setList] = useState<PaymentInfoType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +123,7 @@ const PaymentInfo: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-primary dark:text-white">
@@ -228,7 +229,8 @@ const PaymentInfo: React.FC = () => {
                   type="text"
                   value={formData.transferNumber}
                   onChange={(e) => setFormData({ ...formData, transferNumber: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none"
+                  placeholder={t.paymentInfo.transferNumberPlaceholder}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                   required
                   disabled={isSubmitting}
                 />
@@ -239,21 +241,14 @@ const PaymentInfo: React.FC = () => {
                   type="text"
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none"
+                  placeholder={t.paymentInfo.accountNumberPlaceholder}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                   disabled={isSubmitting}
                 />
               </div>
               <div>
                 <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'نوع الدفع' : 'Payment type'}</label>
-                <select
-                  value={formData.paymentType}
-                  onChange={(e) => setFormData({ ...formData, paymentType: e.target.value as PaymentType })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none appearance-none"
-                  disabled={isSubmitting}
-                >
-                  <option value="BANK_ACCOUNT">{lang === 'ar' ? 'حساب بنكي' : 'Bank Account'}</option>
-                  <option value="ELECTRONIC_WALLET">{lang === 'ar' ? 'محفظة إلكترونية' : 'Electronic Wallet'}</option>
-                </select>
+                <Dropdown options={[{ value: 'BANK_ACCOUNT', label: lang === 'ar' ? 'حساب بنكي' : 'Bank Account' }, { value: 'ELECTRONIC_WALLET', label: lang === 'ar' ? 'محفظة إلكترونية' : 'Electronic Wallet' }]} value={formData.paymentType} onChange={(v) => setFormData({ ...formData, paymentType: v as PaymentType })} placeholder={lang === 'ar' ? 'نوع الدفع' : 'Payment type'} showClear={false} isRtl={lang === 'ar'} disabled={isSubmitting} triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none cursor-pointer text-start disabled:opacity-50 disabled:cursor-not-allowed pl-4 pr-10 rtl:pl-10 rtl:pr-4" />
               </div>
               {formData.paymentType === 'BANK_ACCOUNT' && (
                 <div>
@@ -262,7 +257,8 @@ const PaymentInfo: React.FC = () => {
                     type="text"
                     value={formData.bankName}
                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none"
+                    placeholder={t.paymentInfo.bankNamePlaceholder}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                     disabled={isSubmitting}
                   />
                 </div>
@@ -274,8 +270,8 @@ const PaymentInfo: React.FC = () => {
                     type="text"
                     value={formData.walletProvider}
                     onChange={(e) => setFormData({ ...formData, walletProvider: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none"
-                    placeholder="e.g. Vodafone Cash, Orange Cash"
+                    placeholder={t.paymentInfo.walletProviderPlaceholder}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                     disabled={isSubmitting}
                   />
                 </div>
@@ -286,7 +282,8 @@ const PaymentInfo: React.FC = () => {
                   type="text"
                   value={formData.accountHolderName}
                   onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none"
+                  placeholder={t.paymentInfo.accountHolderPlaceholder}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                   disabled={isSubmitting}
                 />
               </div>

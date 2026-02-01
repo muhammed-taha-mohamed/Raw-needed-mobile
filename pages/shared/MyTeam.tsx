@@ -174,10 +174,20 @@ const MyTeam: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display min-h-screen pb-40">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display min-h-screen pb-40">
       
-      {/* Floating Action Button - Positioned above bottom nav */}
-      <div className="fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6">
+      {/* Web: Add button bar at top — hidden on mobile */}
+      <div className="hidden md:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm mb-6">
+        <div className="flex flex-wrap items-center justify-end">
+          <button type="button" onClick={openAddModal} className="min-h-[42px] px-5 rounded-xl bg-primary text-white font-black text-[12px] shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-lg">person_add</span>
+            {t.team.addStaff}
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Action Button — mobile only */}
+      <div className="fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6 md:hidden">
         <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
           <button 
             onClick={openAddModal}
@@ -315,7 +325,7 @@ const MyTeam: React.FC = () => {
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-2xl border border-primary/20 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[92vh]">
               <div className="px-10 py-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 shrink-0">
-                 <div className="flex items-center gap-5"><div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-3xl">person_add</span></div><div><h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none">{editingMember ? t.team.editStaff : t.team.addStaff}</h3><p className="text-[10px] font-black text-slate-400     mt-2">Member Identity & Access</p></div></div>
+                 <div className="flex items-center gap-5"><div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-3xl">person_add</span></div><div><h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none">{editingMember ? t.team.editStaff : t.team.addStaff}</h3><p className="text-[10px] font-black text-slate-400     mt-2">{t.team.memberIdentityAccess}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-10 rounded-full hover:bg-red-50 text-slate-400 transition-all active:scale-90"><span className="material-symbols-outlined">close</span></button>
               </div>
               <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
@@ -328,10 +338,10 @@ const MyTeam: React.FC = () => {
                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.name}</label><input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.email}</label><input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.phone}</label><input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.password}</label><input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={editingMember ? '••••••••' : ''} /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.name}</label><input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.email}</label><input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.phone}</label><input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.team.password}</label><input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className="w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
                     </div>
                     <div className="space-y-4">
                        <label className="text-[11px] font-black text-slate-500   px-1">{t.team.screens}</label>

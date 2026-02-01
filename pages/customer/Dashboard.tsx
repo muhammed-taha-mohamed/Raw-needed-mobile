@@ -76,7 +76,7 @@ const CustomerDashboard: React.FC = () => {
   }) || [];
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display text-slate-800 dark:text-slate-100 antialiased">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display text-slate-800 dark:text-slate-100 antialiased">
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         

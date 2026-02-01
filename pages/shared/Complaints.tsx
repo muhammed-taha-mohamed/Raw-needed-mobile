@@ -131,11 +131,25 @@ const Complaints: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display min-h-screen relative pb-32">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display min-h-screen relative pb-32 md:pb-8">
       
-      {/* Floating Action Button for New Ticket */}
+      {/* Top Add Button - Web only */}
       {!isAdmin && (
-        <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+        <div className="hidden md:block mb-6">
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-6 py-3 rounded-2xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all border border-primary/20 flex items-center gap-2"
+            title={t.complaints.addNew}
+          >
+            <span className="material-symbols-outlined text-xl">add_comment</span>
+            {t.complaints.addNew}
+          </button>
+        </div>
+      )}
+
+      {/* Floating Action Button for New Ticket - Mobile only */}
+      {!isAdmin && (
+        <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
           <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
             <button 
               onClick={() => setIsCreateModalOpen(true)}
@@ -231,8 +245,8 @@ const Complaints: React.FC = () => {
                         type="text" 
                         value={newMessage} 
                         onChange={(e) => setNewMessage(e.target.value)} 
-                        placeholder={lang === 'ar' ? 'اكتب رسالتك...' : 'Type your message...'} 
-                        className="flex-1 h-14 px-6 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold outline-none focus:border-primary transition-all shadow-inner text-sm" 
+                        placeholder={t.complaints.messagePlaceholder} 
+                        className="flex-1 h-14 px-6 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold outline-none focus:border-primary transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" 
                       />
                       <button 
                         type="submit" 
@@ -279,8 +293,8 @@ const Complaints: React.FC = () => {
                       <input 
                         required type="text" value={newTicket.subject} 
                         onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})} 
-                        className={`w-full h-14 px-6 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
-                        placeholder={lang === 'ar' ? 'مثال: مشكلة في الدفع' : 'e.g. Payment Issue'} 
+                        className={`w-full h-14 px-6 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
+                        placeholder={t.complaints.subjectPlaceholder} 
                       />
                    </div>
 
@@ -289,8 +303,8 @@ const Complaints: React.FC = () => {
                       <textarea 
                         required value={newTicket.description} 
                         onChange={(e) => setNewTicket({...newTicket, description: e.target.value})} 
-                        className={`w-full p-6 rounded-3xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[150px] text-sm ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
-                        placeholder={lang === 'ar' ? 'يرجى تقديم تفاصيل كاملة لمساعدتك بشكل أفضل...' : 'Please provide full details for better assistance...'}
+                        className={`w-full p-6 rounded-3xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[150px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
+                        placeholder={t.complaints.descriptionPlaceholder}
                       />
                    </div>
 

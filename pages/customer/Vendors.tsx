@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, SubCategory } from '../../types';
+import Dropdown from '../../components/Dropdown';
 
 interface Supplier {
   id: string;
@@ -310,7 +311,7 @@ const Vendors: React.FC = () => {
   const activeCatalogFiltersCount = [prodSearchName, prodSearchOrigin, prodSearchCat, prodSearchSub].filter(Boolean).length;
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
@@ -319,18 +320,8 @@ const Vendors: React.FC = () => {
       )}
 
       <div className="flex justify-end mb-4">
-        <div className="relative group w-full md:w-64">
-          <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-xl`}>filter_list</span>
-          <select 
-            value={selectedCategoryId}
-            onChange={(e) => { setSelectedCategoryId(e.target.value); setCurrentPage(0); }}
-            className={`w-full ${lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-10'} py-3.5 rounded-2xl border-2 border-primary/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm appearance-none`}
-          >
-            <option value="">{lang === 'ar' ? 'جميع الفئات' : 'All Categories'}</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{lang === 'ar' ? cat.arabicName : cat.name}</option>
-            ))}
-          </select>
+        <div className="w-full md:w-64">
+          <Dropdown options={categories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))} value={selectedCategoryId} onChange={(v) => { setSelectedCategoryId(v); setCurrentPage(0); }} placeholder={lang === 'ar' ? 'جميع الفئات' : 'All Categories'} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 py-3.5 rounded-2xl border-2 border-primary/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm cursor-pointer text-start pl-4 pr-10 rtl:pl-10 rtl:pr-4" />
         </div>
       </div>
 
@@ -565,25 +556,11 @@ const Vendors: React.FC = () => {
                             </div>
                             
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500   px-1">{t.products.category}</label>
-                                <div className="relative">
-                                  <select value={prodSearchCat} onChange={(e) => setProdSearchCat(e.target.value)} className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white">
-                                    <option value="">{lang === 'ar' ? 'الفئات' : 'Categories'}</option>
-                                    {categories.map(c => <option key={c.id} value={c.id}>{lang === 'ar' ? c.arabicName : c.name}</option>)}
-                                  </select>
-                                  <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base`}>expand_more</span>
-                                </div>
+                                <Dropdown label={t.products.category} options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500   px-1">{t.products.subCategory}</label>
-                                <div className="relative">
-                                  <select value={prodSearchSub} onChange={(e) => setProdSearchSub(e.target.value)} disabled={!prodSearchCat} className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white">
-                                    <option value="">{lang === 'ar' ? 'الأنواع' : 'Types'}</option>
-                                    {catalogSubCategories.map(s => <option key={s.id} value={s.id}>{lang === 'ar' ? s.arabicName : s.name}</option>)}
-                                  </select>
-                                  <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base`}>expand_more</span>
-                                </div>
+                                <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
                             </div>
 
                             <div className="sm:col-span-2 space-y-1.5">

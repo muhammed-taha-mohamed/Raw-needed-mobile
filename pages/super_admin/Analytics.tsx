@@ -16,7 +16,7 @@ const Analytics: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in duration-700">
       <div className="mb-10">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
           {lang === 'ar' ? 'التحليلات والنظام' : 'System Analytics'}

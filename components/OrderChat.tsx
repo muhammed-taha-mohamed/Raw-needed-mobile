@@ -13,7 +13,7 @@ interface OrderChatProps {
 }
 
 const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onClose, title }) => {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -175,8 +175,8 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
                   type="text" 
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={lang === 'ar' ? 'اكتب رسالتك...' : 'Type your message...'}
-                  className="w-full h-14 pl-6 pr-14 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner"
+                  placeholder={t.complaints.messagePlaceholder}
+                  className="w-full h-14 pl-6 pr-14 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
                 />
                 <button 
                    type="submit"

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../App';
-import { api } from '../api';
-import { UserSubscription, Category, SubCategory, Advertisement } from '../types';
+import { useLanguage } from '../../App';
+import { api } from '../../api';
+import { UserSubscription, Category, SubCategory, Advertisement } from '../../types';
+import Dropdown from '../../components/Dropdown';
 
 interface ProfileData {
   id: string;
@@ -315,7 +316,7 @@ const Profile: React.FC = () => {
         <div className="h-48 md:h-72 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 relative">
           <img 
              src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
-             className="w-full h-full object-cover opacity-50 grayscale"
+             className="w-full h-full object-cover opacity-50 grayscale dark:opacity-100 dark:grayscale-0 dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
              alt="Banner"
           />
         </div>
@@ -327,7 +328,7 @@ const Profile: React.FC = () => {
                 {imagePreview ? (
                   <img src={imagePreview} className="size-full object-cover" alt={profile?.name} />
                 ) : (
-                  <div className="size-full flex items-center justify-center text-5xl font-black bg-primary text-white">{profile?.name?.charAt(0)}</div>
+                  <div className="size-full flex items-center justify-center text-3xl font-black bg-primary text-white">{profile?.name?.charAt(0)}</div>
                 )}
               </div>
               {isEditing && (
@@ -335,7 +336,7 @@ const Profile: React.FC = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className="absolute inset-0 bg-black/40 flex items-center justify-center text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100"
                 >
-                  <span className="material-symbols-outlined text-4xl">add_a_photo</span>
+                  <span className="material-symbols-outlined text-2xl">add_a_photo</span>
                 </button>
               )}
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -343,7 +344,7 @@ const Profile: React.FC = () => {
 
             <div className="flex-1 text-center md:text-left rtl:md:text-right pb-4">
               <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-1">
-                <h1 className="text-2xl font-black text-primary dark:text-white  leading-none">
+                <h1 className="text-xl font-black text-primary dark:text-white leading-none">
                   {profile?.fullName || profile?.name}
                 </h1>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black border border-primary/20">
@@ -351,8 +352,8 @@ const Profile: React.FC = () => {
                   {profile?.role && formatRole(profile.role)}
                 </span>
               </div>
-              <p className="text-slate-500 font-bold text-base flex items-center justify-center md:justify-start gap-2">
-                <span className="material-symbols-outlined text-primary text-lg">alternate_email</span>
+              <p className="text-slate-500 font-bold text-sm flex items-center justify-center md:justify-start gap-2">
+                <span className="material-symbols-outlined text-primary text-base">alternate_email</span>
                 {profile?.email}
               </p>
             </div>
@@ -364,9 +365,82 @@ const Profile: React.FC = () => {
                   isEditing ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-primary text-white shadow-primary/20'
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">{isEditing ? 'close' : 'edit'}</span>
+                <span className="material-symbols-outlined text-base">{isEditing ? 'close' : 'edit'}</span>
                 {isEditing ? t.team.cancel : t.profile.editProfile}
               </button>
+            </div>
+          </div>
+
+          <div className="block lg:hidden mt-8 space-y-6 px-2">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-sm border border-primary/10 dark:border-slate-800">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">{t.profileExtra.intro}</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-lg">corporate_fare</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{t.profileExtra.organization}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{profile?.organizationName || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-lg">badge</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{t.profileExtra.crnNumber}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile?.organizationCRN || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-lg">category</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{t.profileExtra.businessCategory}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      {profile?.category ? (lang === 'ar' ? profile.category.arabicName : profile.category.name) : '---'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-lg">call</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{t.profileExtra.contactPhone}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile?.phoneNumber || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-lg">translate</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{t.profileExtra.languagePref}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{profile?.languagePreference || 'EN'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-sm border border-primary/10 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">{t.profileExtra.specializations}</h3>
+                <span className="size-7 rounded-lg bg-primary/5 text-primary flex items-center justify-center font-black text-xs">
+                  {profile?.subCategories?.length || 0}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profile?.subCategories?.map(sub => (
+                  <span key={sub.id} className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300">
+                    {lang === 'ar' ? sub.arabicName : sub.name}
+                  </span>
+                ))}
+                {(!profile?.subCategories || profile.subCategories.length === 0) && (
+                  <p className="text-xs text-slate-500 font-bold italic py-2">{t.profileExtra.noSpecificUnits}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -374,20 +448,20 @@ const Profile: React.FC = () => {
           
           <div className="flex gap-8 overflow-x-auto no-scrollbar">
             {[
-              { id: 'overview', label: lang === 'ar' ? 'نظرة عامة' : 'Overview', icon: 'grid_view' },
-              { id: 'documents', label: lang === 'ar' ? 'المستندات' : 'Registration Docs', icon: 'description' },
-              { id: 'ads', label: lang === 'ar' ? 'إعلاناتي' : 'My Ads', icon: 'ads_click' }
+              { id: 'overview', label: t.profileExtra.overview, icon: 'grid_view' },
+              { id: 'documents', label: t.profileExtra.documents, icon: 'description' },
+              { id: 'ads', label: t.profileExtra.myAdsTab, icon: 'ads_click' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 py-4 border-b-4 transition-all whitespace-nowrap text-sm font-black ${
+                className={`flex items-center gap-2 py-3 border-b-4 transition-all whitespace-nowrap text-xs font-black ${
                   activeTab === tab.id 
                   ? 'border-primary text-primary' 
                   : 'border-transparent text-slate-500 hover:text-slate-600'
                 }`}
               >
-                <span className="material-symbols-outlined text-xl">{tab.icon}</span>
+                <span className="material-symbols-outlined text-lg">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -395,13 +469,10 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid Content */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
-        
-        {/* Left Column: Intro & Info */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="hidden lg:block lg:col-span-5 space-y-6">
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-6   ">{lang === 'ar' ? 'عن الشركة' : 'Intro'}</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-6   ">{t.profileExtra.intro}</h3>
             
             <div className="space-y-6">
               <div className="flex items-start gap-4">
@@ -409,7 +480,7 @@ const Profile: React.FC = () => {
                    <span className="material-symbols-outlined">corporate_fare</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-500 ">{lang === 'ar' ? 'اسم المؤسسة' : 'Organization'}</p>
+                    <p className="text-[10px] font-black text-slate-500 ">{t.profileExtra.organization}</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{profile?.organizationName || 'N/A'}</p>
                  </div>
               </div>
@@ -419,7 +490,7 @@ const Profile: React.FC = () => {
                    <span className="material-symbols-outlined">badge</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-500 ">{lang === 'ar' ? 'رقم السجل' : 'CRN Number'}</p>
+                    <p className="text-[10px] font-black text-slate-500 ">{t.profileExtra.crnNumber}</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile?.organizationCRN || 'N/A'}</p>
                  </div>
               </div>
@@ -429,7 +500,7 @@ const Profile: React.FC = () => {
                    <span className="material-symbols-outlined">category</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-500 ">{lang === 'ar' ? 'قطاع الأعمال' : 'Business Category'}</p>
+                    <p className="text-[10px] font-black text-slate-500 ">{t.profileExtra.businessCategory}</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                       {profile?.category ? (lang === 'ar' ? profile.category.arabicName : profile.category.name) : '---'}
                     </p>
@@ -441,7 +512,7 @@ const Profile: React.FC = () => {
                    <span className="material-symbols-outlined">call</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-500 ">{lang === 'ar' ? 'رقم التواصل' : 'Contact Phone'}</p>
+                    <p className="text-[10px] font-black text-slate-500 ">{t.profileExtra.contactPhone}</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile?.phoneNumber || 'N/A'}</p>
                  </div>
               </div>
@@ -451,7 +522,7 @@ const Profile: React.FC = () => {
                    <span className="material-symbols-outlined">translate</span>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-500 ">{lang === 'ar' ? 'تفضيل اللغة' : 'Language Pref'}</p>
+                    <p className="text-[10px] font-black text-slate-500 ">{t.profileExtra.languagePref}</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{profile?.languagePreference || 'EN'}</p>
                  </div>
               </div>
@@ -460,7 +531,7 @@ const Profile: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white ">{lang === 'ar' ? 'التخصصات' : 'Specializations'}</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white ">{t.profileExtra.specializations}</h3>
                 <span className="size-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center font-black text-xs">
                   {profile?.subCategories?.length || 0}
                 </span>
@@ -472,7 +543,7 @@ const Profile: React.FC = () => {
                    </span>
                 ))}
                 {(!profile?.subCategories || profile.subCategories.length === 0) && (
-                  <p className="text-xs text-slate-500 font-bold italic py-2">No specific units defined.</p>
+                  <p className="text-xs text-slate-500 font-bold italic py-2">{t.profileExtra.noSpecificUnits}</p>
                 )}
              </div>
           </div>
@@ -483,24 +554,26 @@ const Profile: React.FC = () => {
           
           {isEditing ? (
             <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-primary/20 animate-in slide-in-from-top-4 duration-500">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-8 ">{t.profile.editProfile}</h2>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-6">{t.profile.editProfile}</h2>
               <form onSubmit={handleUpdateProfile} className="space-y-8">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-500  px-1">{lang === 'ar' ? 'اسم المستخدم' : 'Username'}</label>
+                     <label className="text-[10px] font-black text-slate-500  px-1">{t.profileExtra.username}</label>
                      <input 
                        type="text" value={formData.name} 
                        onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                       placeholder={t.profile.namePlaceholder}
+                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                        required
                      />
                    </div>
                    <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-500  px-1">{lang === 'ar' ? 'الاسم بالكامل' : 'Full Name'}</label>
+                     <label className="text-[10px] font-black text-slate-500  px-1">{t.profileExtra.fullName}</label>
                      <input 
                        type="text" value={formData.fullName} 
                        onChange={(e) => setFormData({...formData, fullName: e.target.value})} 
-                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                       placeholder={t.profile.fullNamePlaceholder}
+                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                        required
                      />
                    </div>
@@ -509,40 +582,25 @@ const Profile: React.FC = () => {
                      <input 
                        type="tel" value={formData.phoneNumber} 
                        onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} 
-                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                       placeholder={t.profile.phonePlaceholder}
+                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                        required
                      />
                    </div>
                    <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-500  px-1">{lang === 'ar' ? 'اللغة المفضلة' : 'Language Preference'}</label>
-                     <select 
-                       value={formData.languagePreference} 
-                       onChange={(e) => setFormData({...formData, languagePreference: e.target.value})} 
-                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner appearance-none ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                     >
-                       <option value="EN">English</option>
-                       <option value="AR">Arabic</option>
-                     </select>
+                     <label className="text-[10px] font-black text-slate-500  px-1">{t.profileExtra.languagePreference}</label>
+                     <Dropdown options={[{ value: 'EN', label: 'English' }, { value: 'AR', label: 'Arabic' }]} value={formData.languagePreference} onChange={(v) => setFormData({...formData, languagePreference: v})} placeholder={t.profileExtra.languagePreference} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                    </div>
                  </div>
 
                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-500  px-1">{lang === 'ar' ? 'الفئة الرئيسية' : 'Business Category'}</label>
-                    <select 
-                       value={formData.categoryId} 
-                       onChange={(e) => handleCategoryChange(e.target.value)} 
-                       className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner appearance-none ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                    >
-                      <option value="">Select Category</option>
-                      {allCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{lang === 'ar' ? cat.arabicName : cat.name}</option>
-                      ))}
-                    </select>
+                    <label className="text-[10px] font-black text-slate-500  px-1">{t.profileExtra.businessCategoryLabel}</label>
+                    <Dropdown options={allCategories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))} value={formData.categoryId} onChange={handleCategoryChange} placeholder={t.profileExtra.selectCategory} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800/50 border-2 border-primary/10 rounded-2xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 p-4 font-bold text-sm focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                  </div>
 
                  {formData.categoryId && (
                     <div className="space-y-4 animate-in fade-in duration-300">
-                      <label className="text-[10px] font-black text-slate-500  px-1">{lang === 'ar' ? 'التخصصات' : 'Sub-Categories / Specializations'}</label>
+                      <label className="text-[10px] font-black text-slate-500  px-1">{t.profileExtra.subCategoriesLabel}</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 custom-scrollbar">
                         {availableSubCategories.map(sub => (
                           <button
@@ -588,24 +646,24 @@ const Profile: React.FC = () => {
                   <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
                     <div className="flex items-center gap-4 mb-8">
                        <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                          <span className="material-symbols-outlined text-2xl">rocket_launch</span>
+                          <span className="material-symbols-outlined text-xl">rocket_launch</span>
                        </div>
                        <div>
-                          <h4 className="text-lg font-black text-slate-900 dark:text-white leading-none">Account Ecosystem</h4>
-                          <p className="text-[10px] font-black text-slate-500 mt-1.5 ">Operational Summary</p>
+                          <h4 className="text-base font-black text-slate-900 dark:text-white leading-none">{t.profileExtra.accountEcosystem}</h4>
+                          <p className="text-[10px] font-black text-slate-500 mt-1">{t.profileExtra.operationalSummary}</p>
                        </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                          <p className="text-[10px] font-black text-slate-500  mb-2">{lang === 'ar' ? 'حالة الحساب' : 'Account Status'}</p>
+                          <p className="text-[10px] font-black text-slate-500  mb-2">{t.profileExtra.accountStatus}</p>
                           <div className="flex items-center gap-2">
                              <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                             <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">Active Verified</span>
+                             <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{t.profileExtra.activeVerified}</span>
                           </div>
                        </div>
                        <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
-                          <p className="text-[10px] font-black text-slate-500  mb-2">{lang === 'ar' ? 'معرف النظام' : 'System UUID'}</p>
+                          <p className="text-[10px] font-black text-slate-500  mb-2">{t.profileExtra.systemUuid}</p>
                           <p className="text-sm font-bold text-slate-600 dark:text-slate-300 tabular-nums truncate">{profile?.id}</p>
                        </div>
                     </div>
@@ -613,47 +671,47 @@ const Profile: React.FC = () => {
 
                   <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-10 text-slate-900 dark:text-white relative overflow-hidden group shadow-xl border border-primary/10 dark:border-slate-800 animate-in fade-in duration-700">
                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
-                       <span className="material-symbols-outlined text-[150px]">workspace_premium</span>
+                       <span className="material-symbols-outlined text-[80px]">workspace_premium</span>
                     </div>
                     <div className="relative z-10 space-y-8">
                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                          <div>
-                            <p className="text-[10px] font-black text-primary  mb-2   ">{lang === 'ar' ? 'ترخيص المؤسسة' : 'Enterprise Licensing'}</p>
-                            <h3 className="text-3xl md:text-4xl font-black er leading-tight">
-                              {lang === 'ar' ? 'الباقة الحالية: ' : 'Current Plan: '} 
-                              <span className="text-primary">{profile?.subscription?.planName || (lang === 'ar' ? 'لا يوجد' : 'None')}</span>
+                            <p className="text-[10px] font-black text-primary  mb-2   ">{t.profileExtra.enterpriseLicensing}</p>
+                            <h3 className="text-xl md:text-2xl font-black leading-tight">
+                              {t.profileExtra.currentPlan} 
+                              <span className="text-primary">{profile?.subscription?.planName || t.profileExtra.none}</span>
                             </h3>
                          </div>
                          {!profile?.subscription && (
                            <a href="#/subscription" className="bg-primary text-white px-8 py-3 rounded-2xl font-black text-[11px]  shadow-xl shadow-primary/20 active:scale-95 transition-all hover:bg-slate-900 dark:hover:bg-slate-800">
-                             {lang === 'ar' ? 'اشترك الآن' : 'Upgrade Now'}
+                             {t.profileExtra.upgradeNow}
                            </a>
                          )}
                        </div>
                        
                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">
                           <div className="space-y-1">
-                             <p className="text-[9px] font-black text-slate-500 ">{lang === 'ar' ? 'التراخيص' : 'Seats'}</p>
-                             <p className="text-2xl font-black er tabular-nums text-slate-700 dark:text-slate-200">{profile?.subscription?.numberOfUsers ?? '00'}</p>
+                             <p className="text-[9px] font-black text-slate-500 ">{t.profileExtra.seats}</p>
+                             <p className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">{profile?.subscription?.numberOfUsers ?? '00'}</p>
                           </div>
                           <div className="space-y-1">
-                             <p className="text-[9px] font-black text-slate-500 ">{lang === 'ar' ? 'المستخدمة' : 'Utilized'}</p>
-                             <p className="text-2xl font-black er tabular-nums text-slate-700 dark:text-slate-200">{profile?.subscription?.usedUsers ?? '00'}</p>
+                             <p className="text-[9px] font-black text-slate-500 ">{t.profileExtra.utilized}</p>
+                             <p className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">{profile?.subscription?.usedUsers ?? '00'}</p>
                           </div>
                           <div className="space-y-1">
-                             <p className="text-[9px] font-black text-slate-500 ">{lang === 'ar' ? 'المتبقية' : 'Available'}</p>
-                             <p className="text-2xl font-black er tabular-nums text-primary">{profile?.subscription?.remainingUsers ?? '00'}</p>
+                             <p className="text-[9px] font-black text-slate-500 ">{t.profileExtra.available}</p>
+                             <p className="text-sm font-black tabular-nums text-primary">{profile?.subscription?.remainingUsers ?? '00'}</p>
                           </div>
                           {profile?.subscription?.remainingSearches != null && (
                             <div className="space-y-1">
-                               <p className="text-[9px] font-black text-slate-500 ">{lang === 'ar' ? 'عمليات البحث المتبقية' : 'Remaining Searches'}</p>
-                               <p className="text-2xl font-black er tabular-nums text-primary">{profile.subscription.remainingSearches}</p>
+                               <p className="text-[9px] font-black text-slate-500 ">{t.profileExtra.remainingSearchesLabel}</p>
+                               <p className="text-sm font-black tabular-nums text-primary">{profile.subscription.remainingSearches}</p>
                             </div>
                           )}
                           {profile?.subscription?.pointsEarned != null && (
                             <div className="space-y-1">
-                               <p className="text-[9px] font-black text-slate-500 ">{lang === 'ar' ? 'النقاط' : 'Points'}</p>
-                               <p className="text-2xl font-black er tabular-nums text-slate-700 dark:text-slate-200">{profile.subscription.pointsEarned}</p>
+                               <p className="text-[9px] font-black text-slate-500 ">{t.profileExtra.pointsLabel}</p>
+                               <p className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">{profile.subscription.pointsEarned}</p>
                             </div>
                           )}
                        </div>
@@ -676,7 +734,7 @@ const Profile: React.FC = () => {
               {activeTab === 'documents' && (
                 <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                   <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-8   ">{lang === 'ar' ? 'شهادة السجل التجاري' : 'Registration Certificate'}</h3>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-8   ">{t.profileExtra.registrationCertificate}</h3>
                     
                     {profile?.organizationCRNImage ? (
                       <div 
@@ -686,15 +744,15 @@ const Profile: React.FC = () => {
                          <img src={profile.organizationCRNImage} alt="CRN Certificate" className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105" />
                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
                            <div className="flex flex-col items-center gap-2">
-                             <span className="material-symbols-outlined text-4xl">zoom_in</span>
-                             <span className="text-[10px] font-black ">{lang === 'ar' ? 'تكبير الصورة' : 'Preview Document'}</span>
+                             <span className="material-symbols-outlined text-2xl">zoom_in</span>
+                             <span className="text-[10px] font-black ">{t.profileExtra.previewDocument}</span>
                            </div>
                          </div>
                       </div>
                     ) : (
                       <div className="p-20 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
-                         <span className="material-symbols-outlined text-5xl text-slate-200 mb-4">document_scanner</span>
-                         <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'لا توجد صورة سجل تجاري' : 'No CRN document uploaded.'}</p>
+                         <span className="material-symbols-outlined text-4xl text-slate-200 mb-4">document_scanner</span>
+                         <p className="text-xs font-bold text-slate-500">{t.profileExtra.noCrnDocument}</p>
                       </div>
                     )}
                   </div>
@@ -721,7 +779,7 @@ const Profile: React.FC = () => {
                       </div>
                     ) : myAds.length === 0 ? (
                       <div className="p-20 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
-                         <span className="material-symbols-outlined text-5xl text-slate-200 mb-4">campaign</span>
+                         <span className="material-symbols-outlined text-4xl text-slate-200 mb-4">campaign</span>
                          <p className="text-xs font-bold text-slate-500">{t.ads.empty}</p>
                       </div>
                     ) : (
@@ -761,11 +819,11 @@ const Profile: React.FC = () => {
               <div className="px-8 py-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
-                       <span className="material-symbols-outlined text-2xl">ads_click</span>
+                       <span className="material-symbols-outlined text-xl">ads_click</span>
                     </div>
                     <div>
-                       <h3 className="text-lg font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
-                       <p className="text-[10px] font-bold text-slate-500  mt-2">Marketing Tool</p>
+                       <h3 className="text-base font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
+                       <p className="text-[10px] font-bold text-slate-500  mt-2">{t.profileExtra.marketingTool}</p>
                     </div>
                  </div>
                  <button onClick={() => setIsAdModalOpen(false)} className="size-10 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-800 active:scale-90">
@@ -783,7 +841,7 @@ const Profile: React.FC = () => {
                           onClick={() => adFileInputRef.current?.click()}
                           className="w-full h-40 border-2 border-dashed border-primary/20 rounded-3xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all group"
                         >
-                           <span className="material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">add_a_photo</span>
+                           <span className="material-symbols-outlined text-2xl mb-2 group-hover:scale-110 transition-transform">add_a_photo</span>
                            <span className="text-[9px] font-black">Select Promotion Visual</span>
                         </button>
                      ) : (
@@ -803,7 +861,7 @@ const Profile: React.FC = () => {
                     <textarea 
                       required value={adFormData.text} onChange={(e) => setAdFormData({...adFormData, text: e.target.value})}
                       className={`w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[100px] text-sm ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                      placeholder="Describe the offer details..."
+                      placeholder={t.profileExtra.describeOffer}
                     />
                   </div>
                 </form>
@@ -812,7 +870,7 @@ const Profile: React.FC = () => {
               <div className="p-8 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-4">
                  <button type="button" onClick={() => setIsAdModalOpen(false)} className="flex-1 py-4 text-slate-500 font-black text-xs hover:bg-slate-100 rounded-2xl transition-all border border-slate-100">{t.team.cancel}</button>
                  <button type="submit" form="adFormProfile" disabled={isSaving} className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black text-xs shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
-                   {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'حفظ الإعلان' : 'Save Ad'}<span className="material-symbols-outlined text-lg">verified</span></>}
+                   {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.profileExtra.saveAd}<span className="material-symbols-outlined text-lg">verified</span></>}
                  </button>
               </div>
            </div>
@@ -827,12 +885,12 @@ const Profile: React.FC = () => {
               <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-3xl">warning</span>
               </div>
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 ">{lang === 'ar' ? 'حذف الإعلان؟' : 'Delete Ad?'}</h3>
+              <h3 className="text-base font-black text-slate-900 dark:text-white mb-2">{t.profileExtra.deleteAdConfirm}</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-bold">{t.ads.deleteConfirm}</p>
               <div className="flex gap-4">
-                <button disabled={isSaving} onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3.5 text-[11px] font-black text-slate-500 hover:bg-slate-50 rounded-xl transition-all border border-slate-100   ">{lang === 'ar' ? 'تراجع' : 'Cancel'}</button>
+                <button disabled={isSaving} onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3.5 text-[11px] font-black text-slate-500 hover:bg-slate-50 rounded-xl transition-all border border-slate-100   ">{t.profileExtra.cancel}</button>
                 <button disabled={isSaving} onClick={handleAdDelete} className="flex-1.5 py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl shadow-lg active:scale-95 transition-all text-[11px]    flex items-center justify-center gap-2">
-                  {isSaving ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined text-base">delete_forever</span> {lang === 'ar' ? 'تأكيد الحذف' : 'Delete'}</>}
+                  {isSaving ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined text-base">delete_forever</span> {t.profileExtra.confirmDelete}</>}
                 </button>
               </div>
             </div>
@@ -854,16 +912,12 @@ const Profile: React.FC = () => {
                   className="px-10 py-3.5 bg-white text-slate-900 rounded-xl font-black text-[10px] flex items-center gap-2 shadow-xl hover:scale-105 transition-transform"
                 >
                   <span className="material-symbols-outlined text-lg">close</span>
-                  {lang === 'ar' ? 'إغلاق' : 'Close Viewer'}
+                  {t.profileExtra.closeViewer}
                 </button>
              </div>
           </div>
         </div>
       )}
-
-      <div className="mt-16 text-center opacity-20 pb-12">
-         <p className="text-[10px] font-black text-slate-500 ">RN Profile Environment • Integrity & Trust</p>
-      </div>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }

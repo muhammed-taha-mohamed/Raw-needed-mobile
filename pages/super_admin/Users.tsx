@@ -12,7 +12,7 @@ const Users: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700">
       <div className="flex items-center justify-end mb-10">
         <div className="relative group w-full md:w-80">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>

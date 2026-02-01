@@ -65,7 +65,6 @@ const RecentNotifications: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      // استخدام PATCH كما طلب المستخدم لإصلاح الخطأ
       await api.patch(`/api/v1/notifications/${id}/mark-read`, {});
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       window.dispatchEvent(new CustomEvent('notificationRead'));

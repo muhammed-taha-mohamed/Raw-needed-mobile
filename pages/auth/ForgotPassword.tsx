@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '../App';
-import { api } from '../api';
+import { useApp } from '../../App';
+import { api } from '../../api';
 
 const ForgotPassword: React.FC = () => {
   const { lang, setLang, t, isDarkMode, toggleDarkMode } = useApp();
@@ -38,7 +38,7 @@ const ForgotPassword: React.FC = () => {
 
     const otpString = otp.join('');
     if (otpString.length !== 6) {
-      setError(lang === 'ar' ? 'يرجى إدخال رمز التحقق كاملاً' : 'Please enter the full 6-digit code.');
+      setError(t.forgotPasswordExtra.otpRequired);
       setIsLoading(false);
       return;
     }
@@ -78,7 +78,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
       <style>{`
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -107,22 +107,25 @@ const ForgotPassword: React.FC = () => {
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
             className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60   "
           >
-            {lang === 'en' ? 'ع' : 'En'}
+            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
           </button>
         </div>
       </div>
 
-      {/* Hero Header - Matching Landing Skin */}
-      <div className="flex-none h-[35vh] bg-white dark:bg-slate-900 relative rounded-b-[4rem] overflow-hidden shadow-2xl z-10 animate-slide-down border-b-4 border-white/10 dark:border-primary/20">
-        <img 
-          src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
-          className="w-full h-full object-cover dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
-          alt="Hero"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
+      {/* Left (mobile: top) - Image / Branding */}
+      <div className={`flex-none h-[45vh] md:h-full md:w-1/2 md:min-h-screen bg-white dark:bg-slate-900 relative overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 border-white/10 dark:border-primary/20 rounded-b-[4rem] md:rounded-none ${lang === 'ar' ? 'md:order-2 md:border-l-4' : 'md:order-1 md:border-r-4'}`}>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
+            className="w-full h-full min-w-full min-h-full object-cover object-center dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
+            alt="Hero"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-8 overflow-y-auto no-scrollbar animate-fade-up" style={{ animationDelay: '0.4s' }}>
+      {/* Right (mobile: bottom) - Form */}
+      <div className={`flex-1 flex flex-col justify-center px-8 sm:px-12 py-8 md:py-12 overflow-y-auto no-scrollbar animate-fade-up md:w-1/2 ${lang === 'ar' ? 'md:order-1' : 'md:order-2'}`} style={{ animationDelay: '0.4s' }}>
         <div className="max-w-md mx-auto w-full space-y-8">
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-black text-white ">
@@ -150,7 +153,7 @@ const ForgotPassword: React.FC = () => {
               <div className="relative group">
                 <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors`}>mail</span>
                 <input 
-                  className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-14 ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 font-bold shadow-xl`} 
+                  className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-14 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 font-bold shadow-xl`} 
                   placeholder={t.forgotPassword.emailPlaceholder} 
                   required 
                   type="email"
@@ -207,8 +210,8 @@ const ForgotPassword: React.FC = () => {
               <div className="relative group">
                 <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors`}>lock</span>
                 <input 
-                  className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-14 ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 font-bold shadow-xl`} 
-                  placeholder={t.forgotPassword.newPasswordLabel} 
+                  className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-14 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 font-bold shadow-xl`} 
+                  placeholder={t.forgotPassword.newPasswordPlaceholder} 
                   required 
                   type="password"
                   value={newPassword}

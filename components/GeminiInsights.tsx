@@ -10,16 +10,14 @@ const GeminiInsights: React.FC = () => {
   const generateInsight = async () => {
     setLoading(true);
     try {
-      // Fix: Strictly follow initialization guidelines: use process.env.API_KEY directly as a named parameter.
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Analyze this SaaS performance: Revenue 45k EGP, 12 new users, 85% retention. Provide 3 short bullet points of strategic advice in ${lang === 'ar' ? 'Arabic' : 'English'}.`,
       });
-      // Fix: Access response.text as a property on GenerateContentResponse as per guidelines.
-      setInsight(response.text || "No insights available.");
+      setInsight(response.text || t.gemini.noInsights);
     } catch (error) {
-      setInsight(lang === 'ar' ? "فشل في جلب التحليلات الذكية." : "Failed to fetch AI insights.");
+      setInsight(t.gemini.error);
     } finally {
       setLoading(false);
     }
@@ -36,10 +34,10 @@ const GeminiInsights: React.FC = () => {
           </div>
           <div>
             <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              {lang === 'ar' ? 'رؤى Gemini الذكية' : 'Gemini AI Insights'}
+              {t.gemini.title}
             </h3>
             <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">
-              {lang === 'ar' ? 'تحليل الأداء المعتمد على الذكاء الاصطناعي' : 'AI-powered performance analysis'}
+              {t.gemini.subtitle}
             </p>
           </div>
         </div>
@@ -54,7 +52,7 @@ const GeminiInsights: React.FC = () => {
           ) : (
             <span className="material-symbols-outlined text-lg">insights</span>
           )}
-          {lang === 'ar' ? 'توليد الرؤى' : 'Generate Insights'}
+          {t.gemini.generateInsights}
         </button>
       </div>
 

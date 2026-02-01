@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { Advertisement } from '../../types';
 import { api } from '../../api';
+import Dropdown from '../../components/Dropdown';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -144,7 +145,7 @@ const Advertisements: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[300] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -249,13 +250,7 @@ const Advertisements: React.FC = () => {
               </div>
               <div className="hidden sm:flex items-center gap-2 border-l rtl:border-r border-slate-100 dark:border-slate-800 pl-4 rtl:pr-4">
                  <span className="text-[12px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'النتائج:' : 'Size:'}</span>
-                 <select 
-                   value={pageSize}
-                   onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(0); }}
-                   className="bg-transparent border-none text-[11px] font-black text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer"
-                 >
-                    {[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}
-                 </select>
+                 <Dropdown options={[5, 10, 20].map(size => ({ value: String(size), label: String(size) }))} value={String(pageSize)} onChange={(v) => { setPageSize(Number(v)); setCurrentPage(0); }} placeholder={String(pageSize)} showClear={false} isRtl={lang === 'ar'} triggerClassName="min-w-[60px] min-h-[36px] flex items-center justify-between gap-1 bg-transparent border-none text-[11px] font-black text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 pl-4 pr-8 rtl:pl-8 rtl:pr-4" />
               </div>
            </div>
            
@@ -395,8 +390,8 @@ const Advertisements: React.FC = () => {
                   <label className="text-[11px] font-black text-slate-400 px-1   ">{t.ads.text}</label>
                   <textarea 
                     required value={formData.text} onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner min-h-[120px]"
-                    placeholder="Describe the offer or promotion details..."
+                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner min-h-[120px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                    placeholder={t.ads.textPlaceholder}
                   />
                 </div>
 

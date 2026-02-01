@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, SubCategory, UserSubscription } from '../../types';
+import Dropdown from '../../components/Dropdown';
 
 interface Product {
   id: string;
@@ -303,8 +304,39 @@ const ProductSearch: React.FC = () => {
   const lowSearches = isCustomerWithSearches && remainingSearches !== undefined && remainingSearches <= 5 && (pointsEarned ?? 0) <= 5;
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 relative">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
       
+      {/* Web: Inline filters + Manual Order at top — hidden on mobile */}
+      <div className="hidden md:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px] flex-1 max-w-[240px] space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{lang === 'ar' ? 'بحث بالاسم' : 'Search by name'}</label>
+            <input type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder={t.productSearch.searchLabel} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
+          </div>
+          <div className="min-w-[160px] space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.category}</label>
+            <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={selectedCat} onChange={setSelectedCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+          </div>
+          <div className="min-w-[160px] space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.subCategory}</label>
+            <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={selectedSub} onChange={setSelectedSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!selectedCat} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
+          </div>
+          <div className="min-w-[160px] space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
+            <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+          </div>
+          <div className="min-w-[180px] flex-1 space-y-1">
+            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.origin}</label>
+            <input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
+          </div>
+          <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
+          <button type="button" onClick={() => setIsManualModalOpen(true)} className="shrink-0 self-end pb-2.5 min-h-[42px] px-5 rounded-xl bg-primary text-white font-black text-[12px] shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-lg">edit_document</span>
+            {t.manualOrder.btn}
+          </button>
+        </div>
+      </div>
+
       {isCustomerWithSearches && (
         <div className={`flex flex-wrap items-center gap-4 p-4 rounded-2xl border ${lowSearches ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800'}`}>
           <div className="flex items-center gap-2">
@@ -476,8 +508,8 @@ const ProductSearch: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Action Buttons Area */}
-      <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+      {/* Floating Action Buttons Area — mobile only */}
+      <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
         <div className="max-w-[1200px] mx-auto flex flex-col items-end gap-3 pointer-events-auto">
           <button 
             onClick={() => setIsManualModalOpen(true)}
@@ -514,54 +546,23 @@ const ProductSearch: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 px-1">{t.products.category}</label>
-                      <div className="relative">
-                        <select 
-                          value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}
-                          className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white"
-                        >
-                          <option value="">{lang === 'ar' ? 'الفئات' : 'Categories'}</option>
-                          {categories.map(c => <option key={c.id} value={c.id}>{lang === 'ar' ? c.arabicName : c.name}</option>)}
-                        </select>
-                        <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg`}>expand_more</span>
-                      </div>
+                      <Dropdown label={t.products.category} options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={selectedCat} onChange={setSelectedCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
 
                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
-                      <div className="relative">
-                        <select 
-                          value={selectedSub} onChange={(e) => setSelectedSub(e.target.value)}
-                          disabled={!selectedCat}
-                          className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white"
-                        >
-                          <option value="">{lang === 'ar' ? 'الأنواع' : 'Types'}</option>
-                          {subCategories.map(s => <option key={s.id} value={s.id}>{lang === 'ar' ? s.arabicName : s.name}</option>)}
-                        </select>
-                        <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg`}>expand_more</span>
-                      </div>
+                      <Dropdown label={t.products.subCategory} options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={selectedSub} onChange={setSelectedSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!selectedCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
                   </div>
                   
                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
-                      <div className="relative">
-                        <select 
-                          value={selectedSupplier} onChange={(e) => setSelectedSupplier(e.target.value)}
-                          className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white"
-                        >
-                          <option value="">{lang === 'ar' ? 'الموردين' : 'Suppliers'}</option>
-                          {suppliersList.map(s => <option key={s.id} value={s.id}>{s.organizationName || s.name}</option>)}
-                        </select>
-                        <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg`}>expand_more</span>
-                      </div>
+                      <Dropdown label={lang === 'ar' ? 'المورد' : 'Supplier'} options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
 
                   <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
                       <input 
                         type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white"
-                        placeholder="Germany..."
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                        placeholder={t.products.originPlaceholder}
                       />
                   </div>
                 </div>
@@ -572,8 +573,8 @@ const ProductSearch: React.FC = () => {
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-lg">search</span>
                       <input 
                         type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm font-bold outline-none focus:border-primary transition-all shadow-inner text-slate-900 dark:text-white"
-                        placeholder={lang === 'ar' ? 'ابحث هنا...' : 'Search items...'}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm md:text-base font-bold outline-none focus:border-primary transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                        placeholder={t.productSearch.searchLabel}
                       />
                   </div>
                 </div>
@@ -602,14 +603,7 @@ const ProductSearch: React.FC = () => {
                  <form onSubmit={handleManualSubmit} className="space-y-5">
                     <div className="space-y-1.5">
                        <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.selectSupplier}</label>
-                       <select 
-                         required value={manualFormData.supplierId}
-                         onChange={(e) => setManualFormData({...manualFormData, supplierId: e.target.value})}
-                         className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                       >
-                         <option value="">{lang === 'ar' ? 'اختر المورد من القائمة' : 'Select a Supplier'}</option>
-                         {suppliersList.map(s => <option key={s.id} value={s.id}>{s.organizationName || s.name}</option>)}
-                       </select>
+                       <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={manualFormData.supplierId} onChange={(v) => setManualFormData({...manualFormData, supplierId: v})} placeholder={lang === 'ar' ? 'اختر المورد من القائمة' : 'Select a Supplier'} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                     </div>
 
                     <div className="space-y-1.5">
@@ -617,8 +611,8 @@ const ProductSearch: React.FC = () => {
                        <input 
                          required type="text" value={manualFormData.name}
                          onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})}
-                         className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                         placeholder="e.g. Special Chemical Reagent"
+                         className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                         placeholder={t.manualOrder.prodNamePlaceholder}
                        />
                     </div>
 
@@ -628,8 +622,8 @@ const ProductSearch: React.FC = () => {
                           <input 
                             required type="text" value={manualFormData.origin}
                             onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                            placeholder="Country..."
+                            className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                            placeholder={t.manualOrder.originPlaceholder}
                           />
                        </div>
                        <div className="space-y-1.5">

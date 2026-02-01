@@ -53,7 +53,6 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
       throw new Error(errorMsg);
     }
 
-    // التحقق مما إذا كان الرد يحتوي على حقل data أو نرجع محتوى content مباشرة
     return (data.content?.data !== undefined ? data.content.data : data.content) as T;
   } catch (err: any) {
     if (err instanceof TypeError && (err.message === 'Failed to fetch' || err.message.includes('NetworkError'))) {

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
-import { Plan, BillingFrequency, UserSubscription, PlanType, CalculatePriceResponse, PlanFeature } from '../../types';
+import { Plan, BillingFrequency, UserSubscription, PlanType, CalculatePriceResponse, PlanFeature, PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
 import { getPlanFeatureLabel } from '../../constants';
 
@@ -11,12 +11,15 @@ const PlanSelection: React.FC = () => {
   const { lang, t } = useLanguage();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentInfoType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Tooltip states
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null);
   const [activeOfferId, setActiveOfferId] = useState<string | null>(null);
+  const [paymentMethodsTooltipOpen, setPaymentMethodsTooltipOpen] = useState(false);
+  const [copiedTransferId, setCopiedTransferId] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('calculate');
@@ -39,6 +42,7 @@ const PlanSelection: React.FC = () => {
     const handleClickOutside = () => {
       setActiveFeatureId(null);
       setActiveOfferId(null);
+      setPaymentMethodsTooltipOpen(false);
     };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
@@ -54,9 +58,10 @@ const PlanSelection: React.FC = () => {
       let planTarget: 'CUSTOMER' | 'SUPPLIER' = 'CUSTOMER';
       if (role.includes('SUPPLIER')) planTarget = 'SUPPLIER';
 
-      const [plansData, subData] = await Promise.allSettled([
+      const [plansData, subData, paymentData] = await Promise.allSettled([
         api.get<Plan[]>(`/api/v1/plans/type/${planTarget}`),
-        api.get<UserSubscription>('/api/v1/user-subscriptions/my-subscription')
+        api.get<UserSubscription>('/api/v1/user-subscriptions/my-subscription'),
+        api.get<PaymentInfoType[]>('/api/v1/admin/payment-info').then((d) => (Array.isArray(d) ? d : [])).catch(() => [])
       ]);
 
       if (plansData.status === 'fulfilled') {
@@ -64,6 +69,9 @@ const PlanSelection: React.FC = () => {
       }
       if (subData.status === 'fulfilled') {
         setSubscription(subData.value);
+      }
+      if (paymentData.status === 'fulfilled' && Array.isArray(paymentData.value)) {
+        setPaymentMethods(paymentData.value.filter((p: PaymentInfoType) => p.active));
       }
     } catch (err: any) {
       setError(err.message || "Failed to load portal data.");
@@ -221,6 +229,9 @@ const PlanSelection: React.FC = () => {
     }
   };
 
+  const paymentTypeLabel = (type: PaymentType) =>
+    type === 'BANK_ACCOUNT' ? t.planSelection.bankAccount : t.planSelection.electronicWallet;
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800 mx-4 md:px-10 my-8">
@@ -231,7 +242,7 @@ const PlanSelection: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {subscription && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -288,13 +299,79 @@ const PlanSelection: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
          <h1 className="text-2xl font-black text-primary dark:text-white  leading-none">
-            {lang === 'ar' ? 'باقات الاشتراك' : 'Subscription Tiers'}
+            {t.planSelection.pageTitle}
           </h1>
           <p className="text-slate-500 dark:text-slate-500 font-medium text-sm max-w-2xl">
-            {lang === 'ar' ? 'اختر الباقة المناسبة لحجم أعمالك وابدأ فوراً.' : 'Find the perfect plan for your business scale.'}
+            {t.planSelection.pageSubtitle}
           </p>
         </div>
       </div>
+
+      <div className="relative inline-block">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setPaymentMethodsTooltipOpen((v) => !v);
+              setActiveFeatureId(null);
+              setActiveOfferId(null);
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary hover:bg-primary/5 transition-all text-[11px] font-black"
+          >
+            <span className="material-symbols-outlined text-primary text-lg">payments</span>
+            {t.planSelection.paymentMethods}
+            <span className={`material-symbols-outlined text-base transition-transform duration-300 ${paymentMethodsTooltipOpen ? 'rotate-180' : ''}`}>expand_more</span>
+          </button>
+          {paymentMethodsTooltipOpen && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`absolute top-full mt-2 z-[60] w-full min-w-[320px] max-w-[90vw] sm:min-w-[380px] p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-primary text-[20px]">payments</span>
+                <h3 className="text-sm font-black text-slate-700 dark:text-white">{t.planSelection.paymentMethods}</h3>
+              </div>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed mb-4">{t.planSelection.paymentMethodsSubtitle}</p>
+              {paymentMethods.length > 0 ? (
+                <div className="space-y-3 max-h-[280px] overflow-y-auto no-scrollbar">
+                  {paymentMethods.map((pm) => (
+                    <div key={pm.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="material-symbols-outlined text-primary text-base">{pm.paymentType === 'BANK_ACCOUNT' ? 'account_balance' : 'account_balance_wallet'}</span>
+                        <span className="text-[10px] font-black text-primary">{paymentTypeLabel(pm.paymentType)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex-1 min-w-0 truncate">{pm.transferNumber}</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(pm.transferNumber);
+                            setCopiedTransferId(pm.id);
+                            setTimeout(() => setCopiedTransferId(null), 2000);
+                          }}
+                          title={t.planSelection.copy}
+                          className="shrink-0 p-1.5 rounded-lg hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {copiedTransferId === pm.id ? 'check' : 'content_copy'}
+                          </span>
+                        </button>
+                      </div>
+                      {pm.accountHolderName && <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pm.accountHolderName}</p>}
+                      {pm.bankName && <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pm.bankName}</p>}
+                      {pm.walletProvider && <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pm.walletProvider}</p>}
+                      {pm.accountNumber && <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'رقم الحساب: ' : 'Account: '}{pm.accountNumber}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">{t.planSelection.noPaymentMethods}</p>
+              )}
+              <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
+            </div>
+          )}
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch pb-6">
         {plans.map((plan, idx) => {
@@ -336,13 +413,38 @@ const PlanSelection: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mb-5 flex items-baseline gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                <span className="text-2xl font-black text-slate-700 dark:text-white tabular-nums er">{plan.pricePerUser}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] text-slate-500 font-black ">{t.plans.currency}</span>
-                  <span className="text-[10px] text-slate-400 font-bold">/ {lang === 'ar' ? 'لكل مستخدم' : 'Per User'}</span>
+              {plan.planType === 'CUSTOMER' && plan.productSearchesConfig ? (
+                <div className="mb-5 space-y-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                    <span className="material-symbols-outlined text-primary text-[20px]">search</span>
+                    <span className="text-[11px] font-black">{lang === 'ar' ? 'إعدادات بحث المنتجات' : 'Product searches'}</span>
+                  </div>
+                  {plan.productSearchesConfig.unlimited ? (
+                    <p className="text-sm font-black text-primary">{lang === 'ar' ? 'غير محدود' : 'Unlimited'}</p>
+                  ) : (
+                    <>
+                      {(plan.productSearchesConfig.from != null || plan.productSearchesConfig.to != null) && (
+                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                          {lang === 'ar' ? 'من' : 'From'} {plan.productSearchesConfig.from ?? '—'} {lang === 'ar' ? 'إلى' : 'to'} {plan.productSearchesConfig.to ?? '—'}
+                        </p>
+                      )}
+                      {!plan.productSearchesConfig.unlimited && plan.productSearchesConfig.pricePerSearch != null && (
+                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                          {lang === 'ar' ? 'السعر لكل بحث:' : 'Price per search:'} {plan.productSearchesConfig.pricePerSearch} {t.plans.currency}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
-              </div>
+              ) : plan.planType !== 'CUSTOMER' ? (
+                <div className="mb-5 flex items-baseline gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <span className="text-2xl font-black text-slate-700 dark:text-white tabular-nums er">{plan.pricePerUser}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-slate-500 font-black ">{t.plans.currency}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">/ {lang === 'ar' ? 'لكل مستخدم' : 'Per User'}</span>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="space-y-3 flex-grow mb-5">
                 <div className="relative">
@@ -454,6 +556,15 @@ const PlanSelection: React.FC = () => {
                 </div>
               </div>
 
+              <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="material-symbols-outlined text-primary text-[18px]">schedule</span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black text-slate-500 dark:text-slate-400">{t.planSelection.receiptUploadTime}</p>
+                  <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{t.planSelection.receiptUploadTimeValue}</p>
+                  <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-1 leading-tight">{t.planSelection.receiptUploadReminder}</p>
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button 
                   onClick={() => openCheckout(plan)}
@@ -549,7 +660,7 @@ const PlanSelection: React.FC = () => {
                             }}
                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-white font-black outline-none text-sm"
                           />
-                          {productSearchesConfig?.pricePerSearch != null && (
+                          {!productSearchesConfig?.unlimited && productSearchesConfig?.pricePerSearch != null && (
                             <p className="text-[11px] font-bold text-slate-500">{lang === 'ar' ? 'السعر لكل بحث:' : 'Price per search:'} {productSearchesConfig.pricePerSearch} {t.plans.currency}</p>
                           )}
                         </div>
@@ -738,9 +849,6 @@ const PlanSelection: React.FC = () => {
         </div>
       )}
       
-      <div className="text-center opacity-20 mt-4 pb-8">
-         <p className=" text-[12px] font-black text-slate-500 ">RN Gateway • 2026</p>
-      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { Plan, SpecialOffer, BillingFrequency, PlanType } from '../../types';
 import { api } from '../../api';
+import Dropdown from '../../components/Dropdown';
 
 const CreatePlan: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -167,7 +168,7 @@ const CreatePlan: React.FC = () => {
               <label className="text-[12px] font-bold text-slate-500  px-1" htmlFor="plan_name">Plan Name</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-accent transition-colors">label</span>
-                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all" id="plan_name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Growth Acceleration" required type="text" disabled={isSubmitting} />
+                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" id="plan_name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.plans.planNamePlaceholder} required type="text" disabled={isSubmitting} />
               </div>
             </div>
 
@@ -176,20 +177,14 @@ const CreatePlan: React.FC = () => {
               <label className="text-[12px] font-bold text-slate-500  px-1" htmlFor="plan_description">{t.plans.description}</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-accent transition-colors">description</span>
-                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all" id="plan_description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Plan summary..." required type="text" disabled={isSubmitting} />
+                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" id="plan_description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder={t.plans.planDescPlaceholder} required type="text" disabled={isSubmitting} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-[12px] font-bold text-slate-500  px-1">{lang === 'ar' ? 'نوع الخطة' : 'Plan Type'}</label>
-                <div className="relative group">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-accent transition-colors">category</span>
-                  <select value={formData.planType} onChange={(e) => setFormData({...formData, planType: e.target.value as PlanType})} className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all appearance-none" required disabled={isSubmitting}>
-                    {planTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.label}</option>)}
-                  </select>
-                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
-                </div>
+                <Dropdown options={planTypes.map(pt => ({ value: pt.id, label: pt.label }))} value={formData.planType} onChange={(v) => setFormData({...formData, planType: v as PlanType})} placeholder={lang === 'ar' ? 'نوع الخطة' : 'Plan Type'} showClear={false} isRtl={lang === 'ar'} disabled={isSubmitting} triggerClassName="w-full min-h-[52px] flex items-center justify-between gap-2 pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:border-primary font-bold transition-all cursor-pointer text-start disabled:opacity-50" />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -208,7 +203,7 @@ const CreatePlan: React.FC = () => {
               <label className="text-[12px] font-bold text-slate-500  px-1" htmlFor="price">{t.plans.pricePerUser} ({t.plans.currency})</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-accent transition-colors">payments</span>
-                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all" id="price" value={formData.pricePerUser} onChange={(e) => setFormData({...formData, pricePerUser: e.target.value})} placeholder="0.00" required type="number" step="0.01" disabled={isSubmitting} />
+                <input className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-accent focus:bg-white dark:focus:bg-slate-900 font-bold transition-all text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" id="price" value={formData.pricePerUser} onChange={(e) => setFormData({...formData, pricePerUser: e.target.value})} placeholder={t.plans.pricePlaceholder} required type="number" step="0.01" disabled={isSubmitting} />
                 <span className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-[12px] font-bold text-slate-500`}>{t.plans.currency}</span>
               </div>
             </div>
@@ -244,7 +239,7 @@ const CreatePlan: React.FC = () => {
             <div className="grid grid-cols-1 gap-3">
               {features.map((feature, idx) => (
                 <div key={idx} className="relative group/feat">
-                  <input type="text" value={feature} onChange={(e) => updateFeature(idx, e.target.value)} className="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none transition-all" placeholder={lang === 'ar' ? 'اسم الميزة...' : 'Feature description...'} required disabled={isSubmitting} />
+                  <input type="text" value={feature} onChange={(e) => updateFeature(idx, e.target.value)} className="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium font-bold focus:border-primary outline-none transition-all" placeholder={t.plans.featureDescPlaceholder} required disabled={isSubmitting} />
                   <button type="button" onClick={() => removeFeature(idx)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-red-500 transition-colors" title="Remove">
                     <span className="material-symbols-outlined text-[18px]">delete_outline</span>
                   </button>
@@ -289,7 +284,7 @@ const CreatePlan: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[9px] font-bold text-slate-500 px-1">{t.plans.offerDesc}</label>
-                      <input type="text" value={offer.description} onChange={(e) => updateOffer(idx, 'description', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-accent outline-none" placeholder="e.g. Volume discount" disabled={isSubmitting} />
+                      <input type="text" value={offer.description} onChange={(e) => updateOffer(idx, 'description', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium font-bold focus:ring-2 focus:ring-accent outline-none" placeholder={t.plans.offerDescPlaceholder} disabled={isSubmitting} />
                     </div>
                   </div>
                 ))

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '../App';
-import { api } from '../api';
-import { Category, SubCategory } from '../types';
+import { useApp } from '../../App';
+import { api } from '../../api';
+import { Category, SubCategory } from '../../types';
+import Dropdown from '../../components/Dropdown';
 
 type Role = 'CUSTOMER_OWNER' | 'SUPPLIER_OWNER';
 
@@ -13,26 +14,8 @@ const InputGroup = ({ label, icon, lang, ...props }: any) => (
     </span>
     <input 
       {...props}
-      className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-12 ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all shadow-lg font-bold text-[16px] md:text-sm`}
+      className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-12 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all shadow-lg font-bold`}
     />
-  </div>
-);
-
-const StyledSelect = ({ value, onChange, options, placeholder, lang }: any) => (
-  <div className="relative group">
-    <select 
-      value={value} 
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full appearance-none rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-12 ${lang === 'ar' ? 'pr-5 pl-12 text-right' : 'pl-5 pr-12 text-left'} focus:ring-4 focus:ring-white/20 transition-all shadow-lg font-bold text-[16px] md:text-sm`}
-    >
-      <option value="">{placeholder}</option>
-      {options.map((c: any) => (
-        <option key={c.id} value={c.id}>{lang === 'ar' ? c.arabicName : c.name}</option>
-      ))}
-    </select>
-    <div className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 pointer-events-none text-slate-400`}>
-      <span className="material-symbols-outlined text-[20px]">expand_more</span>
-    </div>
   </div>
 );
 
@@ -203,7 +186,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
       <style>{`
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -232,20 +215,21 @@ const Register: React.FC = () => {
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
             className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60 "
           >
-            {lang === 'en' ? 'ع' : 'En'}
+            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
           </button>
         </div>
       </div>
 
-      {/* Hero Image Section - Matching Landing Skin */}
-      <div className="flex-none h-[30vh] bg-white dark:bg-slate-900 relative rounded-b-[4rem] overflow-hidden shadow-2xl z-10 animate-slide-down border-b-4 border-white/10 dark:border-primary/20">
-        <img 
-          src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
-          className="w-full h-full object-cover opacity-100 dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
-          alt="Hero"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
-        
+      {/* Left (mobile: top) - Image / Branding */}
+      <div className={`flex-none h-[45vh] md:h-full md:w-1/2 md:min-h-screen bg-white dark:bg-slate-900 relative overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 border-white/10 dark:border-primary/20 rounded-b-[4rem] md:rounded-none ${lang === 'ar' ? 'md:order-2 md:border-l-4' : 'md:order-1 md:border-r-4'}`}>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
+            className="w-full h-full min-w-full min-h-full object-cover object-center opacity-100 dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
+            alt="Hero"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
            {[1, 2, 3].map(s => (
              <div key={s} className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-primary' : 'w-4 bg-slate-200 dark:bg-slate-700'}`}></div>
@@ -253,13 +237,14 @@ const Register: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 py-8 overflow-y-auto no-scrollbar animate-fade-up" style={{ animationDelay: '0.4s' }}>
+      {/* Right (mobile: bottom) - Form */}
+      <div className={`flex-1 flex flex-col justify-center px-8 sm:px-12 py-8 md:py-12 overflow-y-auto no-scrollbar animate-fade-up md:w-1/2 ${lang === 'ar' ? 'md:order-1' : 'md:order-2'}`} style={{ animationDelay: '0.4s' }}>
         <div className="max-w-md mx-auto w-full space-y-8">
           <div className="text-center">
              <h2 className="text-3xl font-black text-white ">
-               {step === 1 ? (lang === 'ar' ? 'اختر نوع الحساب' : 'Select Role') : 
-                step === 2 ? (lang === 'ar' ? 'البيانات الشخصية' : 'Personal Data') : 
-                (lang === 'ar' ? 'بيانات العمل' : 'Business Details')}
+               {step === 1 ? t.registerExtra.step1Title : 
+                step === 2 ? t.registerExtra.step2Title : 
+                t.registerExtra.step3Title}
              </h2>
           </div>
 
@@ -283,19 +268,19 @@ const Register: React.FC = () => {
                   <input type="file" ref={profileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'profile')} />
                 </div>
                 <div className="space-y-4">
-                  <InputGroup icon="person" type="text" lang={lang} value={formData.name} onChange={(e: any) => setFormData({...formData, name: e.target.value})} placeholder={lang === 'ar' ? 'الاسم بالكامل' : 'Full Name'} required />
-                  <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.register.phone} required />
+                  <InputGroup icon="person" type="text" lang={lang} value={formData.name} onChange={(e: any) => setFormData({...formData, name: e.target.value})} placeholder={t.registerExtra.fullNamePlaceholder} required />
+                  <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.register.phonePlaceholder} required />
                   <div className="space-y-1">
-                    <InputGroup icon="mail" type="email" lang={lang} value={formData.email} onChange={(e: any) => setFormData({...formData, email: e.target.value})} placeholder={t.register.email} required />
+                    <InputGroup icon="mail" type="email" lang={lang} value={formData.email} onChange={(e: any) => setFormData({...formData, email: e.target.value})} placeholder={t.register.emailPlaceholder} required />
                     {formData.email.length > 0 && !isEmailValid(formData.email) && (
                       <p className="text-[10px] text-red-300 font-bold px-4 animate-in fade-in slide-in-from-top-1">
-                        {lang === 'ar' ? 'البريد الإلكتروني المدخل غير صالح' : 'The email entered is invalid'}
+                        {t.registerExtra.invalidEmail}
                       </p>
                     )}
                   </div>
                   <div className="space-y-1">
-                    <InputGroup icon="lock" type="password" lang={lang} value={formData.password} onChange={(e: any) => setFormData({...formData, password: e.target.value})} placeholder={t.register.password} required minLength={6} />
-                    <p className="text-[10px] text-white/60 px-4">{lang === 'ar' ? 'كلمة المرور يجب أن تكون 6 خانات على الأقل' : 'Password must be at least 6 characters'}</p>
+                    <InputGroup icon="lock" type="password" lang={lang} value={formData.password} onChange={(e: any) => setFormData({...formData, password: e.target.value})} placeholder={t.register.passwordPlaceholder} required minLength={6} />
+                    <p className="text-[10px] text-white/60 px-4">{t.registerExtra.passwordHint}</p>
                   </div>
                 </div>
               </div>
@@ -303,11 +288,11 @@ const Register: React.FC = () => {
 
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500 pb-4">
-                <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({...formData, organizationName: e.target.value})} placeholder={t.register.orgName} required />
-                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({...formData, organizationCRN: e.target.value})} placeholder={t.register.orgCRN} required />
+                <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({...formData, organizationName: e.target.value})} placeholder={t.register.orgNamePlaceholder} required />
+                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({...formData, organizationCRN: e.target.value})} placeholder={t.register.orgCRNPlaceholder} required />
                 <div onClick={() => crnInputRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${crnPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>{crnPreview ? <img src={crnPreview} className="size-full object-contain p-2" alt="CRN" /> : <><span className="material-symbols-outlined text-2xl text-white/50 mb-1">cloud_upload</span><span className="text-[10px] font-black text-white/60  ">{t.register.orgCRNImage}</span></>}</div>
                 <input type="file" ref={crnInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'crn')} />
-                <StyledSelect value={formData.categoryId} onChange={handleCategoryChange} options={categories} lang={lang} placeholder={t.register.selectCategory} />
+                <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={handleCategoryChange} placeholder={t.register.selectCategory} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white pl-5 pr-12 rtl:pl-12 rtl:pr-5 font-bold text-[16px] md:text-sm shadow-lg focus:ring-4 focus:ring-white/20 transition-all cursor-pointer text-start" />
                 {formData.categoryId && subCategories.length > 0 && <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">{subCategories.map(s => <button key={s.id} type="button" onClick={() => toggleSubCategory(s.id)} className={`px-3 py-2 rounded-full border-0 text-[10px] font-black transition-all text-center leading-tight shadow-sm ${formData.subCategoryIds.includes(s.id) ? 'bg-white dark:bg-primary text-[#20a7b2] dark:text-white' : 'bg-white/10 dark:bg-white/5 text-white/70'}`}>{lang === 'ar' ? s.arabicName : s.name}</button>)}</div>}
               </div>
             )}
@@ -320,7 +305,7 @@ const Register: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center"><p className="text-white/60 text-xs font-bold">{lang === 'ar' ? 'لديك حساب بالفعل؟' : 'Already have an account?'} <Link to="/login" className="text-white font-black hover:underline ml-2 ">{lang === 'ar' ? 'سجل دخول' : 'Login'}</Link></p></div>
+          <div className="text-center"><p className="text-white/60 text-xs font-bold">{t.registerExtra.alreadyHaveAccount} <Link to="/login" className="text-white font-black hover:underline ml-2 ">{t.registerExtra.loginLink}</Link></p></div>
         </div>
       </div>
     </div>

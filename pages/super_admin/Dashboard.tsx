@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -6,9 +6,11 @@ import { useLanguage } from '../../App';
 import AdSlider from '../../components/AdSlider';
 import GeminiInsights from '../../components/GeminiInsights';
 import RecentNotifications from '../../components/RecentNotifications';
+import Dropdown from '../../components/Dropdown';
 
 const Dashboard: React.FC = () => {
   const { lang, t } = useLanguage();
+  const [chartPeriod, setChartPeriod] = useState('7');
   
   const revenueData = [
     { name: lang === 'ar' ? 'إثن' : 'Mon', value: 3200 },
@@ -70,10 +72,7 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
           <div className="mb-8 flex items-center justify-between">
             <h3 className="text-base font-black text-slate-900 dark:text-white    tracking-wider">{t.dashboard.revenueGrowth}</h3>
-            <select className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl text-[10px] font-black text-slate-500 outline-none border border-transparent focus:border-primary/20 cursor-pointer">
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-            </select>
+            <Dropdown options={[{ value: '7', label: 'Last 7 days' }, { value: '30', label: 'Last 30 days' }]} value={chartPeriod} onChange={setChartPeriod} placeholder="Last 7 days" showClear={false} isRtl={lang === 'ar'} triggerClassName="min-h-[36px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl text-[10px] font-black text-slate-500 outline-none border border-transparent focus:border-primary/20 cursor-pointer pl-4 pr-8 rtl:pl-8 rtl:pr-4" />
           </div>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">

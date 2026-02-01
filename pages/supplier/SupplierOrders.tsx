@@ -210,8 +210,31 @@ const SupplierOrders: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
       
+      {/* Top Filter Bar - Web only */}
+      <div className="hidden md:flex flex-wrap items-center gap-2 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+        <span className="text-xs font-black text-slate-400 mr-2">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+        {filterOptions.map((opt) => (
+          <button
+            key={opt.id as any}
+            onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
+            className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
+              statusFilter === opt.id
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {statusFilter && (
+          <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-xs font-black text-red-500 hover:underline ml-2">
+            {lang === 'ar' ? 'مسح' : 'Clear'}
+          </button>
+        )}
+      </div>
+
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-xs animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
            {toast.message}
@@ -317,8 +340,8 @@ const SupplierOrders: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Filter FAB */}
-      <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+      {/* Floating Filter FAB - Mobile only */}
+      <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
         <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
           <div className="relative" ref={filterRef}>
             <button 
@@ -412,7 +435,6 @@ const SupplierOrders: React.FC = () => {
         </div>
       )}
 
-      {/* Response Modal (تقديم عرض السعر) */}
       {respondingOffer && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">

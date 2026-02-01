@@ -50,7 +50,7 @@ const MarketRequests: React.FC = () => {
   const canCreate = userRole.includes('CUSTOMER_OWNER');
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
       <div className="flex flex-wrap items-center justify-end gap-4 mb-10">
         <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:text-slate-600'}`}><span className="material-symbols-outlined text-[22px]">grid_view</span></button>
@@ -78,7 +78,6 @@ const MarketRequests: React.FC = () => {
           </div>
         )}
       </div>
-      {/* ... (باقي المودالز تظل كما هي) ... */}
     </div>
   );
 };
