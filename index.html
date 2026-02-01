@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <title>Raw needed portal</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#009aa7",
+                        "white": "#FFFFFF",
+                        "accent": "#003259",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13181f",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "Tajawal", "system-ui", "sans-serif"],
+                        "display": ["Inter", "Tajawal", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Global font size scale up */
+        html {
+            font-size: 14px;
+        }
+
+        /* Global font normalization */
+        body, input, button, textarea, select { 
+            font-family: 'Inter', 'Tajawal', sans-serif; 
+        }
+        
+        /* Fix for iOS/Android input zoom on focus */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+                padding-top: 0.6rem !important;
+                padding-bottom: 0.6rem !important;
+            }
+        }
+
+        [dir="rtl"] body, [dir="rtl"] input, [dir="rtl"] button, [dir="rtl"] textarea, [dir="rtl"] select { 
+            font-family: 'Tajawal', 'Inter', sans-serif; 
+        }
+
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .fill-1 { font-variation-settings: 'FILL' 1; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        
+        [dir="rtl"] .material-symbols-outlined.rtl-flip { transform: scaleX(-1); }
+
+        /* Mobile safe areas handling */
+        .safe-pt {
+            padding-top: env(safe-area-inset-top, 20px);
+        }
+        
+        @media screen and (max-width: 768px) {
+            .mobile-top-offset {
+                top: calc(env(safe-area-inset-top, 0px) + 25px) !important;
+            }
+            .mobile-header-safe-height {
+                height: calc(env(safe-area-inset-top, 0px) + 85px) !important;
+                padding-top: env(safe-area-inset-top, 0px) !important;
+            }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 antialiased">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
