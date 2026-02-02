@@ -1,4 +1,4 @@
-// Logo: place your logo.png file in the public/ folder (path: /logo.png)
+// Logo
 export const APP_LOGO = "/logo.png";
 
 // Plan feature display names (AR/EN) and which plan type they belong to
