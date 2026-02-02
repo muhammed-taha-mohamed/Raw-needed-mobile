@@ -1,4 +1,5 @@
-export const APP_LOGO = "https://res.cloudinary.com/drzge8ywz/image/upload/v1767602047/trust-app-images/s6agj3qyywabs6bgnwk3.png";
+// Logo: place your logo.png file in the public/ folder (path: /logo.png)
+export const APP_LOGO = "/logo.png";
 
 // Plan feature display names (AR/EN) and which plan type they belong to
 import type { PlanType } from './types';

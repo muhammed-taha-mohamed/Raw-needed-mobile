@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
+import { APP_LOGO } from '../../constants';
 import { UserSubscription, Category, SubCategory, Advertisement } from '../../types';
 import Dropdown from '../../components/Dropdown';
 
@@ -315,7 +316,7 @@ const Profile: React.FC = () => {
       <div className="bg-white dark:bg-slate-900 md:rounded-b-[2.5rem] shadow-sm overflow-hidden border-x border-b border-primary/10 dark:border-slate-800">
         <div className="h-48 md:h-72 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 relative">
           <img 
-             src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
+             src={APP_LOGO} 
              className="w-full h-full object-cover opacity-50 grayscale dark:opacity-100 dark:grayscale-0 dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
              alt="Banner"
           />

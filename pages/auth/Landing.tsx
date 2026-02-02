@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../App';
+import { APP_LOGO } from '../../constants';
 
 interface LandingProps {
   isLoggedIn: boolean;
@@ -59,7 +60,7 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
       <div className="flex-none h-[45vh] md:h-screen md:w-1/2 md:order-2 bg-white dark:bg-slate-900 relative rounded-b-[4rem] md:rounded-none overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 md:border-l-4 border-white/10 dark:border-primary/20">
         <div className="absolute inset-0 flex items-center justify-center">
           <img 
-            src="https://res.cloudinary.com/drzge8ywz/image/upload/v1767623747/trust-app-images/hj0hmskzhvumytynnjbj.png" 
+            src={APP_LOGO} 
             className="w-full h-full min-w-full min-h-full object-cover object-center transition-all duration-700 dark:invert dark:hue-rotate-180 dark:brightness-125"
             alt="Business Growth"
           />
