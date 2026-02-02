@@ -63,7 +63,9 @@ export const translations = {
       successUpdate: 'Ad content updated',
       successDelete: 'Ad removed',
       empty: 'No advertisements running currently.',
-      myAds: 'My Advertisements'
+      myAds: 'My Advertisements',
+      featureRequired: 'This feature is not included in your current subscription plan. Please upgrade your plan to access advertisements.',
+      featureRequiredTitle: 'Feature Not Available'
     },
     manualOrder: {
       btn: 'Create Manual Order',
@@ -136,7 +138,24 @@ export const translations = {
       updateCatalog: 'Update Catalog',
       details: 'Product Details',
       outOfStock: 'Out of Stock',
-      inStock: 'Available'
+      inStock: 'Available',
+      unit: 'Unit (Optional)',
+      productionDate: 'Production Date (Optional)',
+      expirationDate: 'Expiration Date (Optional)',
+      exportStock: 'Export Stock',
+      exporting: 'Exporting...',
+      exportSuccess: 'Stock exported successfully',
+      exportError: 'Failed to export stock',
+      duplicateNameError: 'A product with this name already exists for this supplier',
+      downloadTemplate: 'Download Template',
+      downloading: 'Downloading...',
+      downloadTemplateSuccess: 'Template downloaded successfully',
+      downloadTemplateError: 'Failed to download template',
+      uploadProducts: 'Upload Products',
+      uploading: 'Uploading...',
+      uploadError: 'Failed to upload products',
+      uploadSuccess: 'Products uploaded successfully',
+      invalidFileType: 'Please upload an Excel file (.xlsx)'
     },
     team: {
       title: 'My Team',
@@ -267,12 +286,16 @@ export const translations = {
       statusArchived: 'Archived',
       statusDraft: 'Draft'
     },
+    orders: {
+      featureRequired: 'Private orders feature is not included in your current subscription plan. Please upgrade your plan to access private orders.',
+      featureRequiredTitle: 'Feature Not Available'
+    },
     planSelection: {
       pageTitle: 'Subscription Tiers',
       pageSubtitle: 'Find the perfect plan for your business scale.',
       receiptUploadTime: 'Receipt upload deadline',
       receiptUploadTimeValue: 'Within 24 hours of payment',
-      receiptUploadReminder: 'If you missed uploading the receipt, you can set a reminder on the support screen.',
+      receiptUploadReminder: 'If you missed uploading the receipt, you can set a ticket on the support screen.',
       paymentMethods: 'Payment methods',
       paymentMethodsSubtitle: 'You can pay via the following options added by the administrator, and upload the receipt right after payment for review.',
       bankAccount: 'Bank Account',
@@ -500,7 +523,9 @@ export const translations = {
       successUpdate: 'تم تحديث محتوى الإعلان',
       successDelete: 'تمت إزالة الإعلان',
       empty: 'لا توجد إعلانات نشطة حالياً.',
-      myAds: 'إعلاناتي'
+      myAds: 'إعلاناتي',
+      featureRequired: 'هذه الميزة غير متوفرة في باقة الاشتراك الحالية. يرجى ترقية باقاتك للوصول إلى الإعلانات.',
+      featureRequiredTitle: 'الميزة غير متوفرة'
     },
     manualOrder: {
       btn: 'انشاء طلب يدوي',
@@ -575,7 +600,24 @@ export const translations = {
       updateCatalog: 'تحديث الكتالوج',
       details: 'تفاصيل المنتج',
       outOfStock: 'غير متوفر',
-      inStock: 'متوفر'
+      inStock: 'متوفر',
+      unit: 'وحدة القياس',
+      productionDate: 'تاريخ الإنتاج',
+      expirationDate: 'تاريخ الانتهاء',
+      exportStock: 'تصدير المخزون',
+      exporting: 'جاري التصدير...',
+      exportSuccess: 'تم تصدير المخزون بنجاح',
+      exportError: 'فشل تصدير المخزون',
+      duplicateNameError: 'منتج بهذا الاسم موجود بالفعل لهذا المورد',
+      downloadTemplate: 'تحميل القالب',
+      downloading: 'جاري التحميل...',
+      downloadTemplateSuccess: 'تم تحميل القالب بنجاح',
+      downloadTemplateError: 'فشل تحميل القالب',
+      uploadProducts: 'رفع المنتجات',
+      uploading: 'جاري الرفع...',
+      uploadError: 'فشل رفع المنتجات',
+      uploadSuccess: 'تم رفع المنتجات بنجاح',
+      invalidFileType: 'يرجى رفع ملف Excel (.xlsx)'
     },
     team: {
       title: 'فريقي',
@@ -706,12 +748,16 @@ export const translations = {
       statusArchived: 'مؤرشفة',
       statusDraft: 'مسودة'
     },
+    orders: {
+      featureRequired: 'ميزة الطلبات الخاصة غير متوفرة في اشتراكك الحالي. يرجى ترقية باقاتك للوصول إلى الطلبات الخاصة.',
+      featureRequiredTitle: 'الميزة غير متوفرة'
+    },
     planSelection: {
       pageTitle: 'باقات الاشتراك',
       pageSubtitle: 'اختر الباقة المناسبة لحجم أعمالك وابدأ فوراً.',
       receiptUploadTime: 'وقت رفع الإيصال',
       receiptUploadTimeValue: 'خلال ٢٤ ساعة من إتمام الدفع',
-      receiptUploadReminder: 'إن فاتك رفع الإيصال، يمكنك إنشاء تذكير من شاشة الدعم.',
+      receiptUploadReminder: 'إن فاتك رفع الإيصال، يمكنك إنشاء تذكرة من شاشة الدعم.',
       paymentMethods: 'طرق الدفع',
       paymentMethodsSubtitle: 'يمكنك الدفع عبر الخيارات التالية التي أضافها المسؤول، ورفع الإيصال مباشرة بعد الدفع للمراجعة.',
       bankAccount: 'حساب بنكي',

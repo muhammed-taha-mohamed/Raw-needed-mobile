@@ -27,6 +27,9 @@ interface Product {
   stockQuantity: number;
   category?: { id: string; name: string; arabicName: string };
   subCategory?: { id: string | null; name: string; arabicName: string };
+  unit?: string;
+  productionDate?: string;
+  expirationDate?: string;
 }
 
 interface CartItem {
@@ -59,6 +62,19 @@ interface PaginatedProducts {
 const Vendors: React.FC = () => {
   const { lang, t } = useLanguage();
   const location = useLocation();
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (lang === 'ar') {
+        return date.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
@@ -108,6 +124,7 @@ const Vendors: React.FC = () => {
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const catalogFilterRef = useRef<HTMLDivElement>(null);
+  const hasOpenedFromAdRef = useRef<boolean>(false);
 
   useEffect(() => {
     fetchCategories();
@@ -128,6 +145,46 @@ const Vendors: React.FC = () => {
   useEffect(() => {
     fetchSuppliers(currentPage);
   }, [currentPage, pageSize, selectedCategoryId]);
+
+  // Handle initial supplier from navigation state (from ad click)
+  useEffect(() => {
+    const initialSupplierId = (location.state as any)?.initialSupplierId;
+    if (initialSupplierId && !hasOpenedFromAdRef.current && suppliers.length > 0) {
+      hasOpenedFromAdRef.current = true;
+      // Check if supplier is in current list
+      const supplier = suppliers.find(s => s.id === initialSupplierId);
+      if (supplier) {
+        // Open catalog for this supplier
+        setViewingSupplier(supplier);
+        setProductsPage(0);
+        setProdSearchName('');
+        setProdSearchOrigin('');
+        setProdSearchCat('');
+        setProdSearchSub('');
+        setIsProductsModalOpen(true);
+        // Clear the state to prevent reopening on re-render
+        window.history.replaceState({}, document.title);
+      } else {
+        // Supplier not in current page, fetch it directly
+        api.get<Supplier>(`/api/v1/user/${initialSupplierId}`)
+          .then(supplierData => {
+            if (supplierData) {
+              setViewingSupplier(supplierData as Supplier);
+              setProductsPage(0);
+              setProdSearchName('');
+              setProdSearchOrigin('');
+              setProdSearchCat('');
+              setProdSearchSub('');
+              setIsProductsModalOpen(true);
+              window.history.replaceState({}, document.title);
+            }
+          })
+          .catch(() => {
+            // Supplier not found, ignore
+          });
+      }
+    }
+  }, [suppliers, location.state]);
 
   useEffect(() => {
     if (viewingSupplier) {
@@ -248,6 +305,12 @@ const Vendors: React.FC = () => {
     setProdSearchCat('');
     setProdSearchSub('');
     setIsProductsModalOpen(true);
+    hasOpenedFromAdRef.current = false; // Reset when manually opening
+  };
+
+  const closeProductsModal = () => {
+    setIsProductsModalOpen(false);
+    hasOpenedFromAdRef.current = false; // Reset when closing
   };
 
   const handleManualFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,9 +543,14 @@ const Vendors: React.FC = () => {
 
       {/* Catalog Modal */}
       {isProductsModalOpen && viewingSupplier && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col h-[90vh] relative">
-              
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => closeProductsModal()}
+        >
+           <div
+             className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col h-[90vh] relative"
+             onClick={(e) => e.stopPropagation()}
+           >
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">storefront</span></div>
@@ -491,7 +559,13 @@ const Vendors: React.FC = () => {
                        <p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? 'كتالوج المواد الخام' : 'Vendor Product Catalog'}</p>
                     </div>
                  </div>
-                 <button onClick={() => setIsProductsModalOpen(false)} className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90"><span className="material-symbols-outlined">close</span></button>
+                 <button
+                   type="button"
+                   onClick={(e) => { e.stopPropagation(); closeProductsModal(); }}
+                   className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90 shrink-0"
+                 >
+                   <span className="material-symbols-outlined">close</span>
+                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-slate-50/20 relative">
@@ -516,10 +590,26 @@ const Vendors: React.FC = () => {
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
                                        <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">category</span><span className="text-[10px] font-bold   truncate max-w-[120px]">{lang === 'ar' ? p.category?.arabicName : p.category?.name}</span></div>
                                        <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">public</span><span className="text-[10px] font-bold   tabular-nums">{p.origin}</span></div>
+                                       {p.unit && (
+                                         <div className="flex items-center gap-1.5 text-slate-400">
+                                           <span className="material-symbols-outlined text-[16px] text-primary/60">straighten</span>
+                                           <span className="text-[10px] font-bold uppercase">{p.unit}</span>
+                                         </div>
+                                       )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+                                      <div className="flex items-center gap-1 text-slate-400">
+                                        <span className="material-symbols-outlined text-[14px] text-primary/60">calendar_today</span>
+                                        <span className="text-[9px] font-bold">{lang === 'ar' ? 'إنتاج:' : 'Prod:'} {p.productionDate ? formatDate(p.productionDate) : 'N/A'}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1 text-slate-400">
+                                        <span className="material-symbols-outlined text-[14px] text-primary/60">event_available</span>
+                                        <span className="text-[9px] font-bold">{lang === 'ar' ? 'انتهاء:' : 'Exp:'} {p.expirationDate ? formatDate(p.expirationDate) : 'N/A'}</span>
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="mt-3 flex items-center justify-between gap-2">
-                                     <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span><span className="text-[9px] font-black uppercase">{lang === 'ar' ? 'وحدة' : 'Units'}</span></div></div>
+                                     <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black uppercase">{p.unit}</span> : <span className="text-[9px] font-black uppercase">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
                                      <div className="flex items-center gap-2">
                                         {isInCart ? (
                                           <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20"><button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">remove</span></button><span className="px-2 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{cartQty}</span><button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">add</span></button></div>

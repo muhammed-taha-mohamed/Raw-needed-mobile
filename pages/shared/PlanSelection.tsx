@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { Plan, BillingFrequency, UserSubscription, PlanType, CalculatePriceResponse, PlanFeature, PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
 import { getPlanFeatureLabel } from '../../constants';
+import { clearSubscriptionCache } from '../../utils/subscription';
 
 type CheckoutStep = 'calculate' | 'upload' | 'success';
 
@@ -20,6 +21,7 @@ const PlanSelection: React.FC = () => {
   const [activeOfferId, setActiveOfferId] = useState<string | null>(null);
   const [paymentMethodsTooltipOpen, setPaymentMethodsTooltipOpen] = useState(false);
   const [copiedTransferId, setCopiedTransferId] = useState<string | null>(null);
+  const [subscriptionDetailsTooltipOpen, setSubscriptionDetailsTooltipOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('calculate');
@@ -43,6 +45,7 @@ const PlanSelection: React.FC = () => {
       setActiveFeatureId(null);
       setActiveOfferId(null);
       setPaymentMethodsTooltipOpen(false);
+      setSubscriptionDetailsTooltipOpen(false);
     };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
@@ -212,6 +215,9 @@ const PlanSelection: React.FC = () => {
       if (showFeaturesCheckboxes && selectedFeatures.length > 0) submitBody.selectedFeatures = selectedFeatures;
       await api.post('/api/v1/user-subscriptions/submit', submitBody);
 
+      // Clear subscription cache so feature checks will be updated
+      clearSubscriptionCache();
+      
       setCheckoutStep('success');
     } catch (err: any) {
       setError(err.message || "Submission failed.");
@@ -307,7 +313,8 @@ const PlanSelection: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative inline-block">
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative inline-block">
           <button
             type="button"
             onClick={(e) => {
@@ -315,6 +322,7 @@ const PlanSelection: React.FC = () => {
               setPaymentMethodsTooltipOpen((v) => !v);
               setActiveFeatureId(null);
               setActiveOfferId(null);
+              setSubscriptionDetailsTooltipOpen(false);
             }}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary hover:bg-primary/5 transition-all text-[11px] font-black"
           >
@@ -373,6 +381,126 @@ const PlanSelection: React.FC = () => {
           )}
         </div>
 
+        {subscription && (
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSubscriptionDetailsTooltipOpen((v) => !v);
+                setActiveFeatureId(null);
+                setActiveOfferId(null);
+                setPaymentMethodsTooltipOpen(false);
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary hover:bg-primary/5 transition-all text-[11px] font-black"
+            >
+              <span className="material-symbols-outlined text-primary text-lg">info</span>
+              {lang === 'ar' ? 'تفاصيل الاشتراك الحالي' : 'Current Subscription Details'}
+              <span className={`material-symbols-outlined text-base transition-transform duration-300 ${subscriptionDetailsTooltipOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+            {subscriptionDetailsTooltipOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute top-full mt-2 z-[60] w-full max-w-[calc(100vw-1.7rem)] sm:w-[380px] sm:max-w-[90vw] p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0 sm:right-0' : 'left-0 sm:left-0'}`}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-primary text-[20px]">info</span>
+                  <h3 className="text-sm font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'تفاصيل الاشتراك الحالي' : 'Current Subscription Details'}</h3>
+                </div>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
+                  <div className="space-y-2 text-[11px]">
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'اسم الخطة:' : 'Plan Name:'}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 text-right">{subscription.planName}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+                      <span className={`font-bold ${subscription.status === 'APPROVED' ? 'text-emerald-600' : subscription.status === 'PENDING' ? 'text-amber-600' : 'text-red-600'}`}>
+                        {subscription.status === 'APPROVED' ? (lang === 'ar' ? 'مفعل' : 'Approved') : 
+                         subscription.status === 'PENDING' ? (lang === 'ar' ? 'قيد المراجعة' : 'Pending') : 
+                         (lang === 'ar' ? 'مرفوض' : 'Rejected')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'عدد التراخيص:' : 'Allocated Seats:'}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{subscription.numberOfUsers}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'المستخدمين:' : 'Used:'}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{subscription.usedUsers}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'المتبقي:' : 'Remaining:'}</span>
+                      <span className="font-bold text-primary tabular-nums">{subscription.remainingUsers}</span>
+                    </div>
+                    {subscription.remainingSearches != null && (
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'عمليات البحث المتبقية:' : 'Remaining Searches:'}</span>
+                        <span className="font-bold text-primary tabular-nums">{subscription.remainingSearches}</span>
+                      </div>
+                    )}
+                    {subscription.numberOfSearchesPurchased != null && (
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'إجمالي عمليات البحث:' : 'Total Searches:'}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{subscription.numberOfSearchesPurchased}</span>
+                      </div>
+                    )}
+                    {subscription.pointsEarned != null && (
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'النقاط:' : 'Points:'}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{subscription.pointsEarned}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'المجموع:' : 'Total:'}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{subscription.total.toLocaleString()} {t.plans.currency}</span>
+                    </div>
+                    {subscription.discount > 0 && (
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'الخصم:' : 'Discount:'}</span>
+                        <span className="font-bold text-emerald-600 tabular-nums">-{subscription.discount.toLocaleString()} {t.plans.currency}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start">
+                      <span className="font-black text-slate-500">{lang === 'ar' ? 'السعر النهائي:' : 'Final Price:'}</span>
+                      <span className="font-bold text-primary tabular-nums">{subscription.finalPrice.toLocaleString()} {t.plans.currency}</span>
+                    </div>
+                    {subscription.selectedFeatures && subscription.selectedFeatures.length > 0 && (
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <p className="font-black text-slate-500 mb-2">{lang === 'ar' ? 'المميزات المختارة:' : 'Selected Features:'}</p>
+                        <div className="space-y-1">
+                          {subscription.selectedFeatures.map((feat, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>
+                              <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{getPlanFeatureLabel(String(feat), lang === 'ar' ? 'ar' : 'en')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ التقديم:' : 'Submission Date:'}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{formatDate(subscription.submissionDate)}</span>
+                      </div>
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ التفعيل:' : 'Activation Date:'}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{formatDate(subscription.subscriptionDate)}</span>
+                      </div>
+                      <div className="flex justify-between items-start">
+                        <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ الانتهاء:' : 'Expiry Date:'}</span>
+                        <span className="font-bold text-primary text-[10px]">{formatDate(subscription.expiryDate)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch pb-6">
         {plans.map((plan, idx) => {
           const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
@@ -393,9 +521,7 @@ const PlanSelection: React.FC = () => {
                     <h3 className="font-black text-slate-700 dark:text-white text-base leading-tight  truncate">{plan.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10px] font-black text-primary ">{getFreqLabel(plan.billingFrequency, lang)}</p>
-                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border ${plan.hasAdvertisements ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-                         {plan.hasAdvertisements ? (lang === 'ar' ? 'بإعلانات' : 'Ads') : (lang === 'ar' ? 'بدون إعلانات' : 'No Ads')}
-                      </span>
+                      
                     </div>
                   </div>
                 </div>
@@ -477,15 +603,7 @@ const PlanSelection: React.FC = () => {
                           {lang === 'ar' ? 'المميزات' : 'Included'}
                         </p>
                         
-                        {/* Ad Info Integration */}
-                        <div className={`flex items-start gap-2 font-black ${plan.hasAdvertisements ? 'text-emerald-600' : 'text-orange-600'}`}>
-                          <span className="material-symbols-outlined text-[16px] mt-0.5">{plan.hasAdvertisements ? 'ads_click' : 'block'}</span>
-                          <span className="text-[11px]  leading-tight">
-                            {plan.hasAdvertisements 
-                              ? (lang === 'ar' ? 'تتضمن إعلانات' : 'Includes Ads') 
-                              : (lang === 'ar' ? 'بدون إعلانات' : 'Ad-Free experience')}
-                          </span>
-                        </div>
+                      
 
                         {plan.features && plan.features.length > 0 ? (
                           plan.features.map((feat, fidx) => {
@@ -559,9 +677,7 @@ const PlanSelection: React.FC = () => {
               <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <span className="material-symbols-outlined text-primary text-[18px]">schedule</span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black text-slate-500 dark:text-slate-400">{t.planSelection.receiptUploadTime}</p>
-                  <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{t.planSelection.receiptUploadTimeValue}</p>
-                  <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-1 leading-tight">{t.planSelection.receiptUploadReminder}</p>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1 leading-tight">{t.planSelection.receiptUploadReminder}</p>
                 </div>
               </div>
 

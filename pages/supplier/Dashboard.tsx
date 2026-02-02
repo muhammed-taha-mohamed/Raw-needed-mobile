@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { useNavigate } from 'react-router-dom';
 import AdSlider from '../../components/AdSlider';
 import RecentNotifications from '../../components/RecentNotifications';
+import { useToast } from '../../contexts/ToastContext';
 import { 
   PieChart, Pie, ResponsiveContainer, Cell, Tooltip
 } from 'recharts';
@@ -24,9 +25,11 @@ interface DashboardStats {
 const SupplierDashboard: React.FC = () => {
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [userData, setUserData] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -71,6 +74,47 @@ const SupplierDashboard: React.FC = () => {
   ].filter(d => d.value >= 0) : [];
 
   const totalActions = pieData.reduce((acc, curr) => acc + curr.value, 0);
+
+  const handleExportStock = async () => {
+    setIsExporting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const langHeader = localStorage.getItem('lang') || 'ar';
+      const BASE_URL = 'https://api.rawneeded.com/raw-needed';
+      const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Accept-Language': langHeader,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.errorMessage || t.products.exportError);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const now = new Date();
+      const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      showToast(t.products.exportSuccess, 'success');
+    } catch (err: any) {
+      const errorMsg = err.message || t.products.exportError;
+      showToast(errorMsg, 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
@@ -174,18 +218,40 @@ const SupplierDashboard: React.FC = () => {
 
           {/* Quick Access Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-             <div 
-               onClick={() => navigate('/products')}
-               className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary to-accent text-white shadow-xl shadow-primary/20 cursor-pointer group transition-all hover:-translate-y-1"
-             >
-                <div className="flex justify-between items-start mb-10">
+             <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary to-accent text-white shadow-xl shadow-primary/20 group transition-all">
+                <div className="flex justify-between items-start mb-6">
                    <div className="size-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
                       <span className="material-symbols-outlined text-3xl">inventory_2</span>
                    </div>
-                   <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-all rtl-flip">arrow_forward</span>
                 </div>
                 <h3 className="text-2xl font-black mb-2">{lang === 'ar' ? 'إدارة المنتجات' : 'Inventory Management'}</h3>
-                <p className="text-white/70 text-sm font-bold">{lang === 'ar' ? 'إضافة وتحديث كتالوج المواد الخام.' : 'Update your catalog and stock levels.'}</p>
+                <p className="text-white/70 text-sm font-bold mb-6">{lang === 'ar' ? 'إضافة وتحديث كتالوج المواد الخام.' : 'Update your catalog and stock levels.'}</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => navigate('/products')}
+                    className="flex-1 py-3 px-4 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all text-sm font-black flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">inventory_2</span>
+                    {lang === 'ar' ? 'إدارة المنتجات' : 'Manage Products'}
+                  </button>
+                  <button 
+                    onClick={handleExportStock}
+                    disabled={isExporting}
+                    className="flex-1 py-3 px-4 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isExporting ? (
+                      <>
+                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {t.products.exporting}
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-lg">download</span>
+                        {t.products.exportStock}
+                      </>
+                    )}
+                  </button>
+                </div>
              </div>
 
              <div 

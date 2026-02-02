@@ -11,6 +11,7 @@ interface SupplierResponse {
   respondedAt: string;
   availableQuantity: number;
   shippingInfo: string;
+  phoneNumber?: string; // رقم واتساب من رد المورد
 }
 
 interface RFQOffer {
@@ -214,12 +215,12 @@ const SupplierOrders: React.FC = () => {
       
       {/* Top Filter Bar - Web only */}
       <div className="hidden md:flex flex-wrap items-center gap-2 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-        <span className="text-xs font-black text-slate-400 mr-2">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+        <span className="text-sm font-black text-slate-400 mr-2">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
         {filterOptions.map((opt) => (
           <button
             key={opt.id as any}
             onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
+            className={`px-4 py-2.5 rounded-xl text-base font-black transition-all ${
               statusFilter === opt.id
                 ? 'bg-primary text-white shadow-md shadow-primary/20'
                 : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
@@ -229,14 +230,14 @@ const SupplierOrders: React.FC = () => {
           </button>
         ))}
         {statusFilter && (
-          <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-xs font-black text-red-500 hover:underline ml-2">
+          <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-sm font-black text-red-500 hover:underline ml-2">
             {lang === 'ar' ? 'مسح' : 'Clear'}
           </button>
         )}
       </div>
 
       {toast && (
-        <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-xs animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
+        <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
            {toast.message}
         </div>
       )}
@@ -246,14 +247,14 @@ const SupplierOrders: React.FC = () => {
         {isLoading && offers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-40">
              <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest opacity-50">Accessing Supply Ledger...</p>
+             <p className="text-slate-400 font-black text-xs uppercase tracking-widest opacity-50">Accessing Supply Ledger...</p>
           </div>
         ) : offers.length === 0 ? (
           <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700">
              <span className="material-symbols-outlined text-7xl">request_quote</span>
              <div className="space-y-1">
-               <h3 className="text-xl font-black">{lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'}</h3>
-               <p className="text-sm font-bold">{lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'}</p>
+               <h3 className="text-2xl font-black">{lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'}</h3>
+               <p className="text-base font-bold">{lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'}</p>
              </div>
           </div>
         ) : (
@@ -273,15 +274,15 @@ const SupplierOrders: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2.5 mb-1">
-                        <h3 className="text-sm font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black border ${status.bg}`}>
+                        <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${status.bg}`}>
                           {status.label}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400">
-                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">corporate_fare</span> {offer.customerOrganizationName}</span>
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
+                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>
                          <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
                          <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                          <span className="hidden sm:inline flex items-center gap-1 uppercase tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
                       </div>
@@ -303,32 +304,32 @@ const SupplierOrders: React.FC = () => {
                        <button 
                          disabled={completingId === offer.id}
                          onClick={() => handleCompleteOffer(offer.id)}
-                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-black text-[10px] hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10 uppercase tracking-wider"
+                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10 uppercase tracking-wider"
                        >
                           {completingId === offer.id ? (
                             <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                           ) : (
                             <>
-                              <span className="material-symbols-outlined text-base">task_alt</span>
+                              <span className="material-symbols-outlined text-lg">task_alt</span>
                               {lang === 'ar' ? 'إتمام الطلب' : 'Complete'}
                             </>
                           )}
                        </button>
                     ) : offer.status === 'COMPLETED' ? (
-                       <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-[10px] cursor-default whitespace-nowrap uppercase tracking-wider">
-                          <span className="material-symbols-outlined text-base">check_circle</span>
+                       <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap uppercase tracking-wider">
+                          <span className="material-symbols-outlined text-lg">check_circle</span>
                           {lang === 'ar' ? 'مكتمل' : 'Finalized'}
                        </div>
                     ) : (
                       <button 
                         onClick={() => handleOpenResponse(offer)}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] transition-all active:scale-95 whitespace-nowrap shadow-md uppercase tracking-wider ${
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md uppercase tracking-wider ${
                           offer.status === 'RESPONDED' 
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
                           : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-base">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
+                        <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
                         {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
                       </button>
                     )}
@@ -359,9 +360,9 @@ const SupplierOrders: React.FC = () => {
             {showFilterMenu && (
               <div className={`absolute bottom-full mb-4 z-[250] w-60 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-between items-center mb-4 px-2">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
                   {statusFilter && (
-                    <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-[10px] font-black text-red-500 uppercase">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
+                    <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500 uppercase">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -369,7 +370,7 @@ const SupplierOrders: React.FC = () => {
                     <button
                       key={opt.id as any}
                       onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); setShowFilterMenu(false); }}
-                      className={`w-full text-start px-4 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-between ${
+                      className={`w-full text-start px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between ${
                         statusFilter === opt.id 
                         ? 'bg-primary/10 text-primary' 
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -427,8 +428,8 @@ const SupplierOrders: React.FC = () => {
 
            <div className="h-5 w-px bg-slate-100 dark:bg-slate-800 mx-1"></div>
 
-           <div className="px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
-              <span className="text-[10px] font-black text-slate-500 tabular-nums">
+           <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
+              <span className="text-xs font-black text-slate-500 tabular-nums">
                 {offers.length} / {totalElements}
               </span>
            </div>

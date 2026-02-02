@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
-import { APP_LOGO } from '../../constants';
+import { APP_LOGO, getPlanFeatureLabel } from '../../constants';
 import { UserSubscription, Category, SubCategory, Advertisement } from '../../types';
 import Dropdown from '../../components/Dropdown';
 
@@ -51,6 +51,7 @@ const Profile: React.FC = () => {
   const [adImagePreview, setAdImagePreview] = useState<string | null>(null);
   const adFileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [subscriptionDetailsTooltipOpen, setSubscriptionDetailsTooltipOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -84,6 +85,23 @@ const Profile: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setSubscriptionDetailsTooltipOpen(false);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   const fetchProfile = async () => {
     setIsLoading(true);
@@ -676,18 +694,134 @@ const Profile: React.FC = () => {
                     </div>
                     <div className="relative z-10 space-y-8">
                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                         <div>
+                         <div className="flex-1">
                             <p className="text-[10px] font-black text-primary  mb-2   ">{t.profileExtra.enterpriseLicensing}</p>
                             <h3 className="text-xl md:text-2xl font-black leading-tight">
                               {t.profileExtra.currentPlan} 
                               <span className="text-primary">{profile?.subscription?.planName || t.profileExtra.none}</span>
                             </h3>
                          </div>
-                         {!profile?.subscription && (
-                           <a href="#/subscription" className="bg-primary text-white px-8 py-3 rounded-2xl font-black text-[11px]  shadow-xl shadow-primary/20 active:scale-95 transition-all hover:bg-slate-900 dark:hover:bg-slate-800">
-                             {t.profileExtra.upgradeNow}
-                           </a>
-                         )}
+                         <div className="flex gap-2 flex-wrap">
+                           {!profile?.subscription ? (
+                             <a href="#/subscription" className="bg-primary text-white px-8 py-3 rounded-2xl font-black text-[11px]  shadow-xl shadow-primary/20 active:scale-95 transition-all hover:bg-slate-900 dark:hover:bg-slate-800">
+                               {t.profileExtra.upgradeNow}
+                             </a>
+                           ) : (
+                             <div className="relative inline-block">
+                               <button
+                                 type="button"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setSubscriptionDetailsTooltipOpen(!subscriptionDetailsTooltipOpen);
+                                 }}
+                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-primary hover:bg-primary/5 transition-all text-[11px] font-black"
+                               >
+                                 <span className="material-symbols-outlined text-primary text-lg">info</span>
+                                 {lang === 'ar' ? 'تفاصيل الاشتراك الحالي' : 'Current Subscription Details'}
+                                 <span className={`material-symbols-outlined text-base transition-transform duration-300 ${subscriptionDetailsTooltipOpen ? 'rotate-180' : ''}`}>expand_more</span>
+                               </button>
+                               {subscriptionDetailsTooltipOpen && (
+                                 <div
+                                   onClick={(e) => e.stopPropagation()}
+                                   className={`absolute top-full mt-2 z-[60] w-full max-w-[calc(100vw-1.7rem)] sm:w-[320px] sm:max-w-[90vw] p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0 sm:right-0' : 'left-0 sm:left-0'}`}
+                                 >
+                                   <div className="flex items-center gap-2 mb-3">
+                                     <span className="material-symbols-outlined text-primary text-[20px]">info</span>
+                                     <h3 className="text-sm font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'تفاصيل الاشتراك الحالي' : 'Current Subscription Details'}</h3>
+                                   </div>
+                                   <div className="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
+                                     <div className="space-y-2 text-[11px]">
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'اسم الخطة:' : 'Plan Name:'}</span>
+                                         <span className="font-bold text-slate-700 dark:text-slate-200 text-right">{profile.subscription.planName}</span>
+                                       </div>
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+                                         <span className={`font-bold ${profile.subscription.status === 'APPROVED' ? 'text-emerald-600' : profile.subscription.status === 'PENDING' ? 'text-amber-600' : 'text-red-600'}`}>
+                                           {profile.subscription.status === 'APPROVED' ? (lang === 'ar' ? 'مفعل' : 'Approved') : 
+                                            profile.subscription.status === 'PENDING' ? (lang === 'ar' ? 'قيد المراجعة' : 'Pending') : 
+                                            (lang === 'ar' ? 'مرفوض' : 'Rejected')}
+                                         </span>
+                                       </div>
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'عدد التراخيص:' : 'Allocated Seats:'}</span>
+                                         <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile.subscription.numberOfUsers}</span>
+                                       </div>
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'المستخدمين:' : 'Used:'}</span>
+                                         <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile.subscription.usedUsers}</span>
+                                       </div>
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'المتبقي:' : 'Remaining:'}</span>
+                                         <span className="font-bold text-primary tabular-nums">{profile.subscription.remainingUsers}</span>
+                                       </div>
+                                       {profile.subscription.remainingSearches != null && (
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'عمليات البحث المتبقية:' : 'Remaining Searches:'}</span>
+                                           <span className="font-bold text-primary tabular-nums">{profile.subscription.remainingSearches}</span>
+                                         </div>
+                                       )}
+                                       {profile.subscription.numberOfSearchesPurchased != null && (
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'إجمالي عمليات البحث:' : 'Total Searches:'}</span>
+                                           <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile.subscription.numberOfSearchesPurchased}</span>
+                                         </div>
+                                       )}
+                                       {profile.subscription.pointsEarned != null && (
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'النقاط:' : 'Points:'}</span>
+                                           <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile.subscription.pointsEarned}</span>
+                                         </div>
+                                       )}
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'المجموع:' : 'Total:'}</span>
+                                         <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{profile.subscription.total.toLocaleString()} {t.plans.currency}</span>
+                                       </div>
+                                       {profile.subscription.discount > 0 && (
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'الخصم:' : 'Discount:'}</span>
+                                           <span className="font-bold text-emerald-600 tabular-nums">-{profile.subscription.discount.toLocaleString()} {t.plans.currency}</span>
+                                         </div>
+                                       )}
+                                       <div className="flex justify-between items-start">
+                                         <span className="font-black text-slate-500">{lang === 'ar' ? 'السعر النهائي:' : 'Final Price:'}</span>
+                                         <span className="font-bold text-primary tabular-nums">{profile.subscription.finalPrice.toLocaleString()} {t.plans.currency}</span>
+                                       </div>
+                                       {profile.subscription.selectedFeatures && profile.subscription.selectedFeatures.length > 0 && (
+                                         <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                                           <p className="font-black text-slate-500 mb-2">{lang === 'ar' ? 'المميزات المختارة:' : 'Selected Features:'}</p>
+                                           <div className="space-y-1">
+                                             {profile.subscription.selectedFeatures.map((feat, idx) => (
+                                               <div key={idx} className="flex items-center gap-1.5">
+                                                 <span className="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>
+                                                 <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{getPlanFeatureLabel(String(feat), lang === 'ar' ? 'ar' : 'en')}</span>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         </div>
+                                       )}
+                                       <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ التقديم:' : 'Submission Date:'}</span>
+                                           <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{formatDate(profile.subscription.submissionDate)}</span>
+                                         </div>
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ التفعيل:' : 'Activation Date:'}</span>
+                                           <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px]">{formatDate(profile.subscription.subscriptionDate)}</span>
+                                         </div>
+                                         <div className="flex justify-between items-start">
+                                           <span className="font-black text-slate-500">{lang === 'ar' ? 'تاريخ الانتهاء:' : 'Expiry Date:'}</span>
+                                           <span className="font-bold text-primary text-[10px]">{formatDate(profile.subscription.expiryDate)}</span>
+                                         </div>
+                                       </div>
+                                     </div>
+                                   </div>
+                                   <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
+                                 </div>
+                               )}
+                             </div>
+                           )}
+                         </div>
                        </div>
                        
                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">

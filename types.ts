@@ -198,3 +198,21 @@ export interface Category {
   subCategories?: SubCategory[];
   isLoadingSubs?: boolean;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  origin?: string;
+  supplierId: string;
+  supplierName?: string;
+  inStock: boolean;
+  stockQuantity?: number;
+  category?: Category;
+  subCategory?: SubCategory;
+  categoryId?: string;
+  subCategoryId?: string;
+  image?: string;
+  unit?: string;              // وحدة القياس
+  productionDate?: string;    // تاريخ الإنتاج (ISO date format)
+  expirationDate?: string;    // تاريخ الانتهاء (ISO date format)
+}

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
+import { PlanFeaturesEnum } from '../../types';
+import { hasFeature } from '../../utils/subscription';
 
 interface MarketPost {
   id: string;
@@ -22,21 +25,39 @@ interface MarketPost {
 
 const MarketRequests: React.FC = () => {
   const { lang, t } = useLanguage();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<MarketPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
   const [userRole, setUserRole] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [hasPrivateOrdersFeature, setHasPrivateOrdersFeature] = useState<boolean | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const parsedUser = JSON.parse(userStr);
-      setUserRole((parsedUser.role || ''));
+      const role = (parsedUser.role || '').toUpperCase();
+      setUserRole(role);
+      
+      // Check if user has private orders feature
+      if (role === 'CUSTOMER_OWNER') {
+        hasFeature(PlanFeaturesEnum.CUSTOMER_PRIVATE_ORDERS).then(setHasPrivateOrdersFeature);
+      } else if (role.includes('SUPPLIER')) {
+        hasFeature(PlanFeaturesEnum.SUPPLIER_PRIVATE_ORDERS).then(setHasPrivateOrdersFeature);
+      } else {
+        setHasPrivateOrdersFeature(true); // Admins always have access
+      }
     }
-    fetchData(0, 'all', 12);
   }, []);
+
+  useEffect(() => {
+    if (hasPrivateOrdersFeature === null || hasPrivateOrdersFeature === false) {
+      return; // Don't fetch if feature check is pending or not available
+    }
+    fetchData(0, activeTab, 12);
+  }, [activeTab, hasPrivateOrdersFeature]);
 
   const fetchData = async (page: number, tab: 'all' | 'mine', size: number) => {
     setIsLoading(true);
@@ -47,7 +68,47 @@ const MarketRequests: React.FC = () => {
     } catch (err) {} finally { setIsLoading(false); }
   };
 
-  const canCreate = userRole.includes('CUSTOMER_OWNER');
+  const isCustomer = userRole === 'CUSTOMER_OWNER';
+  const isSupplier = userRole.includes('SUPPLIER');
+  const canCreate = isCustomer && hasPrivateOrdersFeature === true;
+  const canAccess = hasPrivateOrdersFeature === true || (!isCustomer && !isSupplier);
+
+  // Show loading while checking feature
+  if ((isCustomer || isSupplier) && hasPrivateOrdersFeature === null) {
+    return (
+      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+        <div className="flex flex-col items-center justify-center py-40">
+          <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
+          <p className="text-slate-400 font-black text-[10px] md:text-xs opacity-50">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show feature error if user doesn't have access
+  if ((isCustomer || isSupplier) && hasPrivateOrdersFeature === false) {
+    return (
+      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+        <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-red-100 dark:border-red-900/20 shadow-xl">
+          <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
+            <span className="material-symbols-outlined text-5xl">lock</span>
+          </div>
+          <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-4">
+            {t.orders.featureRequiredTitle}
+          </h3>
+          <p className="text-base text-slate-600 dark:text-slate-400 mb-8 text-center max-w-md font-bold">
+            {t.orders.featureRequired}
+          </p>
+          <button 
+            onClick={() => navigate('/subscription')}
+            className="px-8 py-4 bg-primary text-white rounded-xl font-black text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+          >
+            {lang === 'ar' ? 'ترقية الباقة' : 'Upgrade Plan'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">

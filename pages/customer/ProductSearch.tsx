@@ -17,6 +17,9 @@ interface Product {
   supplierName?: string;
   category?: { id: string; name: string; arabicName: string };
   subCategory?: { id: string | null; name: string; arabicName: string };
+  unit?: string;
+  productionDate?: string;
+  expirationDate?: string;
 }
 
 interface Supplier {
@@ -48,6 +51,19 @@ const INITIAL_PAGE_SIZE = 12;
 const ProductSearch: React.FC = () => {
   const { lang, t } = useLanguage();
   const location = useLocation();
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (lang === 'ar') {
+        return date.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [suppliersList, setSuppliersList] = useState<Supplier[]>([]);
@@ -73,6 +89,9 @@ const ProductSearch: React.FC = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const fetchInProgressRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>('');
+  const filtersJustChangedRef = useRef(false);
 
   // Manual Order State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -119,17 +138,56 @@ const ProductSearch: React.FC = () => {
     }
   }, [selectedCat]);
 
+  // When filters change, reset to first page and mark so fetch runs once with page 0
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(0);
-      fetchProducts(0, pageSize);
-    }, 500);
-    return () => clearTimeout(timer);
+    filtersJustChangedRef.current = true;
+    setPage(0);
   }, [selectedCat, selectedSub, selectedSupplier, searchName, searchOrigin]);
 
+  // Single useEffect: one place that triggers filter API (no duplicate calls)
   useEffect(() => {
-    fetchProducts(page, pageSize);
-  }, [page, pageSize]);
+    const usePage = filtersJustChangedRef.current ? 0 : page;
+    if (filtersJustChangedRef.current) filtersJustChangedRef.current = false;
+
+    const fetchKey = `${usePage}-${pageSize}-${selectedCat}-${selectedSub}-${selectedSupplier}-${searchName}-${searchOrigin}`;
+    if (lastFetchKeyRef.current === fetchKey) return;
+    lastFetchKeyRef.current = fetchKey;
+
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
+
+    const payload = {
+      name: searchName || null,
+      origin: searchOrigin || null,
+      categoryId: selectedCat || null,
+      subCategoryId: selectedSub || null,
+      supplierId: selectedSupplier || null,
+    };
+    setIsLoading(true);
+    api
+      .post<PaginatedResponse<Product>>(`/api/v1/product/filter?page=${usePage}&size=${pageSize}`, payload)
+      .then((response) => {
+        setResults(response.content || []);
+        setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
+        const qtys: Record<string, number> = {};
+        (response.content || []).forEach((p) => {
+          if (!cartItems[p.id]) qtys[p.id] = 1;
+        });
+        setLocalQtys((prev) => ({ ...prev, ...qtys }));
+      })
+      .catch((err: any) => {
+        const msg = err?.message || '';
+        if (msg.includes(NO_SEARCHES_MSG) || msg.toLowerCase().includes('no searches') || msg.toLowerCase().includes('no points')) {
+          setToast({ message: t.productSearch.noSearchesOrPoints, type: 'error' });
+        }
+        setResults([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+        fetchInProgressRef.current = false;
+      });
+  }, [page, pageSize, selectedCat, selectedSub, selectedSupplier, searchName, searchOrigin]);
 
   const fetchCart = async () => {
     try {
@@ -428,6 +486,23 @@ const ProductSearch: React.FC = () => {
                                    <span className="material-symbols-outlined text-[18px] text-primary/60">public</span>
                                    <span className="text-[11px] font-bold tabular-nums">{product.origin}</span>
                                 </div>
+                                {product.unit && (
+                                  <div className="flex items-center gap-1.5 text-slate-400">
+                                    <span className="material-symbols-outlined text-[18px] text-primary/60">straighten</span>
+                                    <span className="text-[11px] font-bold uppercase">{product.unit}</span>
+                                  </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                              <div className="flex items-center gap-1.5 text-slate-400">
+                                <span className="material-symbols-outlined text-[16px] text-primary/60">calendar_today</span>
+                                <span className="text-[10px] font-bold">{lang === 'ar' ? 'إنتاج:' : 'Prod:'} {product.productionDate ? formatDate(product.productionDate) : 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-slate-400">
+                                <span className="material-symbols-outlined text-[16px] text-primary/60">event_available</span>
+                                <span className="text-[10px] font-bold">{lang === 'ar' ? 'انتهاء:' : 'Exp:'} {product.expirationDate ? formatDate(product.expirationDate) : 'N/A'}</span>
+                              </div>
                             </div>
 
                             <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-slate-400">
@@ -441,7 +516,12 @@ const ProductSearch: React.FC = () => {
                              <div className="flex items-center gap-1 text-primary">
                                 <span className="text-[11px] font-black">{lang === 'ar' ? 'متوفر :' : 'Available :'}</span>
                                 <span className="text-lg font-black tabular-nums">{product.stockQuantity}</span>
-                                <span className="text-[11px] font-black ">{lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                                {product.unit && (
+                                  <span className="text-[11px] font-black">{product.unit}</span>
+                                )}
+                                {!product.unit && (
+                                  <span className="text-[11px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                                )}
                              </div>
 
                              {/* Action Area */}

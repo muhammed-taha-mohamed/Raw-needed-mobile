@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
-import { Advertisement } from '../../types';
+import { Advertisement, PlanFeaturesEnum } from '../../types';
 import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
+import { hasFeature } from '../../utils/subscription';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -22,6 +23,7 @@ const Advertisements: React.FC = () => {
   
   // User Role State
   const [userRole, setUserRole] = useState<string>('');
+  const [hasAdvertisementFeature, setHasAdvertisementFeature] = useState<boolean | null>(null);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(0);
@@ -45,7 +47,15 @@ const Advertisements: React.FC = () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const parsed = JSON.parse(userStr);
-      setUserRole((parsed.role || '').toUpperCase());
+      const role = (parsed.role || '').toUpperCase();
+      setUserRole(role);
+      
+      // Check if supplier has advertisement feature
+      if (role.includes('SUPPLIER') && !isAdmin) {
+        hasFeature(PlanFeaturesEnum.SUPPLIER_ADVERTISEMENTS).then(setHasAdvertisementFeature);
+      } else {
+        setHasAdvertisementFeature(true); // Admin always has access
+      }
     }
   }, []);
 
@@ -61,6 +71,8 @@ const Advertisements: React.FC = () => {
   }, [toast]);
 
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
+  const isSupplier = userRole.includes('SUPPLIER') && !isAdmin;
+  const canCreateAds = isAdmin || hasAdvertisementFeature === true;
 
   const fetchAds = async (page: number, size: number) => {
     setIsLoading(true);
@@ -88,7 +100,13 @@ const Advertisements: React.FC = () => {
   };
 
   const openAddModal = () => {
-    if (!isAdmin) return;
+    if (!canCreateAds) {
+      setToast({ 
+        message: t.ads.featureRequired, 
+        type: 'error' 
+      });
+      return;
+    }
     setEditingAd(null);
     setSelectedFile(null);
     setImagePreview(null);
@@ -97,7 +115,13 @@ const Advertisements: React.FC = () => {
   };
 
   const openEditModal = (ad: Advertisement) => {
-    if (!isAdmin) return;
+    if (!canCreateAds) {
+      setToast({ 
+        message: t.ads.featureRequired, 
+        type: 'error' 
+      });
+      return;
+    }
     setEditingAd(ad);
     setSelectedFile(null);
     setImagePreview(ad.image);
@@ -122,7 +146,13 @@ const Advertisements: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!canCreateAds) {
+      setToast({ 
+        message: t.ads.featureRequired, 
+        type: 'error' 
+      });
+      return;
+    }
     setIsProcessing(true);
     setError(null);
 
@@ -182,7 +212,7 @@ const Advertisements: React.FC = () => {
           </p>
         </div>
 
-        {isAdmin && (
+        {(isAdmin || (isSupplier && hasAdvertisementFeature === true)) && (
           <button 
             onClick={openAddModal}
             className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 font-black text-xs transition-all active:scale-95 whitespace-nowrap"
@@ -223,7 +253,7 @@ const Advertisements: React.FC = () => {
             >
               <div className="aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-b border-slate-50 dark:border-slate-800 relative">
                  <img src={ad.image} className="size-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Promotion" />
-                 {isAdmin && (
+                 {canCreateAds && (
                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                       <div className="flex gap-2">
                          <button onClick={() => openEditModal(ad)} className="size-10 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><span className="material-symbols-outlined text-xl">edit</span></button>
@@ -247,7 +277,7 @@ const Advertisements: React.FC = () => {
             </div>
           ))}
           
-          {isAdmin && (
+          {canCreateAds && (
             <div 
               onClick={openAddModal}
               className="rounded-[2.5rem] border-2 border-dashed border-primary/10 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group"
@@ -313,7 +343,7 @@ const Advertisements: React.FC = () => {
       )}
 
       {/* Delete Confirmation */}
-      {isAdmin && deleteConfirmId && (
+      {canCreateAds && deleteConfirmId && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 text-center">
@@ -355,7 +385,7 @@ const Advertisements: React.FC = () => {
       )}
 
       {/* Add/Edit Modal */}
-      {isAdmin && isModalOpen && (
+      {canCreateAds && isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
             

@@ -27,6 +27,10 @@ import Cart from './pages/customer/Cart';
 import MarketRequests from './pages/shared/MarketRequests';
 import Complaints from './pages/shared/Complaints';
 import { Language, translations } from './translations';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import Toast from './components/Toast';
+import { setToastService } from './api';
+import { clearSubscriptionCache } from './utils/subscription';
 
 interface UserData {
   token: string;
@@ -72,7 +76,8 @@ const PlaceholderPage = ({ name }: { name: string }) => (
   </div>
 );
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { showToast } = useToast();
   const [user, setUser] = useState<UserData | null>(() => {
     const saved = localStorage.getItem('user');
     try {
@@ -89,6 +94,11 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
+
+  // Connect toast service to API
+  useEffect(() => {
+    setToastService(showToast);
+  }, [showToast]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -127,6 +137,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    clearSubscriptionCache(); // Clear subscription cache on logout
     setUser(null);
   };
 
@@ -223,6 +234,7 @@ const App: React.FC = () => {
 
   return (
     <AppContext.Provider value={{ lang, setLang, t, isDarkMode, toggleDarkMode }}>
+      <Toast />
       <Routes>
         <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
         <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
@@ -231,6 +243,14 @@ const App: React.FC = () => {
         <Route path="*" element={<PortalContent />} />
       </Routes>
     </AppContext.Provider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 };
 
