@@ -80,9 +80,49 @@ export interface Advertisement {
   id: string;
   image: string;
   text: string;
-  userId?: string; // The supplier ID returned from API
-  supplierId?: string; // Compatibility field
+  userId?: string;
+  supplierId?: string;
+  startDate?: string;
+  endDate?: string;
+  featured?: boolean;
   createdAt?: string;
+  updatedAt?: string;
+  active?: boolean;
+}
+
+export interface AdPackage {
+  id: string;
+  nameAr?: string;
+  nameEn?: string;
+  numberOfDays: number;
+  /** Price per ad (EGP) */
+  pricePerAd: number;
+  active: boolean;
+  sortOrder?: number;
+}
+
+export interface AdSettings {
+  featuredPrice: number;
+}
+
+/** Supplier ad package subscription (request → admin approval → can add ads) */
+export interface AdSubscription {
+  id: string;
+  supplierId: string;
+  adPackageId: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  paymentProofPath?: string;
+  requestedAt?: string;
+  approvedAt?: string;
+  startDate?: string;
+  endDate?: string;
+  packageNameAr?: string;
+  packageNameEn?: string;
+  numberOfDays: number;
+  pricePerAd?: number;
+  numberOfAds: number;
+  totalPrice?: number;
+  remainingAds?: number;
 }
 
 export interface UserSubscription {
@@ -212,7 +252,7 @@ export interface Product {
   categoryId?: string;
   subCategoryId?: string;
   image?: string;
-  unit?: string;              // وحدة القياس
-  productionDate?: string;    // تاريخ الإنتاج (ISO date format)
-  expirationDate?: string;    // تاريخ الانتهاء (ISO date format)
+  unit?: string;              // unit of measure
+  productionDate?: string;    // ISO date
+  expirationDate?: string;   // ISO date
 }

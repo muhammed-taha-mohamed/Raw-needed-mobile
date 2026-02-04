@@ -28,7 +28,12 @@ interface PaginatedResponse<T> {
   number: number;
 }
 
-const Approvals: React.FC = () => {
+interface ApprovalsProps {
+  /** When true, rendered inside another page (e.g. Plans tab) - reduces top padding */
+  embedded?: boolean;
+}
+
+const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
   const { lang, t } = useLanguage();
   const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
   const [requests, setRequests] = useState<PendingSubscription[]>([]);
@@ -141,7 +146,7 @@ const Approvals: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
+    <div className={`animate-in fade-in slide-in-from-bottom-4 duration-700 font-display ${embedded ? 'pt-0 pb-6 w-full max-w-full px-0' : 'mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6'}`}>
       
       {/* Action Section */}
       <div className="flex items-center justify-end gap-3 mb-8">

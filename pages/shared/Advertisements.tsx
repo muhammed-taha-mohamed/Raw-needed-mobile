@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../App';
-import { Advertisement, PlanFeaturesEnum } from '../../types';
+import { AdPackage, AdSettings, AdSubscription, Advertisement } from '../../types';
 import { api } from '../../api';
-import Dropdown from '../../components/Dropdown';
-import { hasFeature } from '../../utils/subscription';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -21,9 +21,11 @@ const Advertisements: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // User Role State
   const [userRole, setUserRole] = useState<string>('');
-  const [hasAdvertisementFeature, setHasAdvertisementFeature] = useState<boolean | null>(null);
+  const [adPackages, setAdPackages] = useState<AdPackage[]>([]);
+  const [adSettings, setAdSettings] = useState<AdSettings | null>(null);
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('');
+  const [featured, setFeatured] = useState(false);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(0);
@@ -42,22 +44,38 @@ const Advertisements: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [hasActiveAdSubscription, setHasActiveAdSubscription] = useState<boolean | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const parsed = JSON.parse(userStr);
-      const role = (parsed.role || '').toUpperCase();
-      setUserRole(role);
-      
-      // Check if supplier has advertisement feature
-      if (role.includes('SUPPLIER') && !isAdmin) {
-        hasFeature(PlanFeaturesEnum.SUPPLIER_ADVERTISEMENTS).then(setHasAdvertisementFeature);
-      } else {
-        setHasAdvertisementFeature(true); // Admin always has access
-      }
+      setUserRole((parsed.role || '').toUpperCase());
     }
   }, []);
+
+  useEffect(() => {
+    const role = (localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')!).role || '').toUpperCase();
+    const isSupplier = role.includes('SUPPLIER') && role !== 'SUPER_ADMIN' && role !== 'ADMIN';
+    if (!isSupplier) {
+      setHasActiveAdSubscription(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<AdSubscription[] | { data: AdSubscription[] }>('/api/v1/supplier/ad-subscriptions');
+        const list = Array.isArray(res) ? res : (res as { data?: AdSubscription[] })?.data ?? [];
+        const active = list.some(
+          (s) => s.status === 'APPROVED' && s.endDate && new Date(s.endDate) > new Date()
+        );
+        if (!cancelled) setHasActiveAdSubscription(active);
+      } catch {
+        if (!cancelled) setHasActiveAdSubscription(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userRole]);
 
   useEffect(() => {
     fetchAds(currentPage, pageSize);
@@ -72,7 +90,7 @@ const Advertisements: React.FC = () => {
 
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
   const isSupplier = userRole.includes('SUPPLIER') && !isAdmin;
-  const canCreateAds = isAdmin || hasAdvertisementFeature === true;
+  const canCreateAds = isAdmin || (isSupplier && hasActiveAdSubscription === true);
 
   const fetchAds = async (page: number, size: number) => {
     setIsLoading(true);
@@ -99,18 +117,27 @@ const Advertisements: React.FC = () => {
     }
   };
 
-  const openAddModal = () => {
-    if (!canCreateAds) {
-      setToast({ 
-        message: t.ads.featureRequired, 
-        type: 'error' 
-      });
-      return;
-    }
+  const openAddModal = async () => {
+    if (!canCreateAds) return;
     setEditingAd(null);
     setSelectedFile(null);
     setImagePreview(null);
     setFormData({ text: '', image: '' });
+    setSelectedPackageId('');
+    setFeatured(false);
+    if (isSupplier || isAdmin) {
+      try {
+        const [pkgRes, setRes] = await Promise.all([
+          api.get<{ data: AdPackage[] }>('/api/v1/advertisements/packages'),
+          api.get<{ data: AdSettings }>('/api/v1/advertisements/settings'),
+        ]);
+        setAdPackages(pkgRes.data || []);
+        setAdSettings(setRes.data || null);
+        if ((pkgRes.data?.length ?? 0) > 0) setSelectedPackageId(pkgRes.data![0].id);
+      } catch (e) {
+        setToast({ message: (e as Error).message || 'Failed to load options', type: 'error' });
+      }
+    }
     setIsModalOpen(true);
   };
 
@@ -146,11 +173,9 @@ const Advertisements: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canCreateAds) {
-      setToast({ 
-        message: t.ads.featureRequired, 
-        type: 'error' 
-      });
+    if (!canCreateAds) return;
+    if (!editingAd && isSupplier && !selectedPackageId) {
+      setToast({ message: lang === 'ar' ? 'اختر باقة عرض' : 'Select an ad package', type: 'error' });
       return;
     }
     setIsProcessing(true);
@@ -165,20 +190,29 @@ const Advertisements: React.FC = () => {
         finalImageUrl = await api.post<string>('/api/v1/image/upload', uploadData);
       }
 
-      const payload = { text: formData.text, image: finalImageUrl };
-
       if (editingAd) {
+        const payload = { text: formData.text, image: finalImageUrl };
         await api.put(`/api/v1/advertisements/${editingAd.id}`, payload);
         setToast({ message: t.ads.successUpdate, type: 'success' });
       } else {
+        const payload = {
+          text: formData.text,
+          image: finalImageUrl,
+          adPackageId: selectedPackageId || adPackages[0]?.id,
+          featured: isSupplier ? featured : false,
+        };
+        if (!payload.adPackageId) {
+          setToast({ message: lang === 'ar' ? 'لا توجد باقات إعلانات. أضف باقة من لوحة الأدمن.' : 'No ad packages. Add a package from admin.', type: 'error' });
+          return;
+        }
         await api.post('/api/v1/advertisements', payload);
         setToast({ message: t.ads.successAdd, type: 'success' });
       }
-      
+
       await fetchAds(currentPage, pageSize);
       setIsModalOpen(false);
     } catch (err: any) {
-      setError(err.message || "Operation failed.");
+      setError((err as Error).message || 'Operation failed.');
     } finally {
       setIsProcessing(false);
     }
@@ -202,20 +236,28 @@ const Advertisements: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-primary dark:text-white leading-none">
-            {t.ads.title}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium text-base">
-            {t.ads.subtitle}
-          </p>
+      {isSupplier && hasActiveAdSubscription === false && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 flex flex-wrap items-center gap-2">
+          <span className="material-symbols-outlined text-2xl">info</span>
+          <span className="font-bold flex-1">
+            {lang === 'ar'
+              ? 'لإضافة إعلانات يجب الاشتراك في باقة إعلانات والدفع ثم انتظار موافقة الأدمن.'
+              : 'To add ads you must subscribe to an ad package, pay, then wait for admin approval.'}
+          </span>
+          <Link
+            to="/ad-packages"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90"
+          >
+            {lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages'}
+          </Link>
         </div>
+      )}
 
-        {(isAdmin || (isSupplier && hasAdvertisementFeature === true)) && (
+      <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-6">
+        {canCreateAds && (
           <button 
             onClick={openAddModal}
-            className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 font-black text-xs transition-all active:scale-95 whitespace-nowrap"
+            className="hidden md:flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 font-black text-xs transition-all active:scale-95 whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-lg">add_photo_alternate</span>
             {t.ads.addNew}
@@ -291,56 +333,14 @@ const Advertisements: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination Footer */}
-      {(totalPages > 0) && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-10 py-6 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 animate-in fade-in duration-500">
-           <div className="flex items-center gap-4">
-              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                {lang === 'ar' 
-                  ? `إظهار ${ads.length} من أصل ${totalElements} إعلان` 
-                  : `Showing ${ads.length} of ${totalElements} ads`}
-              </div>
-              <div className="hidden sm:flex items-center gap-2 border-l rtl:border-r border-slate-100 dark:border-slate-800 pl-4 rtl:pr-4">
-                 <span className="text-[12px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'النتائج:' : 'Size:'}</span>
-                 <Dropdown options={[5, 10, 20].map(size => ({ value: String(size), label: String(size) }))} value={String(pageSize)} onChange={(v) => { setPageSize(Number(v)); setCurrentPage(0); }} placeholder={String(pageSize)} showClear={false} isRtl={lang === 'ar'} triggerClassName="min-w-[60px] min-h-[36px] flex items-center justify-between gap-1 bg-transparent border-none text-[11px] font-black text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 pl-4 pr-8 rtl:pl-8 rtl:pr-4" />
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-2">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0 || isLoading}
-                className="size-11 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-              >
-                <span className="material-symbols-outlined rtl-flip">chevron_left</span>
-              </button>
-              
-              <div className="flex items-center gap-1.5">
-                 {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageChange(i)}
-                      className={`size-11 rounded-xl font-black text-sm transition-all shadow-sm ${
-                        currentPage === i 
-                        ? 'bg-primary text-white scale-110 shadow-primary/30 z-10' 
-                        : 'bg-white dark:bg-slate-900 text-slate-500 border border-primary/5 hover:border-primary'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                 ))}
-              </div>
-
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages - 1 || isLoading}
-                className="size-11 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-              >
-                <span className="material-symbols-outlined rtl-flip">chevron_right</span>
-              </button>
-           </div>
-        </div>
-      )}
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={ads.length}
+      />
 
       {/* Delete Confirmation */}
       {canCreateAds && deleteConfirmId && (
@@ -389,82 +389,123 @@ const Advertisements: React.FC = () => {
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
             
-            <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-               <div className="flex items-center gap-5">
-                  <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
-                     <span className="material-symbols-outlined text-3xl">ads_click</span>
-                  </div>
-                  <div>
-                     <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-2">
-                        {editingAd ? t.ads.edit : t.ads.addNew}
-                     </h3>
-                     <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Ad Design & Placement</p>
-                  </div>
-               </div>
-               <button onClick={() => setIsModalOpen(false)} className="size-12 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-800 active:scale-90">
-                 <span className="material-symbols-outlined text-2xl">close</span>
-               </button>
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <span className="material-symbols-outlined text-2xl">ads_click</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Ad design & placement</p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-              <form id="adForm" onSubmit={handleSubmit} className="space-y-8">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              <form id="adForm" onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-black animate-in shake">
-                     {error}
+                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800">
+                    <p className="text-sm font-black text-red-600 dark:text-red-400">{error}</p>
                   </div>
                 )}
 
-                <div className="space-y-3">
-                   <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{t.ads.image}</label>
-                   {!imagePreview ? (
-                      <button 
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-48 border-2 border-dashed border-primary/20 rounded-3xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all group"
-                      >
-                         <span className="material-symbols-outlined text-5xl mb-2 group-hover:scale-110 transition-transform">add_a_photo</span>
-                         <span className="text-[10px] font-black uppercase tracking-widest">Select Promotion Visual</span>
-                      </button>
-                   ) : (
-                      <div className="relative h-56 rounded-3xl overflow-hidden shadow-xl border border-primary/10 group">
-                         <img src={imagePreview} className="size-full object-cover" />
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="size-12 bg-white text-primary rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><span className="material-symbols-outlined">edit</span></button>
-                            <button type="button" onClick={() => {setSelectedFile(null); setImagePreview(null); setFormData({...formData, image: ''});}} className="size-12 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><span className="material-symbols-outlined">delete</span></button>
-                         </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.image}</label>
+                  {!imagePreview ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50"
+                    >
+                      <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'اضغط لرفع الصورة' : 'Click to upload'}</span>
+                    </div>
+                  ) : (
+                    <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
+                      <img src={imagePreview} className="size-full object-cover" alt="Ad" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="size-10 bg-white text-primary rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">edit</span></button>
+                        <button type="button" onClick={() => { setSelectedFile(null); setImagePreview(null); setFormData({ ...formData, image: '' }); }} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">delete</span></button>
                       </div>
-                   )}
-                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                   <p className="text-[9px] text-slate-400 font-bold px-1 italic">Optimal ratio: 16:9 (Landscape)</p>
+                    </div>
+                  )}
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                  <p className="text-[9px] font-black text-slate-400 uppercase px-1">16:9 recommended</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{t.ads.text}</label>
-                  <textarea 
-                    required value={formData.text} onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner min-h-[120px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.text}</label>
+                  <textarea
+                    required
+                    value={formData.text}
+                    onChange={(e) => setFormData({ ...formData, text: e.target.value })}
                     placeholder={t.ads.textPlaceholder}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white min-h-[100px]"
                   />
                 </div>
 
-                <div className="pt-6">
-                  <button 
+                {!editingAd && isSupplier && adPackages.length > 0 && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'باقة العرض' : 'Ad package'}</label>
+                      <select
+                        required
+                        value={selectedPackageId}
+                        onChange={(e) => setSelectedPackageId(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base"
+                      >
+                        {adPackages.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {lang === 'ar' ? (p.nameAr || `${p.numberOfDays} أيام`) : (p.nameEn || `${p.numberOfDays} days`)} — {(p as any).pricePerAd ?? (p as any).price ?? 0} EGP / {lang === 'ar' ? 'إعلان' : 'ad'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="size-5 rounded-md border-slate-300 text-primary focus:ring-primary" />
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'عرض الإعلان في الأول' : 'Display ad first'}</span>
+                      </label>
+                      <span className="text-sm font-bold text-primary">+{(adSettings?.featuredPrice ?? 0)} EGP</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="pt-2">
+                  <button
                     type="submit"
                     disabled={isProcessing}
-                    className="w-full py-5 bg-primary text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-4 uppercase tracking-[0.1em]"
+                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     {isProcessing ? (
-                      <div className="size-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ) : (
                       <>
-                        <span className="material-symbols-outlined">send</span>
-                        {editingAd ? (lang === 'ar' ? 'تحديث الإعلان' : 'Update Content') : (lang === 'ar' ? 'نشر الإعلان' : 'Publish Ad')}
+                        {editingAd ? (lang === 'ar' ? 'تحديث الإعلان' : 'Update') : (lang === 'ar' ? 'نشر الإعلان' : 'Publish')}
+                        <span className="material-symbols-outlined">verified</span>
                       </>
                     )}
                   </button>
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button - Mobile only */}
+      {canCreateAds && (
+        <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
+          <div className="max-w-[1200px] mx-auto flex flex-col items-start gap-3 pointer-events-auto">
+            <button 
+              onClick={openAddModal}
+              className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"
+              title={t.ads.addNew}
+            >
+              <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
+            </button>
           </div>
         </div>
       )}

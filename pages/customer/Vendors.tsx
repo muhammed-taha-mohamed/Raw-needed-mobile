@@ -388,15 +388,123 @@ const Vendors: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 dark:border-slate-800 mb-6 relative overflow-visible">
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-4 mb-6">
+        {suppliers.map((vendor, idx) => (
+          <div 
+            key={vendor.id} 
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm animate-in fade-in slide-in-from-bottom-2"
+            style={{ animationDelay: `${idx * 50}ms` }}
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="size-14 rounded-xl bg-primary/5 text-primary flex items-center justify-center font-black text-lg shrink-0 overflow-hidden border border-primary/10 shadow-sm">
+                {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" /> : vendor.name.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-black text-slate-900 dark:text-white text-base mb-1 truncate">
+                  {vendor.organizationName || vendor.name}
+                </h3>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{vendor.email}</p>
+                {vendor.category && (
+                  <span className="inline-block mt-2 px-2.5 py-1 rounded-lg bg-primary/5 text-primary text-[10px] font-black border border-primary/10">
+                    {lang === 'ar' ? vendor.category.arabicName : vendor.category.name}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              {vendor.organizationCRN && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="material-symbols-outlined text-slate-400 text-base">badge</span>
+                  <span className="font-bold text-slate-600 dark:text-slate-300">{vendor.organizationCRN}</span>
+                </div>
+              )}
+              {vendor.phoneNumber && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="material-symbols-outlined text-slate-400 text-base">call</span>
+                  <span className="font-bold text-slate-600 dark:text-slate-300">{vendor.phoneNumber}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button 
+                onClick={() => openProducts(vendor)} 
+                className="flex-1 py-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">inventory_2</span>
+                {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
+              </button>
+              <div className="relative">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveVendorDetailId(activeVendorDetailId === vendor.id ? null : vendor.id);
+                  }}
+                  className={`size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm ${activeVendorDetailId === vendor.id ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}
+                >
+                  <span className="material-symbols-outlined text-xl">visibility</span>
+                </button>
+                {activeVendorDetailId === vendor.id && (
+                  <div ref={popoverRef} className={`absolute top-full mt-2 z-[500] w-[280px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-primary/20 p-4 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`} onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-3.5">
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-primary/5 border border-primary/10">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[8px] font-black text-primary leading-none mb-1">{lang === 'ar' ? 'القطاع' : 'Vertical'}</p>
+                          <p className="text-[12px] font-black text-slate-800 dark:text-white leading-tight truncate">{vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-primary text-lg ml-2">category</span>
+                      </div>
+                      <div className="space-y-2.5 px-0.5">
+                        <div className="flex items-start gap-2.5">
+                          <div className="size-7 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0"><span className="material-symbols-outlined text-base">corporate_fare</span></div>
+                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'المؤسسة' : 'Organization'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.organizationName || vendor.name}</p></div>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <div className="size-7 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-base">badge</span></div>
+                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'السجل' : 'CRN'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.organizationCRN || '---'}</p></div>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <div className="size-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-base">call</span></div>
+                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'الهاتف' : 'Phone'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.phoneNumber || '---'}</p></div>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <div className="size-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500 shrink-0"><span className="material-symbols-outlined text-base">mail</span></div>
+                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البريد' : 'Email'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.email}</p></div>
+                        </div>
+                      </div>
+                      {vendor.subCategories && vendor.subCategories.length > 0 && (
+                        <div className="pt-2.5 border-t border-slate-50 dark:border-slate-800">
+                          <p className="text-[7px] font-black text-slate-400 mb-2">{lang === 'ar' ? 'التخصصات' : 'Domain'}</p>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto no-scrollbar">
+                            {vendor.subCategories.slice(0, 3).map(sub => (
+                              <span key={sub.id} className="px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 text-[9px] font-bold border border-slate-100 dark:border-slate-700">
+                                {lang === 'ar' ? sub.arabicName : sub.name}
+                              </span>
+                            ))}
+                            {vendor.subCategories.length > 3 && <span className="text-[8px] font-black text-primary px-1">+{vendor.subCategories.length - 3}</span>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className={`absolute -top-2 w-4 h-4 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 dark:border-slate-800 mb-6 relative overflow-visible">
          <div className="overflow-visible rounded-[2.5rem]">
            <table className="w-full text-left rtl:text-right border-collapse">
              <thead>
                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 text-[12px] font-black text-slate-400 ">
                  <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
-                 <th className="px-6 py-4 hidden sm:table-cell">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
+                 <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
                  <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
-                 <th className="px-6 py-4 hidden md:table-cell">{lang === 'ar' ? 'التواصل' : 'Contact'}</th>
+                 <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'التواصل' : 'Contact'}</th>
                  <th className="px-6 py-4"></th>
                </tr>
              </thead>
@@ -414,7 +522,7 @@ const Vendors: React.FC = () => {
                        </div>
                      </div>
                    </td>
-                   <td className="px-6 py-4 hidden sm:table-cell">
+                   <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-slate-700 dark:text-slate-200">{vendor.organizationName || '---'}</span>
                         <span className="text-[9px] font-bold text-emerald-500 mt-1">{vendor.organizationCRN}</span>
@@ -425,7 +533,7 @@ const Vendors: React.FC = () => {
                         {vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}
                       </span>
                    </td>
-                   <td className="px-6 py-4 hidden md:table-cell">
+                   <td className="px-6 py-4 hidden lg:table-cell">
                       <span className="text-sm font-bold text-slate-500 tabular-nums">{vendor.phoneNumber || '---'}</span>
                    </td>
                    <td className={`px-6 py-4 ${activeVendorDetailId === vendor.id ? 'z-[400] relative' : ''}`}>
@@ -443,7 +551,6 @@ const Vendors: React.FC = () => {
                             {activeVendorDetailId === vendor.id && (
                               <div ref={popoverRef} className={`absolute top-full mt-3 z-[500] w-[240px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-primary/20 p-4 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`} onClick={(e) => e.stopPropagation()}>
                                  <div className="space-y-3.5">
-                                    {/* Vertical/Sector Header - Thinner Style */}
                                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-primary/5 border border-primary/10">
                                        <div className="min-w-0 flex-1">
                                           <p className="text-[8px] font-black text-primary     leading-none mb-1">{lang === 'ar' ? 'القطاع' : 'Vertical'}</p>
@@ -451,8 +558,6 @@ const Vendors: React.FC = () => {
                                        </div>
                                        <span className="material-symbols-outlined text-primary text-lg ml-2">category</span>
                                     </div>
-                                    
-                                    {/* Main Info Blocks with subtle colors - Narrower Row Height */}
                                     <div className="space-y-2.5 px-0.5">
                                        <div className="flex items-start gap-2.5">
                                           <div className="size-7 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0"><span className="material-symbols-outlined text-base">corporate_fare</span></div>
@@ -471,8 +576,6 @@ const Vendors: React.FC = () => {
                                           <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400   leading-none mb-0.5">{lang === 'ar' ? 'البريد' : 'Email'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.email}</p></div>
                                        </div>
                                     </div>
-
-                                    {/* Tags Area - Slimmer badges */}
                                     {vendor.subCategories && vendor.subCategories.length > 0 && (
                                       <div className="pt-2.5 border-t border-slate-50 dark:border-slate-800">
                                          <p className="text-[7px] font-black text-slate-400   mb-2   ">{lang === 'ar' ? 'التخصصات' : 'Domain'}</p>
@@ -687,9 +790,9 @@ const Vendors: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                  <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-5">
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div>
-                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500   px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-primary/20 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400 uppercase">Click to upload</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
+                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
+                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" alt="" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400 uppercase">Click to upload</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
                  </form>
               </div>
 

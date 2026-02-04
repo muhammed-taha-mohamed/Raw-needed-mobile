@@ -173,7 +173,7 @@ const Categories: React.FC = () => {
 
       {/* Action Section */}
       <div className="flex items-center justify-end gap-4 mb-10">
-        <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-primary/20 dark:border-slate-800 shadow-sm">
+        <div className="hidden md:flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-primary/20 dark:border-slate-800 shadow-sm">
           <button 
             onClick={() => setViewType('grid')}
             className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
@@ -319,7 +319,7 @@ const Categories: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
+        <div className="hidden md:block bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
           <div className="overflow-x-auto">
             <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
               <thead>
@@ -426,115 +426,110 @@ const Categories: React.FC = () => {
 
       {/* Add Category Modal */}
       {showCatModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-10 duration-500">
-            <div className="p-8 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30">
-              <div className="flex items-center gap-3">
-                <div className="size-11 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                   <span className="material-symbols-outlined text-2xl">category</span>
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <span className="material-symbols-outlined text-2xl">category</span>
                 </div>
-                <h3 className="text-xl font-black text-primary dark:text-white ">{t.categories.addCategory}</h3>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.categories.addCategory}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Name (EN / AR)</p>
+                </div>
               </div>
-              <button onClick={() => setShowCatModal(false)} className="size-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors border border-primary/10">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setShowCatModal(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
-            <form onSubmit={handleAddCategory} className="p-8 space-y-8">
-              <div className="space-y-2.5">
-                <label className="text-xs font-black text-slate-400 px-1   ">{t.categories.nameEn}</label>
-                <input 
-                  type="text" 
-                  value={newCat.name}
-                  onChange={(e) => setNewCat({...newCat, name: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
-                  required
-                />
-              </div>
-              <div className="space-y-2.5">
-                <label className="text-xs font-black text-slate-400 px-1 text-right block   ">{t.categories.nameAr}</label>
-                <input 
-                  type="text" 
-                  value={newCat.arabicName}
-                  onChange={(e) => setNewCat({...newCat, arabicName: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  dir="rtl"
-                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
-                  required
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowCatModal(false)} className="flex-1 py-4 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all border border-primary/10   ">
-                  {t.categories.cancel}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={isProcessing}
-                  className="flex-[2] py-4 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm   "
-                >
-                  {isProcessing ? <div className="h-6 w-6 border-2 border-white/40 border-t-white rounded-full animate-spin"></div> : t.categories.save}
-                </button>
-              </div>
-            </form>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              <form id="addCatForm" onSubmit={handleAddCategory} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameEn}</label>
+                  <input
+                    type="text"
+                    value={newCat.name}
+                    onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
+                    placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameAr}</label>
+                  <input
+                    type="text"
+                    value={newCat.arabicName}
+                    onChange={(e) => setNewCat({ ...newCat, arabicName: e.target.value })}
+                    placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
+                    required
+                    dir="rtl"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white text-right"
+                  />
+                </div>
+              </form>
+            </div>
+            <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
+              <button type="button" onClick={() => setShowCatModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
+              <button form="addCatForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.save}<span className="material-symbols-outlined">verified</span></>}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Add Sub-category Modal */}
       {showSubModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-10 duration-500">
-            <div className="p-8 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30">
-              <div className="flex items-center gap-3">
-                <div className="size-11 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                   <span className="material-symbols-outlined text-2xl">list_alt</span>
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <span className="material-symbols-outlined text-2xl">list_alt</span>
                 </div>
                 <div>
-                   <h3 className="text-xl font-black text-primary dark:text-white  leading-none">{t.categories.addSubCategory}</h3>
-                   <p className="text-[10px] font-black text-slate-400       mt-1.5">{lang === 'ar' ? 'إضافة إلى: ' : 'Adding to: '} {newSub.parentName}</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.categories.addSubCategory}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{lang === 'ar' ? 'إضافة إلى: ' : 'Adding to: '} {newSub.parentName}</p>
                 </div>
               </div>
-              <button onClick={() => setShowSubModal(false)} className="size-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors border border-primary/10">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setShowSubModal(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
-            <form onSubmit={handleAddSubCategory} className="p-8 space-y-8">
-              <div className="space-y-2.5">
-                <label className="text-xs font-black text-slate-400 px-1   ">{t.categories.nameEn}</label>
-                <input 
-                  type="text" 
-                  value={newSub.name}
-                  onChange={(e) => setNewSub({...newSub, name: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white transition-all shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
-                  required
-                />
-              </div>
-              <div className="space-y-2.5">
-                <label className="text-xs font-black text-slate-400 px-1 text-right block   ">{t.categories.nameAr}</label>
-                <input 
-                  type="text" 
-                  value={newSub.arabicName}
-                  onChange={(e) => setNewSub({...newSub, arabicName: e.target.value})}
-                  className="w-full rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 p-4 text-sm md:text-base font-black focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none text-slate-900 dark:text-white text-right font-display shadow-inner placeholder:text-slate-300 placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  dir="rtl"
-                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
-                  required
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowSubModal(false)} className="flex-1 py-4 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all border border-primary/10   ">
-                  {t.categories.cancel}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={isProcessing}
-                  className="flex-[2] py-4 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm   "
-                >
-                  {isProcessing ? <div className="h-6 w-6 border-2 border-white/40 border-t-white rounded-full animate-spin"></div> : t.categories.saveSub}
-                </button>
-              </div>
-            </form>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              <form id="addSubForm" onSubmit={handleAddSubCategory} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameEn}</label>
+                  <input
+                    type="text"
+                    value={newSub.name}
+                    onChange={(e) => setNewSub({ ...newSub, name: e.target.value })}
+                    placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameAr}</label>
+                  <input
+                    type="text"
+                    value={newSub.arabicName}
+                    onChange={(e) => setNewSub({ ...newSub, arabicName: e.target.value })}
+                    placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
+                    required
+                    dir="rtl"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white text-right"
+                  />
+                </div>
+              </form>
+            </div>
+            <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
+              <button type="button" onClick={() => setShowSubModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
+              <button form="addSubForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.saveSub}<span className="material-symbols-outlined">verified</span></>}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -71,6 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
         { name: lang === 'ar' ? 'الموافقات' : 'Verified', icon: 'verified', path: '/approvals' },
         { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
+        { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
         { name: lang === 'ar' ? 'التحليلات' : 'Analytics', icon: 'analytics', path: '/analytics' },
         { name: lang === 'ar' ? 'الدعم' : 'Support', icon: 'support_agent', path: '/support' },
         { name: lang === 'ar' ? 'حسابي' : 'Profile', icon: 'person', path: '/profile' },
@@ -81,10 +82,13 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       { name: lang === 'ar' ? 'لوحة القيادة' : 'Dashboard', icon: 'grid_view', path: '/' },
       { name: lang === 'ar' ? 'السوق' : 'Marketplace', icon: 'explore', path: '/product-search' },
       { name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'storefront', path: '/vendors' },
+      { name: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', icon: 'local_offer', path: '/special-offers' },
       { name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', path: '/cart' },
       { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
       { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Requests', icon: 'campaign', path: '/market-requests' },
       { name: lang === 'ar' ? 'منتجاتي' : 'My Products', icon: 'inventory_2', path: '/products' },
+      { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
+      { name: lang === 'ar' ? 'إعلاناتي' : 'My Ads', icon: 'campaign', path: '/advertisements' },
       { name: lang === 'ar' ? 'فريقي' : 'My Team', icon: 'group', path: '/my-team' },
       { name: lang === 'ar' ? 'الملف الشخصي' : 'Profile', icon: 'person', path: '/profile' },
       { name: lang === 'ar' ? 'إدارة الاشتراك' : 'Subscription', icon: 'loyalty', path: '/subscription' },
@@ -97,6 +101,14 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       filtered = items.filter(i => !['/products'].includes(i.path));
     } else if (isSupplier) {
       filtered = items.filter(i => !['/product-search', '/vendors', '/cart'].includes(i.path));
+    }
+    if (isCustomer) {
+      filtered = filtered.filter(i => !['/ad-packages', '/advertisements'].includes(i.path));
+    }
+    
+    // Remove special offers from admin (should never see it)
+    if (isAdmin) {
+      filtered = filtered.filter(i => i.path !== '/special-offers');
     }
 
     return filtered.map(item => ({
@@ -167,6 +179,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/subscription') info = { title: lang === 'ar' ? 'إدارة الاشتراك' : 'Subscription', subtitle: lang === 'ar' ? 'خطة أعمالك الحالية.' : 'Your current business plan.' };
     else if (path === '/profile') info = { title: t.profile.title, subtitle: t.profile.subtitle };
     else if (path === '/cart') info = { title: lang === 'ar' ? 'عربة الطلبات' : 'Procurement Cart', subtitle: lang === 'ar' ? 'راجع المواد قبل الإرسال.' : 'Review items before sending.' };
+    else if (path === '/special-offers') info = { title: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', subtitle: lang === 'ar' ? 'عروض خاصة من الموردين' : 'Special offers from suppliers' };
+    else if (path === '/ad-packages') info = { title: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', subtitle: lang === 'ar' ? 'إدارة باقات الإعلانات وسعر عرض أولاً' : 'Manage ad packages and featured price' };
 
     return info;
   }, [location.pathname, lang, t, isAdmin]);
@@ -196,7 +210,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-[200] flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 ease-in-out border-primary/60 shadow-xl ${lang === 'ar' ? 'border-l' : 'border-r'}
         ${isSidebarOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}
         lg:translate-x-0
-        w-[85%] sm:w-80 lg:w-64
+        w-1/2 sm:w-80 lg:w-64
       `}>
         
         <div className="p-6 flex items-center gap-4 pt-12 md:pt-6">

@@ -19,8 +19,15 @@ const AdSlider: React.FC = () => {
       const parsed = JSON.parse(userStr);
       const role = (parsed.userInfo?.role || parsed.role || '').toUpperCase();
       setUserRole(role);
+      // Only fetch ads for customers
+      if (role.includes('CUSTOMER')) {
+        fetchAds();
+      } else {
+        setIsLoading(false);
+      }
+    } else {
+      setIsLoading(false);
     }
-    fetchAds();
   }, []);
 
   useEffect(() => {
@@ -50,6 +57,8 @@ const AdSlider: React.FC = () => {
     }
   };
 
+  // Only show ads for customers
+  if (!userRole.includes('CUSTOMER')) return null;
   if (isLoading || ads.length === 0) return null;
 
   return (

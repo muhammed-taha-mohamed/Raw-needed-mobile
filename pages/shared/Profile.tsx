@@ -52,6 +52,7 @@ const Profile: React.FC = () => {
   const adFileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [subscriptionDetailsTooltipOpen, setSubscriptionDetailsTooltipOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,6 +66,13 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     fetchProfile();
+    // Get user role from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const parsed = JSON.parse(userStr);
+      const role = (parsed.userInfo?.role || parsed.role || '').toUpperCase();
+      setUserRole(role);
+    }
   }, []);
 
   useEffect(() => {
@@ -74,10 +82,11 @@ const Profile: React.FC = () => {
   }, [isEditing]);
 
   useEffect(() => {
-    if (activeTab === 'ads') {
+    // Only fetch ads if user is supplier and ads tab is active
+    if (activeTab === 'ads' && userRole.includes('SUPPLIER')) {
       fetchMyAds();
     }
-  }, [activeTab]);
+  }, [activeTab, userRole]);
 
   useEffect(() => {
     if (toast) {
@@ -469,7 +478,8 @@ const Profile: React.FC = () => {
             {[
               { id: 'overview', label: t.profileExtra.overview, icon: 'grid_view' },
               { id: 'documents', label: t.profileExtra.documents, icon: 'description' },
-              { id: 'ads', label: t.profileExtra.myAdsTab, icon: 'ads_click' }
+              // Show ads tab only for suppliers
+              ...(userRole.includes('SUPPLIER') ? [{ id: 'ads', label: t.profileExtra.myAdsTab, icon: 'ads_click' }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
@@ -950,62 +960,59 @@ const Profile: React.FC = () => {
       {/* Add/Edit Ad Modal */}
       {isAdModalOpen && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 flex flex-col max-h-[90vh]">
-              <div className="px-8 py-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
-                       <span className="material-symbols-outlined text-xl">ads_click</span>
+                    <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                       <span className="material-symbols-outlined text-2xl">ads_click</span>
                     </div>
                     <div>
-                       <h3 className="text-base font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
-                       <p className="text-[10px] font-bold text-slate-500  mt-2">{t.profileExtra.marketingTool}</p>
+                       <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
+                       <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.profileExtra.marketingTool}</p>
                     </div>
                  </div>
-                 <button onClick={() => setIsAdModalOpen(false)} className="size-10 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-800 active:scale-90">
+                 <button onClick={() => setIsAdModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
                    <span className="material-symbols-outlined text-xl">close</span>
                  </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <form id="adFormProfile" onSubmit={handleAdSubmit} className="space-y-6">
-                  <div className="space-y-3">
-                     <label className="text-[10px] font-black text-slate-400    px-1 ">{t.ads.image}</label>
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                <form id="adFormProfile" onSubmit={handleAdSubmit} className="space-y-5">
+                  <div className="space-y-1.5">
+                     <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.image}</label>
                      {!adImagePreview ? (
-                        <button 
-                          type="button"
-                          onClick={() => adFileInputRef.current?.click()}
-                          className="w-full h-40 border-2 border-dashed border-primary/20 rounded-3xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all group"
-                        >
-                           <span className="material-symbols-outlined text-2xl mb-2 group-hover:scale-110 transition-transform">add_a_photo</span>
-                           <span className="text-[9px] font-black">Select Promotion Visual</span>
-                        </button>
+                        <div onClick={() => adFileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
+                          <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'اضغط لرفع الصورة' : 'Click to upload'}</span>
+                        </div>
                      ) : (
-                        <div className="relative h-48 rounded-3xl overflow-hidden shadow-xl border border-primary/10 group">
-                           <img src={adImagePreview} className="size-full object-cover" />
-                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                              <button type="button" onClick={() => adFileInputRef.current?.click()} className="size-10 bg-white text-primary rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><span className="material-symbols-outlined">edit</span></button>
-                              <button type="button" onClick={() => {setAdSelectedFile(null); setAdImagePreview(null); setAdFormData({...adFormData, image: ''});}} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><span className="material-symbols-outlined">delete</span></button>
-                           </div>
+                        <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
+                          <img src={adImagePreview} className="size-full object-cover" alt="" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                            <button type="button" onClick={() => adFileInputRef.current?.click()} className="size-10 bg-white text-primary rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">edit</span></button>
+                            <button type="button" onClick={() => { setAdSelectedFile(null); setAdImagePreview(null); setAdFormData({ ...adFormData, image: '' }); }} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">delete</span></button>
+                          </div>
                         </div>
                      )}
                      <input type="file" ref={adFileInputRef} className="hidden" accept="image/*" onChange={handleAdFileChange} />
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400    px-1 ">{t.ads.text}</label>
-                    <textarea 
-                      required value={adFormData.text} onChange={(e) => setAdFormData({...adFormData, text: e.target.value})}
-                      className={`w-full px-5 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[100px] text-sm ${lang === 'ar' ? 'text-right' : 'text-left'}`}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.text}</label>
+                    <textarea
+                      required
+                      value={adFormData.text}
+                      onChange={(e) => setAdFormData({ ...adFormData, text: e.target.value })}
                       placeholder={t.profileExtra.describeOffer}
+                      className={`w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[100px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                     />
                   </div>
                 </form>
               </div>
 
-              <div className="p-8 border-t border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-4">
-                 <button type="button" onClick={() => setIsAdModalOpen(false)} className="flex-1 py-4 text-slate-500 font-black text-xs hover:bg-slate-100 rounded-2xl transition-all border border-slate-100">{t.team.cancel}</button>
-                 <button type="submit" form="adFormProfile" disabled={isSaving} className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black text-xs shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
-                   {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.profileExtra.saveAd}<span className="material-symbols-outlined text-lg">verified</span></>}
+              <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
+                 <button type="button" onClick={() => setIsAdModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.team.cancel}</button>
+                 <button type="submit" form="adFormProfile" disabled={isSaving} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+                   {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.profileExtra.saveAd}<span className="material-symbols-outlined">verified</span></>}
                  </button>
               </div>
            </div>

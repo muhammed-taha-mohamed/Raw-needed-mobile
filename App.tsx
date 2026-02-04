@@ -8,9 +8,11 @@ import Approvals from './pages/super_admin/Approvals';
 import Categories from './pages/super_admin/Categories';
 import Analytics from './pages/super_admin/Analytics';
 import Users from './pages/super_admin/Users';
+import AdPackages from './pages/super_admin/AdPackages';
 import PaymentInfo from './pages/super_admin/PaymentInfo';
 import Orders from './pages/shared/Orders';
 import SupplierOrders from './pages/supplier/SupplierOrders';
+import SpecialOffers from './pages/supplier/SpecialOffers';
 import Profile from './pages/shared/Profile';
 import Login from './pages/auth/Login';
 import Landing from './pages/auth/Landing';
@@ -19,8 +21,11 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import PlanSelection from './pages/shared/PlanSelection';
 import CustomerDashboard from './pages/customer/Dashboard';
 import SupplierDashboard from './pages/supplier/Dashboard';
+import ViewSpecialOffers from './pages/customer/ViewSpecialOffers';
 import MyTeam from './pages/shared/MyTeam';
 import Products from './pages/supplier/Products';
+import SupplierAdPackages from './pages/supplier/AdPackages';
+import Advertisements from './pages/shared/Advertisements';
 import Vendors from './pages/customer/Vendors';
 import ProductSearch from './pages/customer/ProductSearch';
 import Cart from './pages/customer/Cart';
@@ -159,6 +164,7 @@ const AppContent: React.FC = () => {
             <Route path="/approvals" element={<Approvals />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/ad-packages" element={<AdPackages />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/market-requests" element={<MarketRequests />} />
             <Route path="/support" element={<Complaints />} />
@@ -189,6 +195,7 @@ const AppContent: React.FC = () => {
             <Route path="/my-team" element={<MyTeam />} />
             <Route path="/product-search" element={<ProductSearch />} />
             <Route path="/vendors" element={<Vendors />} />
+            <Route path="/special-offers" element={<ViewSpecialOffers />} />
             <Route path="/market-requests" element={<MarketRequests />} />
             <Route path="/support" element={<Complaints />} />
             <Route path="/cart" element={<Cart />} />
@@ -208,9 +215,12 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<SupplierDashboard />} />
             <Route path="/my-team" element={<MyTeam />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/special-offers" element={<SpecialOffers />} />
             <Route path="/market-requests" element={<MarketRequests />} />
             <Route path="/support" element={<Complaints />} />
             <Route path="/orders" element={<SupplierOrders />} />
+            <Route path="/ad-packages" element={<SupplierAdPackages />} />
+            <Route path="/advertisements" element={<Advertisements />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/subscription" element={<PlanSelection />} />
             <Route path="*" element={<Navigate to="/" replace />} />

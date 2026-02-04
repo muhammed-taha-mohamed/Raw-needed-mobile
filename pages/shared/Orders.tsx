@@ -16,6 +16,7 @@ interface RFQOrder {
   numberOfLines: number;
   createdAt: string;
   createdByOwner: boolean;
+  specialOfferId?: string; // Flag to indicate if order is from special offer
 }
 
 interface SupplierResponse {
@@ -41,6 +42,7 @@ interface RFQLine {
   quantity: number;
   status: string;
   supplierResponse: SupplierResponse | null;
+  specialOfferId?: string; // Flag to indicate if order line is from special offer
 }
 
 interface PaginatedRFQ {
@@ -254,6 +256,12 @@ const Orders: React.FC = () => {
                         <span className={`px-2 py-0.5 rounded-lg text-[9px] md:text-xs font-black border ${status.bg}`}>
                           {status.label}
                         </span>
+                        {order.specialOfferId && (
+                          <span className="px-2 py-0.5 rounded-lg text-[9px] md:text-xs font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[10px]">local_offer</span>
+                            {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-slate-400">
                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">inventory_2</span> {order.numberOfLines} {lang === 'ar' ? 'مواد' : 'Items'}</span>
@@ -390,7 +398,15 @@ const Orders: React.FC = () => {
                  <div className="flex items-center gap-4">
                     <div className="size-11 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-xl">fact_check</span></div>
                     <div>
-                       <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-none">#{selectedOrder.orderNumber}</h3>
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-none">#{selectedOrder.orderNumber}</h3>
+                         {selectedOrder.specialOfferId && (
+                           <span className="px-2 py-1 rounded-lg text-[9px] md:text-xs font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                             <span className="material-symbols-outlined text-[10px]">local_offer</span>
+                             {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                           </span>
+                         )}
+                       </div>
                        <p className="text-[9px] md:text-xs font-black text-slate-400    mt-2  ">{lang === 'ar' ? 'تفاصيل بنود العرض' : 'RFQ Items & Responses'}</p>
                     </div>
                  </div>
@@ -407,7 +423,15 @@ const Orders: React.FC = () => {
                            <div className="flex items-center gap-4 flex-1">
                               <div className="size-14 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0 shadow-inner">{line.productImage ? <img src={line.productImage} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-slate-200"><span className="material-symbols-outlined text-2xl">inventory_2</span></div>}</div>
                               <div className="min-w-0">
-                                 <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white truncate">{line.productName}</h4>
+                                 <div className="flex items-center gap-2 flex-wrap mb-1">
+                                   <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white truncate">{line.productName}</h4>
+                                   {line.specialOfferId && (
+                                     <span className="px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                       <span className="material-symbols-outlined text-[9px]">local_offer</span>
+                                       {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                                     </span>
+                                   )}
+                                 </div>
                                  <p className="text-[10px] md:text-xs font-bold text-slate-500">{lang === 'ar' ? 'المورد: ' : 'Supplier: '} {line.supplierOrganizationName || line.supplierName}</p>
                                  <p className="text-[10px] md:text-xs font-black text-primary mt-1">{lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity}</p>
                               </div>

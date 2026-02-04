@@ -11,7 +11,7 @@ interface SupplierResponse {
   respondedAt: string;
   availableQuantity: number;
   shippingInfo: string;
-  phoneNumber?: string; // رقم واتساب من رد المورد
+  phoneNumber?: string; // WhatsApp from supplier response
 }
 
 interface RFQOffer {
@@ -29,6 +29,7 @@ interface RFQOffer {
   quantity: number;
   status: 'PENDING' | 'RESPONDED' | 'REJECTED' | 'APPROVED' | 'COMPLETED';
   supplierResponse: SupplierResponse | null;
+  specialOfferId?: string; // Flag to indicate if order line is from special offer
 }
 
 interface PaginatedOffers {
@@ -273,11 +274,17 @@ const SupplierOrders: React.FC = () => {
                        )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2.5 mb-1">
+                      <div className="flex items-center gap-2.5 mb-1 flex-wrap">
                         <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
                         <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${status.bg}`}>
                           {status.label}
                         </span>
+                        {offer.specialOfferId && (
+                          <span className="px-2 py-1 rounded-lg text-[9px] md:text-[10px] font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[10px]">local_offer</span>
+                            {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>

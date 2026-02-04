@@ -1,14 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
-import { api } from '../../api';
+import { api, BASE_URL } from '../../api';
 import { useNavigate } from 'react-router-dom';
-import AdSlider from '../../components/AdSlider';
 import RecentNotifications from '../../components/RecentNotifications';
 import { useToast } from '../../contexts/ToastContext';
 import { 
-  PieChart, Pie, ResponsiveContainer, Cell, Tooltip
+  PieChart, Pie, ResponsiveContainer, Cell, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area
 } from 'recharts';
+
+interface MonthlyStat {
+  month: string;
+  orderCount: number;
+  growthPercentage: number;
+}
 
 interface DashboardStats {
   totalOrders: number;
@@ -16,7 +22,10 @@ interface DashboardStats {
   sentOrders: number;
   completedOrders: number;
   cancelledOrders: number;
-  monthlyStats: any[];
+  monthlyStats: MonthlyStat[];
+  monthlyGrowthPercentage: number;
+  ordersThisMonth: number;
+  ordersLastMonth: number;
   totalOrderLines: number;
   pendingOrderLines: number;
   respondedOrderLines: number;
@@ -75,12 +84,29 @@ const SupplierDashboard: React.FC = () => {
 
   const totalActions = pieData.reduce((acc, curr) => acc + curr.value, 0);
 
+  const chartData = stats?.monthlyStats?.map(s => {
+    const monthParts = s.month.split(' ');
+    const label = lang === 'ar' ? monthParts[0] : monthParts[0].substring(0, 3);
+    return { 
+      name: label, 
+      orders: s.orderCount || 0,
+      growth: s.growthPercentage || 0 
+    };
+  }) || [];
+
+  const responseRate = stats && stats.totalOrderLines > 0 
+    ? ((stats.respondedOrderLines / stats.totalOrderLines) * 100).toFixed(1) 
+    : '0';
+  
+  const completionRate = stats && stats.totalOrderLines > 0 
+    ? ((stats.completedOrders / stats.totalOrderLines) * 100).toFixed(1) 
+    : '0';
+
   const handleExportStock = async () => {
     setIsExporting(true);
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const BASE_URL = 'https://api.rawneeded.com/raw-needed';
       const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
         method: 'GET',
         headers: {
@@ -124,9 +150,75 @@ const SupplierDashboard: React.FC = () => {
         {/* Main Stats Column */}
         <div className="lg:col-span-8 space-y-8">
           
-          <AdSlider />
+          {/* Quick Stats Cards */}
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 animate-pulse">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
+                  <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : stats && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-primary text-2xl">inventory_2</span>
+                  {stats.monthlyGrowthPercentage > 0 && (
+                    <span className="text-[10px] font-black text-emerald-500 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-lg">
+                      <span className="material-symbols-outlined text-xs">trending_up</span>
+                      {Math.abs(stats.monthlyGrowthPercentage || 0).toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.totalOrderLines}</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'إجمالي العروض' : 'Total RFQs'}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-amber-500 text-2xl">pending_actions</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pendingOrderLines}</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting'}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-blue-500 text-2xl">rate_review</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.respondedOrderLines}</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'تم الرد' : 'Quoted'}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-emerald-500 text-2xl">task_alt</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.completedOrders}</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-purple-500 text-2xl">percent</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{responseRate}%</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="material-symbols-outlined text-indigo-500 text-2xl">check_circle</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{completionRate}%</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'معدل الإتمام' : 'Completion'}</p>
+              </div>
+            </div>
+          )}
           
           {/* Enhanced Supply Analytics Section */}
+          {isLoading ? (
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm animate-pulse">
+              <div className="h-[300px] bg-slate-200 dark:bg-slate-700 rounded"></div>
+            </div>
+          ) : (
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group relative overflow-hidden">
                <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none group-hover:opacity-[0.05] transition-opacity">
                   <span className="material-symbols-outlined text-[150px]">query_stats</span>
@@ -215,8 +307,109 @@ const SupplierDashboard: React.FC = () => {
                   </div>
                </div>
           </div>
+          )}
+          {/* Monthly Performance Chart */}
+          {!isLoading && stats && chartData.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm p-8">
+              <div className="mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'أداء العروض الشهري' : 'Monthly RFQ Performance'}</h3>
+                <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'مقارنة عدد العروض بين الأشهر' : 'RFQ count comparison across months'}</p>
+              </div>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} barSize={40}>
+                    <defs>
+                      <linearGradient id="colorRFQ" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#009aa7" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#009aa7" stopOpacity={0.2}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" opacity={0.5} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} allowDecimals={false} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', backgroundColor: '#0f172a', color: '#fff'}}
+                      itemStyle={{fontWeight: 900, color: '#009aa7'}}
+                    />
+                    <Bar dataKey="orders" radius={[10, 10, 4, 4]} fill="url(#colorRFQ)" animationDuration={2000} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
-          {/* Quick Access Grid */}
+          {/* Growth Trend */}
+          {!isLoading && stats && chartData.length > 1 && (
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm p-8">
+              <div className="mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'اتجاه النمو' : 'Growth Trend'}</h3>
+                <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'نمو العروض عبر الأشهر' : 'RFQ growth over time'}</p>
+              </div>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorGrowthSupplier" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#009aa7" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#009aa7" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" opacity={0.5} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', backgroundColor: '#0f172a', color: '#fff'}}
+                      itemStyle={{fontWeight: 900, color: '#009aa7'}}
+                    />
+                    <Area type="monotone" dataKey="orders" stroke="#009aa7" fillOpacity={1} fill="url(#colorGrowthSupplier)" strokeWidth={3} animationDuration={2000} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Performance Metrics Card */}
+          {!isLoading && stats && (
+            <div className="bg-gradient-to-br from-primary to-accent rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary/20">
+              <div className="mb-6">
+                <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'مؤشرات الأداء الرئيسية' : 'Key Performance Indicators'}</h3>
+                <p className="text-white/70 text-sm font-bold">{lang === 'ar' ? 'إحصائيات الأداء الشاملة' : 'Comprehensive performance stats'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</span>
+                    <span className="text-2xl font-black">{responseRate}%</span>
+                  </div>
+                  <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${responseRate}%` }}></div>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}</span>
+                    <span className="text-2xl font-black">{completionRate}%</span>
+                  </div>
+                  <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${completionRate}%` }}></div>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">{lang === 'ar' ? 'هذا الشهر' : 'This Month'}</span>
+                    <span className="text-2xl font-black">{stats.ordersThisMonth || 0}</span>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">{lang === 'ar' ? 'الشهر السابق' : 'Last Month'}</span>
+                    <span className="text-2xl font-black">{stats.ordersLastMonth || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
              <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary to-accent text-white shadow-xl shadow-primary/20 group transition-all">
                 <div className="flex justify-between items-start mb-6">

@@ -1,5 +1,8 @@
 
-const BASE_URL = 'https://api.rawneeded.com/raw-needed';
+// Base URL 
+export const BASE_URL = 'https://localhost:8644/raw-needed';
+// export const BASE_URL = 'https://api.rawneeded.com/raw-needed';
+
 
 export interface ApiResponse<T> {
   date?: string;

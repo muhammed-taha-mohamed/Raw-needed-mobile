@@ -276,55 +276,53 @@ const Complaints: React.FC = () => {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
-              <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-xl">add_comment</span></div>
+                    <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>
                     <div>
                        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.complaints.addNew}</h3>
+                       <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Subject, description & attachment</p>
                     </div>
                  </div>
-                 <button onClick={() => setIsCreateModalOpen(false)} className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90"><span className="material-symbols-outlined text-xl">close</span></button>
+                 <button onClick={() => setIsCreateModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-6">
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500">{t.complaints.subject}</label>
-                      <input 
-                        required type="text" value={newTicket.subject} 
-                        onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})} 
-                        className={`w-full h-14 px-6 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
-                        placeholder={t.complaints.subjectPlaceholder} 
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-5">
+                   <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.subject}</label>
+                      <input
+                        required
+                        type="text"
+                        value={newTicket.subject}
+                        onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                        placeholder={t.complaints.subjectPlaceholder}
+                        className={`w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                       />
                    </div>
-
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-500">{t.complaints.description}</label>
-                      <textarea 
-                        required value={newTicket.description} 
-                        onChange={(e) => setNewTicket({...newTicket, description: e.target.value})} 
-                        className={`w-full p-6 rounded-3xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[150px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`} 
+                   <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.description}</label>
+                      <textarea
+                        required
+                        value={newTicket.description}
+                        onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
                         placeholder={t.complaints.descriptionPlaceholder}
+                        className={`w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[120px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`}
                       />
                    </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[11px] font-black text-slate-500">{t.complaints.image}</label>
+                   <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.image}</label>
                       {!preview ? (
-                        <button 
-                          type="button" 
-                          onClick={() => fileInputRef.current?.click()} 
-                          className="w-full h-32 border-2 border-dashed border-primary/20 rounded-3xl bg-slate-50 dark:bg-slate-800/40 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all group"
-                        >
-                           <span className="material-symbols-outlined text-4xl mb-1 group-hover:scale-110 transition-transform">cloud_upload</span>
-                           <span className="text-[9px] font-black ">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach Screenshot'}</span>
-                        </button>
+                        <div onClick={() => fileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
+                          <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach screenshot'}</span>
+                        </div>
                       ) : (
-                        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-primary/10 group h-40">
-                           <img src={preview} className="size-full object-cover" />
-                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <button type="button" onClick={() => {setSelectedFile(null); setPreview(null);}} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><span className="material-symbols-outlined">delete</span></button>
-                           </div>
+                        <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
+                          <img src={preview} className="size-full object-cover" alt="" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onClick={() => { setSelectedFile(null); setPreview(null); }} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">delete</span></button>
+                          </div>
                         </div>
                       )}
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -333,17 +331,8 @@ const Complaints: React.FC = () => {
               </div>
 
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <button 
-                    form="ticketForm" 
-                    type="submit" 
-                    disabled={isProcessing} 
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm  shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
-                 >
-                    {isProcessing ? (
-                       <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                       <>{lang === 'ar' ? 'إرسال التذكرة' : 'Dispatch Ticket'}<span className="material-symbols-outlined">send</span></>
-                    )}
+                 <button form="ticketForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                   {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'إرسال التذكرة' : 'Dispatch Ticket'}<span className="material-symbols-outlined">verified</span></>}
                  </button>
               </div>
            </div>

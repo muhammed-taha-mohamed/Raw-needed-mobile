@@ -13,6 +13,7 @@ interface CartItem {
   inStock: boolean;
   quantity: number;
   image: string | null;
+  specialOfferId?: string;
 }
 
 interface CartData {
@@ -113,6 +114,9 @@ const Cart: React.FC = () => {
       const userId = userData?.userInfo?.id || userData?.id;
       if (!userId) throw new Error("Authentication required");
       
+      // Find specialOfferId from items if any item has it
+      const specialOfferId = cart.items.find(item => item.specialOfferId)?.specialOfferId || null;
+
       const payload = {
         userId: userId,
         items: cart.items.map(item => ({
@@ -123,8 +127,10 @@ const Cart: React.FC = () => {
           supplierName: item.supplierName,
           inStock: item.inStock,
           quantity: item.quantity,
-          image: item.image
-        }))
+          image: item.image,
+          specialOfferId: (item as any).specialOfferId || null
+        })),
+        specialOfferId: specialOfferId // Add specialOfferId at order level
       };
 
       // 1. Send RFQ

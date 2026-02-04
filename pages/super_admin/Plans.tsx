@@ -3,7 +3,33 @@ import { useLanguage } from '../../App';
 import { Plan, BillingFrequency, PlanType, PlanFeature } from '../../types';
 import { api } from '../../api';
 import PlanModal from '../../components/PlanModal';
+import Approvals from './Approvals';
 import { getPlanFeatureLabel } from '../../constants';
+
+interface ApprovedSubscription {
+  id: string;
+  userId: string;
+  planId: string;
+  planName: string | null;
+  userName?: string;
+  numberOfUsers: number;
+  usedUsers?: number;
+  remainingUsers?: number;
+  total: number;
+  finalPrice: number;
+  status: string;
+  submissionDate?: string;
+  subscriptionDate?: string;
+  expiryDate?: string;
+}
+
+interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
 
 const Plans: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -19,6 +45,13 @@ const Plans: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<'plans' | 'approvals' | 'subscriptions'>('plans');
+  const [approvedSubscriptions, setApprovedSubscriptions] = useState<ApprovedSubscription[]>([]);
+  const [loadingApproved, setLoadingApproved] = useState(false);
+  const [approvedPage, setApprovedPage] = useState(0);
+  const [approvedTotalPages, setApprovedTotalPages] = useState(0);
+  const approvedPageSize = 15;
+
   // Tooltip states for features and offers
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null);
   const [activeOfferId, setActiveOfferId] = useState<string | null>(null);
@@ -33,6 +66,36 @@ const Plans: React.FC = () => {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'subscriptions') {
+      fetchApprovedSubscriptions(approvedPage);
+    }
+  }, [activeTab, approvedPage]);
+
+  const fetchApprovedSubscriptions = async (page: number) => {
+    setLoadingApproved(true);
+    try {
+      const response = await api.get<PaginatedResponse<ApprovedSubscription>>(
+        `/api/v1/admin/user-subscriptions/approved?page=${page}&size=${approvedPageSize}`
+      );
+      setApprovedSubscriptions(response.content || []);
+      setApprovedTotalPages(response.totalPages || 0);
+    } catch (err: any) {
+      setApprovedSubscriptions([]);
+    } finally {
+      setLoadingApproved(false);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '—';
+    try {
+      return new Date(dateString).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
 
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -125,20 +188,45 @@ const Plans: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-end gap-4">
-        <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-            <span className="material-symbols-outlined text-[22px]">grid_view</span>
-          </button>
-          <button onClick={() => setViewType('table')} className={`p-2 rounded-lg transition-all ${viewType === 'table' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-            <span className="material-symbols-outlined text-[22px]">view_list</span>
-          </button>
-        </div>
-        <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm  ">
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          <span>{t.plans.addNew}</span>
+      {/* Tabs - full width of container */}
+      <div className="flex gap-1 p-1 mb-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 w-full min-w-0">
+        <button
+          onClick={() => setActiveTab('plans')}
+          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'plans' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+        >
+          {lang === 'ar' ? 'الخطط' : 'Plans'}
+        </button>
+        <button
+          onClick={() => setActiveTab('approvals')}
+          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'approvals' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+        >
+          {lang === 'ar' ? 'الموافقات' : 'Approvals'}
+        </button>
+        <button
+          onClick={() => setActiveTab('subscriptions')}
+          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'subscriptions' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+        >
+          {lang === 'ar' ? 'الاشتراكات النشطة' : 'Active'}
         </button>
       </div>
+
+      {/* Tab: Plans */}
+      {activeTab === 'plans' && (
+        <>
+          <div className="flex items-center justify-end gap-4">
+            <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                <span className="material-symbols-outlined text-[22px]">grid_view</span>
+              </button>
+              <button onClick={() => setViewType('table')} className={`p-2 rounded-lg transition-all ${viewType === 'table' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                <span className="material-symbols-outlined text-[22px]">view_list</span>
+              </button>
+            </div>
+            <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm  ">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              <span>{t.plans.addNew}</span>
+            </button>
+          </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
@@ -154,6 +242,7 @@ const Plans: React.FC = () => {
         </div>
       ) : (
         <>
+
           {viewType === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
               {plans.map((plan, idx) => {
@@ -525,6 +614,75 @@ const Plans: React.FC = () => {
             </div>
           )}
         </>
+        )
+        </>
+      )}
+
+      {/* Tab: Approvals - full Approvals page with all style */}
+      {activeTab === 'approvals' && (
+        <Approvals embedded />
+      )}
+
+      {/* Tab: Active subscriptions (approved, non-pending) */}
+      {activeTab === 'subscriptions' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <h2 className="text-base font-black text-slate-800 dark:text-white mb-4">
+            {lang === 'ar' ? 'الاشتراكات النشطة (المعتمدة)' : 'Active subscriptions (approved)'}
+          </h2>
+          {loadingApproved && approvedSubscriptions.length === 0 ? (
+            <div className="flex justify-center py-12">
+              <div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : approvedSubscriptions.length === 0 ? (
+            <p className="text-slate-500 dark:text-slate-400 text-sm py-6">
+              {lang === 'ar' ? 'لا توجد اشتراكات معتمدة.' : 'No approved subscriptions.'}
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الخطة' : 'Plan'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المقاعد' : 'Seats'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المستخدم / المتبقي' : 'Used / Left'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'تاريخ البدء' : 'Start'}</th>
+                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approvedSubscriptions.map((sub) => (
+                      <tr key={sub.id} className="border-b border-slate-100 dark:border-slate-800">
+                        <td className="p-3 font-bold text-slate-800 dark:text-white">{sub.userName || sub.userId?.slice(-8) || '—'}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-400">{sub.planName || '—'}</td>
+                        <td className="p-3 font-bold text-slate-800 dark:text-white">{sub.numberOfUsers ?? '—'}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-400">
+                          {(sub.usedUsers ?? 0)} / {(sub.remainingUsers ?? sub.numberOfUsers ?? 0)}
+                        </td>
+                        <td className="p-3 font-bold text-primary">{sub.finalPrice != null ? `${Number(sub.finalPrice).toLocaleString()} ${t.plans.currency}` : '—'}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-400">{formatDate(sub.subscriptionDate || sub.submissionDate)}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-400">{formatDate(sub.expiryDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {approvedTotalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  <button onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} disabled={approvedPage === 0} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-sm disabled:opacity-50">
+                    {lang === 'ar' ? 'السابق' : 'Prev'}
+                  </button>
+                  <span className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400">{approvedPage + 1} / {approvedTotalPages}</span>
+                  <button onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} disabled={approvedPage >= approvedTotalPages - 1} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-sm disabled:opacity-50">
+                    {lang === 'ar' ? 'التالي' : 'Next'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Delete Modal */}

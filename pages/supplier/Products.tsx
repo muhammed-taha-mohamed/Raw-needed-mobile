@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
-import { api } from '../../api';
+import { api, BASE_URL } from '../../api';
 import { Category, SubCategory, Product } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import PaginationFooter from '../../components/PaginationFooter';
 import { useToast } from '../../contexts/ToastContext';
 
 const Products: React.FC = () => {
@@ -259,7 +260,6 @@ const Products: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const BASE_URL = 'https://api.rawneeded.com/raw-needed';
       const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
         method: 'GET',
         headers: {
@@ -303,7 +303,6 @@ const Products: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const BASE_URL = 'https://api.rawneeded.com/raw-needed';
       const response = await fetch(`${BASE_URL}/api/v1/product/download-template`, {
         method: 'GET',
         headers: {
@@ -358,8 +357,7 @@ const Products: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const BASE_URL = 'https://api.rawneeded.com/raw-needed';
-      
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -378,7 +376,7 @@ const Products: React.FC = () => {
       }
 
       const data = await response.json();
-      // دعم هيكل الاستجابة: { content: { success, data: { totalRows, successCount, failedCount, errors } } }
+      // Support response shape: { content: { success, data: { totalRows, successCount, failedCount, errors } } }
       const result = data.content?.data ?? data.data ?? data;
       const payload = {
         totalRows: result.totalRows ?? 0,
@@ -835,53 +833,14 @@ const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* New Compact Slim Pagination Footer (Pill Style) */}
-      {(totalPages > 0) && (
-        <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 animate-in fade-in duration-500 mt-6 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto">
-           <div className="flex items-center gap-1.5">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}
-                className="size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-              >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-              </button>
-              
-              <div className="flex items-center gap-1">
-                 {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                    let pageNum = i;
-                    if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
-                    return (
-                      <button
-                        key={pageNum} onClick={() => handlePageChange(pageNum)}
-                        className={`size-9 rounded-full font-black text-[12px] transition-all ${
-                          currentPage === pageNum 
-                          ? 'bg-primary text-white shadow-md' 
-                          : 'bg-white dark:bg-slate-900 text-slate-400 hover:text-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        {pageNum + 1}
-                      </button>
-                    );
-                 })}
-              </div>
-
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}
-                className="size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-              >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-              </button>
-           </div>
-
-           <div className="h-6 w-px bg-slate-100 dark:bg-slate-800 mx-1"></div>
-
-           <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
-              <span className="text-[11px] font-black text-slate-500 tabular-nums tracking-tighter">
-                {products.length} / {totalElements}
-              </span>
-           </div>
-        </div>
-      )}
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={products.length}
+      />
 
       {/* ... (Add/Edit Product Modal remains the same) ... */}
       {isModalOpen && (
