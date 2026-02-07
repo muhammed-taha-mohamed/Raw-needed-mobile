@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, SubCategory, UserSubscription } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import { clearSubscriptionCache } from '../../utils/subscription';
 
 interface Product {
   id: string;
@@ -46,11 +47,12 @@ interface CartData {
   items: CartItem[];
 }
 
-const INITIAL_PAGE_SIZE = 12;
+const INITIAL_PAGE_SIZE = 10;
 
 const ProductSearch: React.FC = () => {
   const { lang, t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return '';
@@ -87,6 +89,7 @@ const ProductSearch: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [showBuySearchesFromApi, setShowBuySearchesFromApi] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const fetchInProgressRef = useRef(false);
@@ -106,6 +109,17 @@ const ProductSearch: React.FC = () => {
   const [manualPreview, setManualPreview] = useState<string | null>(null);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const manualFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add Searches (partial renewal) popup
+  const [addSearchesModalOpen, setAddSearchesModalOpen] = useState(false);
+  const [addSearchesCount, setAddSearchesCount] = useState(50);
+  const [addSearchesPrice, setAddSearchesPrice] = useState<number | null>(null);
+  const [addSearchesPriceLoading, setAddSearchesPriceLoading] = useState(false);
+  const [addSearchesFile, setAddSearchesFile] = useState<File | null>(null);
+  const [addSearchesFilePreview, setAddSearchesFilePreview] = useState<string | null>(null);
+  const [addSearchesSubmitting, setAddSearchesSubmitting] = useState(false);
+  const [addSearchesSuccess, setAddSearchesSuccess] = useState(false);
+  const [addSearchesError, setAddSearchesError] = useState<string | null>(null);
 
   // Handle Initial Supplier from Navigation (Advertisements)
   useEffect(() => {
@@ -177,9 +191,14 @@ const ProductSearch: React.FC = () => {
         setLocalQtys((prev) => ({ ...prev, ...qtys }));
       })
       .catch((err: any) => {
-        const msg = err?.message || '';
-        if (msg.includes(NO_SEARCHES_MSG) || msg.toLowerCase().includes('no searches') || msg.toLowerCase().includes('no points')) {
-          setToast({ message: t.productSearch.noSearchesOrPoints, type: 'error' });
+        if (err?.errorCode === '518') {
+          setShowBuySearchesFromApi(true);
+          fetchMySubscription();
+        } else {
+          const msg = err?.message || '';
+          if (msg.includes(NO_SEARCHES_MSG) || msg.toLowerCase().includes('no searches') || msg.toLowerCase().includes('no points')) {
+            setToast({ message: t.productSearch.noSearchesOrPoints, type: 'error' });
+          }
         }
         setResults([]);
       })
@@ -208,6 +227,69 @@ const ProductSearch: React.FC = () => {
       setSubscription(data);
     } catch (e) {
       setSubscription(null);
+    }
+  };
+
+  const fetchAddSearchesPrice = async () => {
+    if (addSearchesCount < 1) return;
+    setAddSearchesPriceLoading(true);
+    setAddSearchesError(null);
+    try {
+      const res = await api.get<any>(`/api/v1/user-subscriptions/add-searches/price?numberOfSearches=${addSearchesCount}`);
+      const data = res?.content?.data ?? res?.data ?? res;
+      setAddSearchesPrice(typeof data?.totalPrice === 'number' ? data.totalPrice : null);
+    } catch (err: any) {
+      setAddSearchesPrice(null);
+      setAddSearchesError(err?.message || (lang === 'ar' ? 'فشل حساب السعر' : 'Failed to get price'));
+    } finally {
+      setAddSearchesPriceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (addSearchesModalOpen && subscription && subscription.remainingSearches != null && subscription.status === 'APPROVED' && addSearchesCount >= 1) {
+      fetchAddSearchesPrice();
+    } else if (!addSearchesModalOpen) {
+      setAddSearchesPrice(null);
+      setAddSearchesError(null);
+    }
+  }, [addSearchesModalOpen, addSearchesCount, subscription?.id, subscription?.status]);
+
+  const handleAddSearchesFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAddSearchesFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAddSearchesFilePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmitAddSearches = async () => {
+    if (addSearchesCount < 1) return;
+    setAddSearchesSubmitting(true);
+    setAddSearchesError(null);
+    try {
+      let receiptUrl = '';
+      if (addSearchesFile) {
+        const formData = new FormData();
+        formData.append('file', addSearchesFile);
+        receiptUrl = await api.post<string>('/api/v1/image/upload', formData);
+      }
+      await api.post('/api/v1/user-subscriptions/add-searches', {
+        numberOfSearches: addSearchesCount,
+        receiptFile: receiptUrl || ''
+      });
+      clearSubscriptionCache();
+      setAddSearchesSuccess(true);
+      await fetchMySubscription();
+      setShowBuySearchesFromApi(false);
+      setAddSearchesFile(null);
+      setAddSearchesFilePreview(null);
+    } catch (err: any) {
+      setAddSearchesError(err?.message || (lang === 'ar' ? 'فشل إرسال الطلب' : 'Submission failed'));
+    } finally {
+      setAddSearchesSubmitting(false);
     }
   };
 
@@ -357,9 +439,18 @@ const ProductSearch: React.FC = () => {
   const activeFiltersCount = [selectedCat, selectedSub, selectedSupplier, searchName, searchOrigin].filter(Boolean).length;
 
   const remainingSearches = subscription?.remainingSearches ?? null;
-  const pointsEarned = subscription?.pointsEarned ?? null;
+  const pointsEarned = subscription?.points ?? subscription?.pointsEarned ?? null;
   const isCustomerWithSearches = remainingSearches !== null;
   const lowSearches = isCustomerWithSearches && remainingSearches !== undefined && remainingSearches <= 5 && (pointsEarned ?? 0) <= 5;
+  const noSearchesLeft = isCustomerWithSearches && (remainingSearches ?? 0) === 0 && (pointsEarned ?? 0) === 0;
+  const showNoSearchesBanner = noSearchesLeft || showBuySearchesFromApi;
+
+  // Reset "buy searches" banner when subscription has credit again (e.g. after buying more)
+  useEffect(() => {
+    if (subscription && ((subscription.remainingSearches ?? 0) > 0 || (subscription.points ?? subscription.pointsEarned ?? 0) > 0)) {
+      setShowBuySearchesFromApi(false);
+    }
+  }, [subscription]);
 
   return (
     <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
@@ -395,7 +486,124 @@ const ProductSearch: React.FC = () => {
         </div>
       </div>
 
-      {isCustomerWithSearches && (
+      {showNoSearchesBanner && (
+        <div className="flex flex-wrap items-center gap-4 p-5 rounded-2xl border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
+          <span className="material-symbols-outlined text-primary text-4xl">search_off</span>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'عمليات البحث خلصت' : 'No searches left'}</h3>
+            <p className="text-[12px] font-bold text-slate-600 dark:text-slate-400 mt-0.5">{lang === 'ar' ? 'يمكنك شراء عمليات بحث إضافية (تجديد جزئي) — اضغط لفتح اشتراكك الحالي وإضافة رصيد.' : 'You can buy more searches (partial renewal) — open your current subscription to add credit.'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAddSearchesSuccess(false);
+              setAddSearchesError(null);
+              setAddSearchesModalOpen(true);
+              fetchMySubscription();
+            }}
+            className="px-5 py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg hover:bg-primary/90 active:scale-95 flex items-center gap-2 shrink-0"
+          >
+            <span className="material-symbols-outlined text-lg">add_circle</span>
+            {lang === 'ar' ? 'شراء عمليات بحث' : 'Buy more searches'}
+          </button>
+        </div>
+      )}
+
+      {/* Add Searches popup: current subscription + partial renewal */}
+      {addSearchesModalOpen && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'اشتراكك الحالي — شراء عمليات بحث' : 'Your subscription — Buy more searches'}</h2>
+              <button type="button" onClick={() => setAddSearchesModalOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-5 space-y-5">
+              {/* Current subscription summary */}
+              {subscription && (
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                  <h3 className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">{lang === 'ar' ? 'الاشتراك الحالي' : 'Current subscription'}</h3>
+                  <div className="flex flex-wrap gap-4 text-[12px] font-bold">
+                    <span className="text-slate-600 dark:text-slate-400">{subscription.planName}</span>
+                    {subscription.remainingSearches != null && (
+                      <span>{lang === 'ar' ? 'عمليات بحث متبقية:' : 'Remaining searches:'} <strong className="text-primary">{subscription.remainingSearches}</strong></span>
+                    )}
+                    <span>{lang === 'ar' ? 'النقاط:' : 'Points:'} <strong className="text-accent">{(subscription as any).points ?? subscription.pointsEarned ?? 0}</strong></span>
+                    <span className={subscription.status === 'APPROVED' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'}>{subscription.status}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Partial renewal — add searches */}
+              <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 rounded-xl border border-primary/20 p-4">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'شراء عمليات بحث إضافية' : 'Buy more searches'}</h3>
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">{lang === 'ar' ? 'تجديد جزئي — أضف عمليات بحث لاشتراكك الحالي وادفع الفرق' : 'Partial renewal — add searches to your current subscription and pay the difference'}</p>
+                {addSearchesSuccess ? (
+                  <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm font-bold">
+                    {lang === 'ar' ? 'تم إرسال طلبك. سيتم مراجعته من الإدارة وتفعيل عمليات البحث بعد التأكد من الدفع.' : 'Request submitted. It will be reviewed by admin and searches will be added after payment verification.'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 space-y-2">
+                      <label className="text-[12px] font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'عدد عمليات البحث' : 'Number of searches'}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={addSearchesCount}
+                        onChange={(e) => setAddSearchesCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-black outline-none focus:border-primary"
+                      />
+                      <div className="flex items-center gap-2">
+                        {addSearchesPriceLoading ? (
+                          <span className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'جاري الحساب...' : 'Calculating...'}</span>
+                        ) : addSearchesPrice != null ? (
+                          <span className="text-sm font-black text-primary">{addSearchesPrice.toLocaleString()} {t.plans.currency}</span>
+                        ) : addSearchesError ? (
+                          <span className="text-xs font-bold text-red-500">{addSearchesError}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <label className="text-[12px] font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'إيصال الدفع (صورة) — اختياري' : 'Payment receipt (image) — optional'}</label>
+                      {!addSearchesFilePreview ? (
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 hover:border-primary cursor-pointer">
+                          <span className="material-symbols-outlined text-2xl text-slate-400 mb-1">cloud_upload</span>
+                          <span className="text-[11px] font-bold text-slate-500">{lang === 'ar' ? 'اختر صورة' : 'Select image'}</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={handleAddSearchesFileChange} />
+                        </label>
+                      ) : (
+                        <div className="relative">
+                          <img src={addSearchesFilePreview} alt="" className="h-24 w-full object-cover rounded-xl border border-slate-200 dark:border-slate-700" />
+                          <button type="button" onClick={() => { setAddSearchesFile(null); setAddSearchesFilePreview(null); }} className="absolute top-1 right-1 size-8 rounded-full bg-red-500 text-white flex items-center justify-center">
+                            <span className="material-symbols-outlined text-lg">close</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleSubmitAddSearches}
+                        disabled={addSearchesSubmitting || addSearchesPriceLoading}
+                        className="px-6 py-3 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {addSearchesSubmitting ? (
+                          <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <span className="material-symbols-outlined text-lg">add_circle</span>
+                        )}
+                        {lang === 'ar' ? 'إرسال طلب إضافة البحث' : 'Submit Add Searches Request'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCustomerWithSearches && !showNoSearchesBanner && (
         <div className={`flex flex-wrap items-center gap-4 p-4 rounded-2xl border ${lowSearches ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800'}`}>
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-xl">search</span>
@@ -408,7 +616,10 @@ const ProductSearch: React.FC = () => {
             <span className="text-lg font-black tabular-nums text-accent">{pointsEarned ?? 0}</span>
           </div>
           {lowSearches && (
-            <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 w-full">{lang === 'ar' ? 'عمليات البحث أو النقاط منخفضة. يمكنك شراء المزيد من عمليات البحث من صفحة الاشتراك.' : 'Searches or points are low. You can purchase more searches from the subscription page.'}</p>
+            <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 w-full">
+              {lang === 'ar' ? 'عمليات البحث أو النقاط منخفضة. ' : 'Searches or points are low. '}
+              <button type="button" onClick={() => { setAddSearchesSuccess(false); setAddSearchesError(null); setAddSearchesModalOpen(true); fetchMySubscription(); }} className="underline font-black hover:text-primary">{lang === 'ar' ? 'شراء عمليات بحث' : 'Buy more searches'}</button>
+            </p>
           )}
         </div>
       )}
@@ -618,7 +829,7 @@ const ProductSearch: React.FC = () => {
             </button>
 
             {showFilters && (
-              <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+              <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-black  text-slate-900 dark:text-white">{lang === 'ar' ? 'تصفية السوق' : 'Market Filters'}</h3>
                   <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
@@ -666,8 +877,8 @@ const ProductSearch: React.FC = () => {
 
       {/* Manual Order Modal */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div>

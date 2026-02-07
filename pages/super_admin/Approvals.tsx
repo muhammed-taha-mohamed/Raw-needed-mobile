@@ -35,7 +35,6 @@ interface ApprovalsProps {
 
 const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
   const { lang, t } = useLanguage();
-  const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
   const [requests, setRequests] = useState<PendingSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,9 +58,70 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
   const [rejectingRequest, setRejectingRequest] = useState<PendingSubscription | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  // Add Searches requests (partial renewal)
+  interface AddSearchesItem {
+    id: string;
+    userId: string;
+    subscriptionId: string;
+    planName: string | null;
+    userOrganizationName: string | null;
+    numberOfSearches: number;
+    totalPrice: number;
+    receiptFilePath: string;
+    status: string;
+    createdAt: string;
+  }
+  const [addSearchesList, setAddSearchesList] = useState<AddSearchesItem[]>([]);
+  const [addSearchesLoading, setAddSearchesLoading] = useState(false);
+  const [addSearchesProcessingId, setAddSearchesProcessingId] = useState<string | null>(null);
+  const [showAddSearchesSection, setShowAddSearchesSection] = useState(false);
+
   useEffect(() => {
     fetchPendingRequests(currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (showAddSearchesSection) fetchAddSearchesPending();
+  }, [showAddSearchesSection]);
+
+  const fetchAddSearchesPending = async () => {
+    setAddSearchesLoading(true);
+    try {
+      const res = await api.get<any>('/api/v1/admin/add-searches/pending?page=0&size=50');
+      const data = res?.content?.data ?? res?.data ?? res;
+      const content = data?.content ?? [];
+      setAddSearchesList(Array.isArray(content) ? content : []);
+    } catch {
+      setAddSearchesList([]);
+    } finally {
+      setAddSearchesLoading(false);
+    }
+  };
+
+  const handleApproveAddSearches = async (requestId: string) => {
+    setAddSearchesProcessingId(requestId);
+    try {
+      await api.post(`/api/v1/admin/add-searches/${requestId}/approve`, {});
+      await fetchAddSearchesPending();
+    } catch (err: any) {
+      alert(err?.message || (lang === 'ar' ? 'فشل الموافقة' : 'Approve failed'));
+    } finally {
+      setAddSearchesProcessingId(null);
+    }
+  };
+
+  const handleRejectAddSearches = async (requestId: string) => {
+    const reason = window.prompt(lang === 'ar' ? 'سبب الرفض (اختياري):' : 'Rejection reason (optional):') || '';
+    setAddSearchesProcessingId(requestId);
+    try {
+      await api.post(`/api/v1/admin/add-searches/${requestId}/reject`, { reason });
+      await fetchAddSearchesPending();
+    } catch (err: any) {
+      alert(err?.message || (lang === 'ar' ? 'فشل الرفض' : 'Reject failed'));
+    } finally {
+      setAddSearchesProcessingId(null);
+    }
+  };
 
   const fetchPendingRequests = async (page: number) => {
     setIsLoading(true);
@@ -147,45 +207,35 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
 
   return (
     <div className={`animate-in fade-in slide-in-from-bottom-4 duration-700 font-display ${embedded ? 'pt-0 pb-6 w-full max-w-full px-0' : 'mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6'}`}>
-      
-      {/* Action Section */}
-      <div className="flex items-center justify-end gap-3 mb-8">
-        <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <button 
-            onClick={() => setViewType('grid')}
-            className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <span className="material-symbols-outlined text-[22px]">grid_view</span>
-          </button>
-          <button 
-            onClick={() => setViewType('table')}
-            className={`p-2 rounded-lg transition-all ${viewType === 'table' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <span className="material-symbols-outlined text-[22px]">view_list</span>
-          </button>
-        </div>
-        <button 
-          onClick={() => fetchPendingRequests(currentPage)}
-          className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary rounded-xl border border-slate-200 dark:border-slate-800 transition-all shadow-sm active:scale-95"
+      {/* Header: title + button to open Add Searches section */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="text-xl font-black text-slate-800 dark:text-white">
+          {lang === 'ar' ? 'الموافقات' : 'Approvals'}
+        </h1>
+        <button
+          type="button"
+          onClick={() => setShowAddSearchesSection(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 font-black text-sm transition-all"
         >
-          <span className="material-symbols-outlined">refresh</span>
+          <span className="material-symbols-outlined text-lg">search</span>
+          {lang === 'ar' ? 'طلبات إضافة عمليات البحث' : 'Add Searches Requests'}
         </button>
       </div>
 
       {isLoading && requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col items-center justify-center py-32 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800">
           <div className="h-10 w-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
           <p className="text-slate-400 font-bold text-[11px] ">Reviewing submissions...</p>
         </div>
       ) : error ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-lg">
+        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg">
           <span className="material-symbols-outlined text-red-400 text-5xl mb-4">cloud_off</span>
           <h3 className="text-2xl font-black text-slate-700 dark:text-white mb-2">Load Failed</h3>
           <p className="text-slate-500 text-base mb-6">{error}</p>
           <button onClick={() => fetchPendingRequests(currentPage)} className="px-10 py-3 bg-primary text-white rounded-xl font-bold text-base shadow-md active:scale-95">Retry Sync</button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="py-32 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800">
+        <div className="py-32 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
           <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
             <span className="material-symbols-outlined text-4xl">check_circle</span>
           </div>
@@ -194,8 +244,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
         </div>
       ) : (
         <>
-          {viewType === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
               {requests.map((req, idx) => (
                 <div 
                   key={req.id} 
@@ -305,109 +354,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                   </div>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500 mb-8">
-              <div className="overflow-x-auto">
-                <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-[12px] text-slate-500 dark:text-slate-400 font-bold  whitespace-nowrap">
-                      <th className="px-8 py-5">{lang === 'ar' ? 'المستخدم' : 'Applicant'}</th>
-                      <th className="px-8 py-5">{lang === 'ar' ? 'الخطة' : 'Subscription'}</th>
-                      <th className="px-8 py-5">{lang === 'ar' ? 'السعر والخصم' : 'Base & Discount'}</th>
-                      <th className="px-8 py-5">{lang === 'ar' ? 'الإجمالي النهائي' : 'Final Total'}</th>
-                      <th className={`px-8 py-5 ${lang === 'ar' ? 'text-left' : 'text-right'}`}>{lang === 'ar' ? 'الإدارة' : 'Governance'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {requests.map((req, idx) => (
-                      <tr key={req.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-all group animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${idx * 25}ms` }}>
-                        <td className="px-8 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-slate-700 overflow-hidden">
-                              {req.userImage ? (
-                                 <img src={req.userImage} className="size-full object-cover" />
-                              ) : (
-                                 <span className="material-symbols-outlined text-xl">person</span>
-                              )}
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-black text-slate-700 dark:text-white  text-sm truncate">{req.userName}</span>
-                              <button 
-                                onClick={() => fetchUserDetails(req.userId)}
-                                className="text-primary text-[11px] font-black  hover:underline text-left rtl:text-right mt-0.5 flex items-center gap-1"
-                              >
-                                <span className="material-symbols-outlined text-[14px]">person</span>
-                                {lang === 'ar' ? 'الحساب' : 'Profile'}
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-black text-primary  whitespace-nowrap">
-                              {req.planName || (lang === 'ar' ? 'خطة اشتراك' : 'Standard Plan')}
-                            </span>
-                            <span className="text-[12px] text-slate-400 font-bold ">{req.numberOfUsers} {lang === 'ar' ? 'تراخيص' : 'Seats'}</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5">
-                               <span className="text-[12px] font-bold text-slate-400 ">{lang === 'ar' ? 'الأصلي:' : 'Base:'}</span>
-                               <span className="text-sm font-bold text-slate-600 dark:text-slate-300 tabular-nums">{req.total?.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                               <span className="text-[12px] font-bold text-orange-400 ">{lang === 'ar' ? 'الخصم:' : 'Discount:'}</span>
-                               <span className="text-sm font-black text-orange-500 tabular-nums">-{req.discount?.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <div className="flex flex-col">
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-base font-black text-slate-700 dark:text-white tabular-nums">{req.finalPrice.toLocaleString()}</span>
-                              <span className="text-[11px] text-slate-400 font-bold ">{t.plans.currency}</span>
-                            </div>
-                            <span className="text-[11px] text-slate-400 font-bold ">{formatDate(req.submissionDate)}</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <div className={`flex items-center ${lang === 'ar' ? 'justify-start' : 'justify-end'} gap-4`}>
-                            <button 
-                              onClick={() => setSelectedReceipt(req.filePath)}
-                              className="text-primary text-[12px] font-black hover:underline  flex items-center gap-1"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">receipt_long</span>
-                              {lang === 'ar' ? 'الايصال' : 'Receipt'}
-                            </button>
-                            <button 
-                              disabled={!!processingId}
-                              onClick={() => setRejectingRequest(req)}
-                              className="size-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center dark:bg-red-950/30"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">close</span>
-                            </button>
-                            <button 
-                              disabled={!!processingId}
-                              onClick={() => handleApprove(req.id)}
-                              className="size-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center dark:bg-emerald-950/30"
-                            >
-                              {processingId === req.id ? (
-                                <div className="size-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                <span className="material-symbols-outlined text-[18px]">check</span>
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -453,10 +400,64 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
         </>
       )}
 
+      {/* بوب اب طلبات إضافة عمليات البحث */}
+      {showAddSearchesSection && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowAddSearchesSection(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-2xl">search</span>
+                {lang === 'ar' ? 'طلبات إضافة عمليات البحث' : 'Add Searches Requests'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowAddSearchesSection(false)}
+                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+                title={lang === 'ar' ? 'إغلاق' : 'Close'}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1">
+              {addSearchesLoading ? (
+                <div className="py-12 flex justify-center"><div className="size-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /></div>
+              ) : addSearchesList.length === 0 ? (
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 py-4">{lang === 'ar' ? 'لا توجد طلبات معلقة' : 'No pending add-searches requests.'}</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {addSearchesList.map((item) => (
+                    <div key={item.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-sm font-black text-slate-800 dark:text-white">{item.userOrganizationName || item.userId}</span>
+                        <span className="text-[10px] font-bold text-primary">{item.planName || '—'}</span>
+                      </div>
+                      <div className="space-y-1.5 text-[12px] mb-4">
+                        <div className="flex justify-between"><span className="text-slate-500 font-bold">{lang === 'ar' ? 'عدد البحث' : 'Searches'}</span><span className="font-black tabular-nums">{item.numberOfSearches}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500 font-bold">{lang === 'ar' ? 'المبلغ' : 'Amount'}</span><span className="font-black tabular-nums text-primary">{item.totalPrice.toLocaleString()} {t.plans.currency}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500 font-bold">{lang === 'ar' ? 'التاريخ' : 'Date'}</span><span className="font-bold">{formatDate(item.createdAt)}</span></div>
+                      </div>
+                      {item.receiptFilePath && (
+                        <a href={item.receiptFilePath} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:underline block mb-3">{lang === 'ar' ? 'عرض الإيصال' : 'View receipt'}</a>
+                      )}
+                      <div className="flex gap-2">
+                        <button disabled={!!addSearchesProcessingId} onClick={() => handleRejectAddSearches(item.id)} className="flex-1 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-black text-xs disabled:opacity-50"> {lang === 'ar' ? 'رفض' : 'Reject'}</button>
+                        <button disabled={!!addSearchesProcessingId} onClick={() => handleApproveAddSearches(item.id)} className="flex-1 py-2 rounded-lg bg-emerald-500 text-white font-black text-xs disabled:opacity-50 flex items-center justify-center gap-1">
+                          {addSearchesProcessingId === item.id ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (lang === 'ar' ? 'موافقة' : 'Approve')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Info Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
             <div className="p-8 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-4">
                   <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
@@ -573,8 +574,8 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
 
       {/* Rejection Modal */}
       {rejectingRequest && (
-        <div className="fixed inset-0 z-[230] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-500">
              <div className="p-8">
                 <div className="size-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 mb-6">
                    <span className="material-symbols-outlined text-2xl">cancel</span>
@@ -612,10 +613,10 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
       {/* Lightbox for Receipt */}
       {selectedReceipt && (
         <div 
-          className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300"
           onClick={() => setSelectedReceipt(null)}
         >
-          <div className="relative max-w-4xl w-full flex flex-col items-center animate-in zoom-in-95 duration-500">
+          <div className="relative max-w-4xl w-[90%] md:w-full flex flex-col items-center animate-in zoom-in-95 duration-500">
              <img src={selectedReceipt} alt="Document View" className="max-h-[80vh] rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain" />
              <div className="mt-6 flex gap-4">
                 <a 

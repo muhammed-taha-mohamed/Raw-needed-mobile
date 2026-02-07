@@ -8,7 +8,6 @@ const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [expandedCats, setExpandedCats] = useState<string[]>([]);
@@ -153,7 +152,7 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 pb-24 md:pb-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[200] flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -171,47 +170,43 @@ const Categories: React.FC = () => {
         </div>
       )}
 
-      {/* Action Section */}
-      <div className="flex items-center justify-end gap-4 mb-10">
-        <div className="hidden md:flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-primary/20 dark:border-slate-800 shadow-sm">
-          <button 
-            onClick={() => setViewType('grid')}
-            className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            title="Grid"
-          >
-            <span className="material-symbols-outlined text-2xl">grid_view</span>
-          </button>
-          <button 
-            onClick={() => setViewType('table')}
-            className={`p-2 rounded-lg transition-all ${viewType === 'table' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            title="List"
-          >
-            <span className="material-symbols-outlined text-2xl">view_list</span>
-          </button>
-        </div>
-
+      {/* Action Section - Add button on desktop only */}
+      <div className="hidden md:flex items-center justify-start gap-4 mb-10">
         <button 
           onClick={() => setShowCatModal(true)}
-          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm   "
+          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
           {t.categories.addCategory}
         </button>
       </div>
 
+      {/* Mobile: Floating Action Button (FAB) — above bottom nav, same as Products */}
+      <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+        <div className={`max-w-[1200px] mx-auto flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+          <button 
+            onClick={() => setShowCatModal(true)}
+            className="size-12 rounded-full bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-all border-2 border-white/20"
+            aria-label={t.categories.addCategory}
+          >
+            <span className="material-symbols-outlined text-2xl">add</span>
+          </button>
+        </div>
+      </div>
+
       {isLoading && categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-primary/10 dark:border-slate-800">
+        <div className="flex flex-col items-center justify-center py-32 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-primary/10 dark:border-slate-800">
           <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
           <p className="text-slate-400 font-bold text-xs   ">Syncing Hierarchy...</p>
         </div>
       ) : error ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-primary/20 dark:border-slate-800 rounded-[2.5rem] shadow-lg">
+        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-primary/20 dark:border-slate-800 rounded-xl shadow-lg">
           <span className="material-symbols-outlined text-5xl text-red-500 mb-6">cloud_off</span>
           <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Connection Error</h3>
           <p className="text-slate-500 mb-8 text-base">{error}</p>
           <button onClick={fetchCategories} className="px-10 py-3 bg-primary text-white rounded-xl font-bold text-base active:scale-95 shadow-md">Retry</button>
         </div>
-      ) : viewType === 'grid' ? (
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
           {categories.map((cat, idx) => (
             <div 
@@ -305,94 +300,13 @@ const Categories: React.FC = () => {
               </div>
             </div>
           ))}
-
-          <div 
-            onClick={() => setShowCatModal(true)}
-            className="rounded-[1.5rem] border-2 border-dashed border-primary/20 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[220px] cursor-pointer group animate-in zoom-in-95 duration-700"
-          >
-            <div className="bg-slate-50 dark:bg-slate-800 group-hover:bg-primary text-primary/40 group-hover:text-white rounded-2xl p-4 mb-4 transition-all shadow-sm border border-primary/10">
-              <span className="material-symbols-outlined text-3xl">add</span>
-            </div>
-            <h3 className="text-xs font-black text-slate-400 group-hover:text-primary transition-colors   ">
-              {t.categories.addCategory}
-            </h3>
-          </div>
-        </div>
-      ) : (
-        <div className="hidden md:block bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
-          <div className="overflow-x-auto">
-            <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
-              <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 font-bold    whitespace-nowrap">
-                  <th className="px-8 py-5">Index</th>
-                  <th className="px-8 py-5">Category name</th>
-                  <th className="px-8 py-5">Identity</th>
-                  <th className="px-8 py-5 text-center">Items</th>
-                  <th className={`px-8 py-5 ${lang === 'ar' ? 'text-left' : 'text-right'}`}>Management</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-primary/5 dark:divide-slate-800">
-                {categories.map((cat, idx) => (
-                  <tr key={cat.id} className="hover:bg-primary/5 dark:hover:bg-slate-800/20 transition-all group animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${idx * 25}ms` }}>
-                    <td className="px-8 py-5 text-xs font-black text-slate-400 group-hover:text-primary tabular-nums">
-                       #{(idx + 1).toString().padStart(3, '0')}
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="size-10 rounded-xl bg-primary/5 dark:bg-slate-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm border border-primary/10">
-                           <span className="material-symbols-outlined text-[20px]">folder</span>
-                        </div>
-                        <span className="font-black text-slate-900 dark:text-white text-base leading-tight">{cat.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                       <span className="text-base font-bold text-slate-500 dark:text-slate-400">{cat.arabicName}</span>
-                    </td>
-                    <td className="px-8 py-5 text-center">
-                       <span className="inline-block px-4 py-1.5 rounded-xl text-xs font-black bg-primary/5 dark:bg-slate-800 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm    border border-primary/10">
-                         {cat.subCategories?.length || 0} units
-                       </span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className={`flex items-center ${lang === 'ar' ? 'justify-start' : 'justify-end'} gap-5`}>
-                        <button 
-                           onClick={() => openSubModal(cat)}
-                           className="bg-primary/10 text-primary hover:bg-primary hover:text-white px-4 py-1.5 rounded-lg text-xs font-black transition-all active:scale-95    whitespace-nowrap shadow-sm"
-                        >
-                          {t.categories.addSubCategory}
-                        </button>
-                        <button className="text-slate-400 hover:text-primary transition-all active:scale-90 p-1.5 rounded-lg hover:bg-primary/5">
-                           <span className="material-symbols-outlined text-[22px]">edit</span>
-                        </button>
-                        <button 
-                           onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}
-                           className="text-slate-300 hover:text-red-500 transition-all active:scale-90 p-1.5 rounded-lg hover:bg-red-50"
-                        >
-                           <span className="material-symbols-outlined text-[24px]">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {categories.length === 0 && (
-             <div className="p-24 text-center flex flex-col items-center gap-6 opacity-50 bg-slate-50/50 dark:bg-slate-800/20">
-                <span className="material-symbols-outlined text-7xl text-slate-300">folder_off</span>
-                <div className="space-y-1">
-                  <p className="text-lg font-black text-slate-900 dark:text-white">Database is empty</p>
-                  <p className="text-base font-bold text-slate-500">Add your first category to get started.</p>
-                </div>
-             </div>
-          )}
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {itemToDelete && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 text-center">
               <div className="mx-auto w-16 h-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 ring-4 ring-red-50 dark:ring-red-900/10">
                 <span className="material-symbols-outlined text-4xl">warning</span>
@@ -426,8 +340,8 @@ const Categories: React.FC = () => {
 
       {/* Add Category Modal */}
       {showCatModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -481,8 +395,8 @@ const Categories: React.FC = () => {
 
       {/* Add Sub-category Modal */}
       {showSubModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">

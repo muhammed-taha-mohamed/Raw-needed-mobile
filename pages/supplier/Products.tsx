@@ -39,7 +39,7 @@ const Products: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const pageSize = 12;
+  const pageSize = 10;
 
   const [searchName, setSearchName] = useState('');
   const [searchOrigin, setSearchOrigin] = useState('');
@@ -786,7 +786,7 @@ const Products: React.FC = () => {
           <div className="relative" ref={filterRef}>
             <button onClick={() => setShowFilters(!showFilters)} className={`size-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 ${activeFiltersCount > 0 ? 'bg-primary text-white border-white/20' : 'bg-slate-900 text-white border-white/10'}`}><span className="material-symbols-outlined text-2xl">tune</span>{activeFiltersCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{activeFiltersCount}</span>}</button>
             {showFilters && (
-              <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+              <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-end items-center mb-6">
                   <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{t.products.clearAll}</button>
                 </div>
@@ -844,8 +844,8 @@ const Products: React.FC = () => {
 
       {/* ... (Add/Edit Product Modal remains the same) ... */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">inventory_2</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingProduct ? t.products.editProduct : t.products.addProduct}</h3><p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.products.updateCatalog}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
@@ -920,15 +920,15 @@ const Products: React.FC = () => {
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-8 text-center animate-in zoom-in-95"><div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div></div>
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 p-8 text-center animate-in zoom-in-95"><div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div></div>
         </div>
       )}
 
       {/* Upload Results Modal */}
       {showUploadModal && uploadResult && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`size-12 rounded-xl flex items-center justify-center shadow-lg ${uploadResult.failedCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'} text-white`}>
@@ -979,7 +979,7 @@ const Products: React.FC = () => {
                   <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                       <table className="w-full text-left rtl:text-right">
-                        <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
+                        <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
                           <tr>
                             <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">{lang === 'ar' ? 'الصف' : 'Row'}</th>
                             <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</th>

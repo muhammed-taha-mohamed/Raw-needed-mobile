@@ -397,55 +397,50 @@ const SupplierOrders: React.FC = () => {
 
       {/* Pagination Footer */}
       {(totalPages > 1 || offers.length > 0) && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 animate-in fade-in duration-500 mt-8 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto">
-           <div className="flex items-center gap-1">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}
-                className="size-8 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-              >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-              </button>
-              
-              <div className="flex items-center gap-1">
-                 {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                    let pageNum = i;
-                    if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
-                    return (
-                      <button
-                        key={pageNum} onClick={() => handlePageChange(pageNum)}
-                        className={`size-8 rounded-full font-black text-[11px] transition-all ${
-                          currentPage === pageNum 
-                          ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                          : 'bg-white dark:bg-slate-900 text-slate-400 hover:text-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        {pageNum + 1}
-                      </button>
-                    );
-                 })}
-              </div>
-
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}
-                className="size-8 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-              >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-              </button>
-           </div>
-
-           <div className="h-5 w-px bg-slate-100 dark:bg-slate-800 mx-1"></div>
-
-           <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
-              <span className="text-xs font-black text-slate-500 tabular-nums">
-                {offers.length} / {totalElements}
-              </span>
-           </div>
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-full shadow-sm animate-in fade-in duration-500 mt-8 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto">
+          <div className="px-3 py-1.5 bg-white dark:bg-slate-900 rounded-full shrink-0">
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+              {offers.length} / {totalElements}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}
+              className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+            >
+              <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                let pageNum = i;
+                if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
+                return (
+                  <button
+                    key={pageNum} onClick={() => handlePageChange(pageNum)}
+                    className={`size-8 md:size-9 rounded-full font-black text-[11px] md:text-xs transition-all ${
+                      currentPage === pageNum 
+                      ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                      : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+            </div>
+            <button 
+              onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}
+              className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+            >
+              <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+            </button>
+          </div>
         </div>
       )}
 
       {respondingOffer && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
             
             <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
                <div className="flex items-center gap-5">

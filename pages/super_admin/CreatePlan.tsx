@@ -161,7 +161,7 @@ const CreatePlan: React.FC = () => {
         </div>
       )}
 
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-12">
+      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-12">
         <form className="p-10 flex flex-col gap-8" onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div className="flex flex-col gap-2">

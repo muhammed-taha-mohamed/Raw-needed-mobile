@@ -170,7 +170,7 @@ const Complaints: React.FC = () => {
                <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
              </div>
            ) : complaints.length === 0 ? (
-             <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800">
+             <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
                <span className="material-symbols-outlined text-7xl">support_agent</span>
                <div className="space-y-1">
                  <h3 className="text-xl font-black">{t.complaints.empty}</h3>
@@ -201,7 +201,7 @@ const Complaints: React.FC = () => {
         </div>
 
         {/* Chat Detail Area */}
-        <div className="lg:col-span-8 h-[650px] flex flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-primary/10 shadow-sm overflow-hidden animate-in zoom-in-95 duration-700">
+        <div className="lg:col-span-8 h-[650px] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden animate-in zoom-in-95 duration-700">
            {selectedTicket ? (
              <>
                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
@@ -215,7 +215,7 @@ const Complaints: React.FC = () => {
                </div>
                <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 custom-scrollbar bg-slate-50/20 dark:bg-slate-800/5">
                   <div className="flex justify-center mb-10">
-                    <div className="max-w-[90%] bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-primary/5 shadow-sm text-center">
+                    <div className="max-w-[90%] bg-white dark:bg-slate-900 p-8 rounded-xl border border-primary/5 shadow-sm text-center">
                       <p className="text-sm font-bold text-slate-600 dark:text-slate-300 leading-relaxed italic">{selectedTicket.description}</p>
                       {selectedTicket.image && (
                         <div className="mt-6 rounded-2xl overflow-hidden border border-slate-100 max-w-xs mx-auto shadow-lg">
@@ -274,8 +274,8 @@ const Complaints: React.FC = () => {
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>

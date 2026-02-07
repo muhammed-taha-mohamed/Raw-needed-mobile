@@ -50,12 +50,6 @@ interface DashboardStats {
   latestOrder?: LatestOrder;
   mostRequestedSupplier?: MostRequestedSupplier;
   mostRequestedSupplierOrderCount?: number;
-  cartItemsCount?: number;
-  vendorsCount?: number;
-  productsCount?: number;
-  marketRequestsCount?: number;
-  teamMembersCount?: number;
-  complaintsCount?: number;
 }
 
 const CustomerDashboard: React.FC = () => {
@@ -355,47 +349,6 @@ const CustomerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Performance Metrics */}
-          {!loadingStats && stats && (
-            <div className="bg-gradient-to-br from-primary to-accent rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary/20">
-              <div className="mb-6">
-                <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'مؤشرات الأداء' : 'Performance Metrics'}</h3>
-                <p className="text-white/70 text-sm font-bold">{lang === 'ar' ? 'إحصائيات الأداء الرئيسية' : 'Key performance indicators'}</p>
-              </div>
-              <div className="space-y-4">
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}</span>
-                    <span className="text-2xl font-black">{completionRate}%</span>
-                  </div>
-                  <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${completionRate}%` }}></div>
-                  </div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</span>
-                    <span className="text-2xl font-black">{responseRate}%</span>
-                  </div>
-                  <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${responseRate}%` }}></div>
-                  </div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'إجمالي بنود الطلبات' : 'Total Order Lines'}</span>
-                    <span className="text-2xl font-black">{stats.totalOrderLines}</span>
-                  </div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'طلبات هذا الشهر' : 'Orders This Month'}</span>
-                    <span className="text-2xl font-black">{stats.ordersThisMonth}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Sidebar Column */}
@@ -474,113 +427,44 @@ const CustomerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Screen Statistics Cards */}
-          {!loadingStats && (
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6">
-              <h3 className="text-base font-black text-slate-900 dark:text-white mb-4">{lang === 'ar' ? 'إحصائيات الشاشات' : 'Screen Statistics'}</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Cart */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/cart')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">shopping_cart</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'العربة' : 'Cart'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.cartItemsCount || 0}</p>
-                </div>
-
-                {/* Vendors */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/vendors')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">storefront</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الموردون' : 'Vendors'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.vendorsCount || 0}</p>
-                </div>
-
-                {/* Products */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/product-search')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">inventory_2</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المنتجات' : 'Products'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.productsCount || 0}</p>
-                </div>
-
-                {/* Market Requests */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/market-requests')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">campaign</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'طلبات خاصة' : 'Requests'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.marketRequestsCount || 0}</p>
-                </div>
-
-                {/* Team Members */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/my-team')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">group</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الفريق' : 'Team'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.teamMembersCount || 0}</p>
-                </div>
-
-                {/* Complaints */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onClick={() => navigate('/support')}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-lg">support_agent</span>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الشكاوى' : 'Support'}</span>
-                  </div>
-                  <p className="text-xl font-black text-slate-900 dark:text-white">{stats?.complaintsCount || 0}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Screen Statistics Chart */}
+          {/* مؤشرات الأداء */}
           {!loadingStats && stats && (
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm p-6">
-              <h3 className="text-base font-black text-slate-900 dark:text-white mb-4">{lang === 'ar' ? 'توزيع النشاط' : 'Activity Distribution'}</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: lang === 'ar' ? 'العربة' : 'Cart', value: stats.cartItemsCount || 0, color: '#009aa7' },
-                        { name: lang === 'ar' ? 'الموردون' : 'Vendors', value: stats.vendorsCount || 0, color: '#3b82f6' },
-                        { name: lang === 'ar' ? 'المنتجات' : 'Products', value: stats.productsCount || 0, color: '#10b981' },
-                        { name: lang === 'ar' ? 'طلبات خاصة' : 'Requests', value: stats.marketRequestsCount || 0, color: '#8b5cf6' },
-                        { name: lang === 'ar' ? 'الفريق' : 'Team', value: stats.teamMembersCount || 0, color: '#f59e0b' },
-                        { name: lang === 'ar' ? 'الشكاوى' : 'Support', value: stats.complaintsCount || 0, color: '#ef4444' },
-                      ].filter(item => item.value > 0)}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationDuration={1500}
-                    >
-                      {[
-                        { name: lang === 'ar' ? 'العربة' : 'Cart', value: stats.cartItemsCount || 0, color: '#009aa7' },
-                        { name: lang === 'ar' ? 'الموردون' : 'Vendors', value: stats.vendorsCount || 0, color: '#3b82f6' },
-                        { name: lang === 'ar' ? 'المنتجات' : 'Products', value: stats.productsCount || 0, color: '#10b981' },
-                        { name: lang === 'ar' ? 'طلبات خاصة' : 'Requests', value: stats.marketRequestsCount || 0, color: '#8b5cf6' },
-                        { name: lang === 'ar' ? 'الفريق' : 'Team', value: stats.teamMembersCount || 0, color: '#f59e0b' },
-                        { name: lang === 'ar' ? 'الشكاوى' : 'Support', value: stats.complaintsCount || 0, color: '#ef4444' },
-                      ].filter(item => item.value > 0).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', backgroundColor: '#0f172a', color: '#fff'}}
-                      itemStyle={{fontWeight: 900, color: '#009aa7'}}
-                    />
-                    <Legend 
-                      wrapperStyle={{ fontSize: '10px', fontWeight: 900 }}
-                      iconType="circle"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+            <div className="bg-gradient-to-br from-primary to-accent rounded-[2rem] p-6 text-white shadow-xl shadow-primary/20">
+              <div className="mb-5">
+                <h3 className="text-base font-black mb-1">{lang === 'ar' ? 'مؤشرات الأداء' : 'Performance Indicators'}</h3>
+                <p className="text-white/70 text-xs font-bold">{lang === 'ar' ? 'إحصائيات الأداء الرئيسية' : 'Key performance indicators'}</p>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold">{lang === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}</span>
+                    <span className="text-xl font-black">{completionRate}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${completionRate}%` }}></div>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</span>
+                    <span className="text-xl font-black">{responseRate}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${responseRate}%` }}></div>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold">{lang === 'ar' ? 'إجمالي بنود الطلبات' : 'Total Order Lines'}</span>
+                    <span className="text-lg font-black">{stats.totalOrderLines}</span>
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold">{lang === 'ar' ? 'طلبات هذا الشهر' : 'Orders This Month'}</span>
+                    <span className="text-lg font-black">{stats.ordersThisMonth}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

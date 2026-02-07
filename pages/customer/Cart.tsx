@@ -219,7 +219,7 @@ const Cart: React.FC = () => {
         
         {/* Summary Card - Moved to the right in LTR / left in RTL but appears logically based on grid order */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 order-last lg:order-none rtl:lg:order-first">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)] border border-primary/10 relative overflow-hidden flex flex-col gap-4 animate-in slide-in-from-left-4 duration-700">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.08)] border border-primary/10 relative overflow-hidden flex flex-col gap-4 animate-in slide-in-from-left-4 duration-700">
             
             <div className="flex items-center justify-between">
                <div>
@@ -373,8 +373,8 @@ const Cart: React.FC = () => {
 
       {/* Clear Cart Confirmation - Equal buttons size */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-8 text-center animate-in zoom-in-95">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 text-center animate-in zoom-in-95">
               <div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-4xl">warning</span></div>
               <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'تفريغ العربة؟' : 'Clear Cart?'}</h3>
               <p className="text-sm text-slate-500 font-bold mb-8">{lang === 'ar' ? 'سيتم حذف جميع المواد من العربة بشكل نهائي.' : 'All items will be permanently removed from your cart.'}</p>

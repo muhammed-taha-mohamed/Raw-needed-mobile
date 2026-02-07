@@ -24,7 +24,7 @@ const Advertisements: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+  const pageSize = 10;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -156,16 +156,7 @@ const Advertisements: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-primary dark:text-white leading-none">
-            {t.ads.title}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium text-base">
-            {t.ads.subtitle}
-          </p>
-        </div>
-
+      <div className="flex flex-col md:flex-row md:items-center justify-end gap-6">
         <button 
           onClick={openAddModal}
           className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl shadow-lg shadow-primary/20 font-black text-xs transition-all active:scale-95 whitespace-nowrap"
@@ -176,19 +167,19 @@ const Advertisements: React.FC = () => {
       </div>
 
       {isLoading && ads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-40 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-primary/5">
+        <div className="flex flex-col items-center justify-center py-40 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-primary/5">
            <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
            <p className="text-slate-500 font-black text-[12px]">Fetching Promotions...</p>
         </div>
       ) : error ? (
-        <div className="p-16 text-center bg-white dark:bg-slate-900 border border-red-100 dark:border-red-900/20 rounded-[2.5rem] shadow-2xl">
+        <div className="p-16 text-center bg-white dark:bg-slate-900 border border-red-100 dark:border-red-900/20 rounded-xl shadow-2xl">
            <span className="material-symbols-outlined text-red-500 text-6xl mb-6">cloud_off</span>
            <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Sync Error</h3>
            <p className="text-slate-500 mb-8 font-bold">{error}</p>
            <button onClick={() => fetchAds(0, pageSize)} className="px-12 py-4 bg-primary text-white rounded-2xl font-black active:scale-95 shadow-xl shadow-primary/20">Retry Sync</button>
         </div>
       ) : ads.length === 0 ? (
-        <div className="py-40 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+        <div className="py-40 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
            <div className="size-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
               <span className="material-symbols-outlined text-6xl">campaign</span>
            </div>
@@ -200,7 +191,7 @@ const Advertisements: React.FC = () => {
           {ads.map((ad, idx) => (
             <div 
               key={ad.id} 
-              className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-primary/5 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col animate-in zoom-in-95 h-full group"
+              className="bg-white dark:bg-slate-900 rounded-xl border border-primary/5 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col animate-in zoom-in-95 h-full group"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <div className="aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-b border-slate-50 dark:border-slate-800 relative">
@@ -229,7 +220,7 @@ const Advertisements: React.FC = () => {
           
           <div 
             onClick={openAddModal}
-            className="rounded-[2.5rem] border-2 border-dashed border-primary/10 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group"
+            className="rounded-xl border-2 border-dashed border-primary/10 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group"
           >
              <div className="size-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white shadow-sm transition-all">
                 <span className="material-symbols-outlined text-4xl">add</span>
@@ -241,16 +232,12 @@ const Advertisements: React.FC = () => {
 
       {/* Pagination Footer */}
       {(totalPages > 0) && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-10 py-6 bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-10 py-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 animate-in fade-in duration-500">
            <div className="flex items-center gap-4">
               <div className="text-[11px] font-black text-slate-500   ">
                 {lang === 'ar' 
                   ? `إظهار ${ads.length} من أصل ${totalElements} إعلان` 
                   : `Showing ${ads.length} of ${totalElements} ads`}
-              </div>
-              <div className="hidden sm:flex items-center gap-2 border-l rtl:border-r border-slate-100 dark:border-slate-800 pl-4 rtl:pr-4">
-                 <span className="text-[12px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'النتائج:' : 'Size:'}</span>
-                 <Dropdown options={[5, 10, 20].map(size => ({ value: String(size), label: String(size) }))} value={String(pageSize)} onChange={(v) => { setPageSize(Number(v)); setCurrentPage(0); }} placeholder={String(pageSize)} showClear={false} isRtl={lang === 'ar'} triggerClassName="min-w-[60px] min-h-[36px] flex items-center justify-between gap-1 bg-transparent border-none text-[11px] font-black text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 pl-4 pr-8 rtl:pl-8 rtl:pr-4" />
               </div>
            </div>
            
@@ -292,8 +279,8 @@ const Advertisements: React.FC = () => {
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 text-center">
               <div className="mx-auto size-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-5xl">warning</span>
@@ -334,8 +321,8 @@ const Advertisements: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
             
             <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-5">

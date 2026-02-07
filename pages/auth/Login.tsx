@@ -14,7 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
+    <div className="fixed inset-0 w-full h-full min-h-[100dvh] flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
       <style>{`
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -67,21 +67,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Floating Auth Header */}
       <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none mobile-top-offset">
         <div className="pointer-events-auto">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
           >
             <span className="material-symbols-outlined text-lg">home</span>
           </Link>
         </div>
         <div className="flex gap-2 pointer-events-auto">
-          <button 
+          <button
             onClick={toggleDarkMode}
             className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
           >
             <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          <button 
+          <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
             className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60 "
           >
@@ -93,8 +93,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Left (mobile: top) - Image / Branding; on web LTR=left, RTL=right */}
       <div className={`flex-none h-[45vh] md:h-full md:w-1/2 md:min-h-screen bg-white dark:bg-slate-900 relative overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 border-white/10 dark:border-primary/20 rounded-b-[4rem] md:rounded-none ${lang === 'ar' ? 'md:order-2 md:border-l-4' : 'md:order-1 md:border-r-4'}`}>
         <div className="absolute inset-0 flex items-center justify-center">
-          <img 
-            src={APP_LOGO} 
+          <img
+            src={APP_LOGO}
             className="w-full h-full min-w-full min-h-full object-cover object-center dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
             alt="Hero"
           />
@@ -136,7 +136,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {isLoading ? <div className="h-5 w-5 border-[3px] border-primary/30 border-t-primary rounded-full animate-spin"></div> : t.loginExtra.signInButton}
             </button>
           </form>
-          
+
           <div className="text-center pt-4">
             <p className="text-white/70 text-sm font-bold">{t.login.noAccount} <Link to="/register" className="text-white font-black hover:underline ml-2 ">{t.login.registerLink}</Link></p>
           </div>

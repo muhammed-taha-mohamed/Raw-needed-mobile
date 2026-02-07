@@ -109,6 +109,9 @@ export interface AdSettings {
 export interface AdSubscription {
   id: string;
   supplierId: string;
+  supplierName?: string;
+  supplierOrganizationName?: string;
+  supplierImage?: string;
   adPackageId: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   paymentProofPath?: string;
@@ -128,6 +131,8 @@ export interface AdSubscription {
 export interface UserSubscription {
   id: string;
   userId: string;
+  userName?: string;
+  userOrganizationName?: string;
   planId: string;
   planName: string;
   numberOfUsers: number;

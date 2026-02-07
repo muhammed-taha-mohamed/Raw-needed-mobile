@@ -400,7 +400,7 @@ const Profile: React.FC = () => {
           </div>
 
           <div className="block lg:hidden mt-8 space-y-6 px-2">
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-sm border border-primary/10 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-primary/10 dark:border-slate-800">
               <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">{t.profileExtra.intro}</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -452,7 +452,7 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-sm border border-primary/10 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-primary/10 dark:border-slate-800">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">{t.profileExtra.specializations}</h3>
                 <span className="size-7 rounded-lg bg-primary/5 text-primary flex items-center justify-center font-black text-xs">
@@ -500,7 +500,7 @@ const Profile: React.FC = () => {
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
         <div className="hidden lg:block lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10 dark:border-slate-800">
             <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-6   ">{t.profileExtra.intro}</h3>
             
             <div className="space-y-6">
@@ -558,7 +558,7 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10 dark:border-slate-800">
              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white ">{t.profileExtra.specializations}</h3>
                 <span className="size-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center font-black text-xs">
@@ -582,7 +582,7 @@ const Profile: React.FC = () => {
         <div className="lg:col-span-7 space-y-8">
           
           {isEditing ? (
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-primary/20 animate-in slide-in-from-top-4 duration-500">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-8 md:p-12 shadow-xl border border-primary/20 animate-in slide-in-from-top-4 duration-500">
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-6">{t.profile.editProfile}</h2>
               <form onSubmit={handleUpdateProfile} className="space-y-8">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -672,7 +672,7 @@ const Profile: React.FC = () => {
             <>
               {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10 dark:border-slate-800">
                     <div className="flex items-center gap-4 mb-8">
                        <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
                           <span className="material-symbols-outlined text-xl">rocket_launch</span>
@@ -698,7 +698,7 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-10 text-slate-900 dark:text-white relative overflow-hidden group shadow-xl border border-primary/10 dark:border-slate-800 animate-in fade-in duration-700">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-8 md:p-10 text-slate-900 dark:text-white relative overflow-hidden group shadow-xl border border-primary/10 dark:border-slate-800 animate-in fade-in duration-700">
                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                        <span className="material-symbols-outlined text-[80px]">workspace_premium</span>
                     </div>
@@ -878,7 +878,7 @@ const Profile: React.FC = () => {
 
               {activeTab === 'documents' && (
                 <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10 dark:border-slate-800">
                     <h3 className="text-sm font-black text-slate-900 dark:text-white  mb-8   ">{t.profileExtra.registrationCertificate}</h3>
                     
                     {profile?.organizationCRNImage ? (
@@ -906,7 +906,7 @@ const Profile: React.FC = () => {
 
               {activeTab === 'ads' && (
                 <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-primary/10 dark:border-slate-800">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-sm border border-primary/10 dark:border-slate-800">
                     <div className="flex items-center justify-between mb-8">
                        <h3 className="text-sm font-black text-slate-900 dark:text-white   ">{t.ads.myAds}</h3>
                        <button 
@@ -959,8 +959,8 @@ const Profile: React.FC = () => {
 
       {/* Add/Edit Ad Modal */}
       {isAdModalOpen && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -1021,8 +1021,8 @@ const Profile: React.FC = () => {
 
       {/* Ad Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 text-center">
               <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-3xl">warning</span>
@@ -1043,11 +1043,11 @@ const Profile: React.FC = () => {
       {/* Lightbox */}
       {selectedReceipt && (
         <div 
-          className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setSelectedReceipt(null)}
         >
           <div className="relative max-w-4xl w-full flex flex-col items-center animate-in zoom-in-95 duration-500">
-             <img src={selectedReceipt} alt="Payment Receipt" className="max-h-[85vh] rounded-[2.5rem] shadow-2xl border-4 border-white/20 object-contain" />
+             <img src={selectedReceipt} alt="Payment Receipt" className="max-h-[85vh] rounded-xl shadow-2xl border-4 border-white/20 object-contain" />
              <div className="mt-6 flex gap-4">
                 <button 
                   onClick={() => setSelectedReceipt(null)}

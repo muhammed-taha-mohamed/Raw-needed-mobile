@@ -12,11 +12,14 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const { lang, setLang, t, isDarkMode, toggleDarkMode } = useApp();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [userData, setUserData] = useState<any>(null);
-  
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [pendingCounts, setPendingCounts] = useState<{ pendingSubscriptions: number; pendingAdSubscriptions: number; pendingAddSearches: number } | null>(null);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -49,15 +52,35 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     try {
       const data = await api.get<{ count: number, success: boolean }>('/api/v1/notifications/user/unread-count');
       setUnreadCount(data.count || 0);
-    } catch (e) {}
+    } catch (e) { }
   };
+
+  useEffect(() => {
+    const role = (userData?.role || '').toUpperCase();
+    const isAdminUser = role === 'SUPER_ADMIN' || role === 'ADMIN';
+    if (!isAdminUser) return;
+    const fetchPending = async () => {
+      try {
+        const res = await api.get<any>('/api/v1/admin/dashboard/pending-counts');
+        const data = res?.content?.data ?? res?.data ?? res;
+        if (data && typeof data.pendingSubscriptions === 'number' && typeof data.pendingAdSubscriptions === 'number' && typeof data.pendingAddSearches === 'number') {
+          setPendingCounts({
+            pendingSubscriptions: data.pendingSubscriptions,
+            pendingAdSubscriptions: data.pendingAdSubscriptions,
+            pendingAddSearches: data.pendingAddSearches
+          });
+        }
+      } catch (_) { setPendingCounts(null); }
+    };
+    fetchPending();
+  }, [userData?.role, location.pathname]);
 
   const role = (userData?.role || '').toUpperCase();
   const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
   const isCustomer = role.includes('CUSTOMER');
   const isSupplier = role.includes('SUPPLIER');
   const isStaff = role.includes('STAFF');
-  
+
   const allowedScreens = useMemo(() => {
     return userData?.userInfo?.allowedScreens || userData?.allowedScreens || [];
   }, [userData]);
@@ -69,15 +92,13 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
         { name: lang === 'ar' ? 'معلومات الدفع' : 'Payment Info', icon: 'payments', path: '/payment-info' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
-        { name: lang === 'ar' ? 'الموافقات' : 'Verified', icon: 'verified', path: '/approvals' },
         { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
         { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
-        { name: lang === 'ar' ? 'التحليلات' : 'Analytics', icon: 'analytics', path: '/analytics' },
         { name: lang === 'ar' ? 'الدعم' : 'Support', icon: 'support_agent', path: '/support' },
         { name: lang === 'ar' ? 'حسابي' : 'Profile', icon: 'person', path: '/profile' },
       ];
     }
-    
+
     const items = [
       { name: lang === 'ar' ? 'لوحة القيادة' : 'Dashboard', icon: 'grid_view', path: '/' },
       { name: lang === 'ar' ? 'السوق' : 'Marketplace', icon: 'explore', path: '/product-search' },
@@ -96,7 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     ];
 
     let filtered = items;
-    
+
     if (isCustomer) {
       filtered = items.filter(i => !['/products'].includes(i.path));
     } else if (isSupplier) {
@@ -105,7 +126,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     if (isCustomer) {
       filtered = filtered.filter(i => !['/ad-packages', '/advertisements'].includes(i.path));
     }
-    
+
     // Remove special offers from admin (should never see it)
     if (isAdmin) {
       filtered = filtered.filter(i => i.path !== '/special-offers');
@@ -119,13 +140,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
   const bottomNavItems = useMemo(() => {
     let items = [];
-    
+
     if (isAdmin) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
-        { name: lang === 'ar' ? 'الموافقات' : 'Approvals', icon: 'verified', path: '/approvals' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else if (isSupplier) {
@@ -181,6 +201,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/cart') info = { title: lang === 'ar' ? 'عربة الطلبات' : 'Procurement Cart', subtitle: lang === 'ar' ? 'راجع المواد قبل الإرسال.' : 'Review items before sending.' };
     else if (path === '/special-offers') info = { title: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', subtitle: lang === 'ar' ? 'عروض خاصة من الموردين' : 'Special offers from suppliers' };
     else if (path === '/ad-packages') info = { title: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', subtitle: lang === 'ar' ? 'إدارة باقات الإعلانات وسعر عرض أولاً' : 'Manage ad packages and featured price' };
+    else if (path === '/plans') info = { title: lang === 'ar' ? 'الخطط' : 'Plans', subtitle: lang === 'ar' ? 'إدارة خطط الاشتراك والأسعار' : 'Manage subscription plans and pricing' };
+    else if (path === '/categories') info = { title: lang === 'ar' ? 'الفئات' : 'Categories', subtitle: lang === 'ar' ? 'إدارة الفئات والتصنيفات' : 'Manage categories and classifications' };
+    else if (path === '/approvals') info = { title: lang === 'ar' ? 'الموافقات' : 'Approvals', subtitle: lang === 'ar' ? 'مراجعة وموافقة على الطلبات' : 'Review and approve requests' };
+    else if (path === '/users') info = { title: lang === 'ar' ? 'المستخدمين' : 'Users', subtitle: lang === 'ar' ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users' };
+    else if (path === '/advertisements') info = { title: lang === 'ar' ? 'الإعلانات' : 'Advertisements', subtitle: lang === 'ar' ? 'إدارة الإعلانات والعروض الترويجية' : 'Manage advertisements and promotions' };
 
     return info;
   }, [location.pathname, lang, t, isAdmin]);
@@ -195,11 +220,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark transition-colors duration-300 font-display text-slate-800 dark:text-slate-100">
-      
+    <div className="flex min-h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark transition-colors duration-300 font-display text-slate-800 dark:text-slate-100">
+
       {/* Backdrop: mobile only (on desktop sidebar is always visible) */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[190] bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -210,127 +235,211 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-[200] flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 ease-in-out border-primary/60 shadow-xl ${lang === 'ar' ? 'border-l' : 'border-r'}
         ${isSidebarOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}
         lg:translate-x-0
-        w-1/2 sm:w-80 lg:w-64
+        ${isSidebarCollapsed ? 'lg:w-20 lg:overflow-visible' : 'w-1/2 sm:w-1/2 lg:w-64'}
+        overflow-visible
       `}>
-        
-        <div className="p-6 flex items-center gap-4 pt-12 md:pt-6">
+
+        <div className={`relative p-6 flex items-center gap-4 pt-12 md:pt-6 ${isSidebarCollapsed ? 'lg:justify-center lg:px-2' : ''}`}>
+
           <div className="relative group shrink-0">
-             <div className="size-14 rounded-2xl bg-[#e0f5f6] dark:bg-primary/5 flex items-center justify-center text-primary font-black text-2xl border border-primary/40 shadow-sm overflow-hidden">
-                {userData?.profileImage ? (
-                  <img src={userData.profileImage} className="size-full object-cover" alt="Profile" />
-                ) : (
-                  getProfileInitial()
-                )}
-             </div>
-             <div className="absolute -bottom-1 -right-1 size-4 bg-emerald-50 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
+            <div className="size-14 rounded-2xl bg-[#e0f5f6] dark:bg-primary/5 flex items-center justify-center text-primary font-black text-2xl border border-primary/40 shadow-sm overflow-hidden">
+              {userData?.profileImage ? (
+                <img src={userData.profileImage} className="size-full object-cover" alt="Profile" />
+              ) : (
+                getProfileInitial()
+              )}
+            </div>
+            <div className="absolute -bottom-1 -right-1 size-4 bg-emerald-50 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
           </div>
-          
-          <div className="min-w-0 flex-1 animate-in fade-in duration-500">
-             <h3 className="text-slate-900 dark:text-white font-black text-sm md:text-base leading-tight truncate">
-               {userData?.organizationName || userData?.name || (lang === 'ar' ? 'عميل' : 'Customer')}
-             </h3>
-             <Link 
-               to="/profile" 
-               onClick={() => setIsSidebarOpen(false)}
-               className="text-primary font-bold text-[10px] md:text-[11px] hover:underline flex items-center gap-1 mt-1"
-             >
-               {lang === 'ar' ? 'عرض الملف' : 'View Profile'}
-               <span className="material-symbols-outlined text-[14px] rtl-flip">arrow_forward</span>
-             </Link>
-          </div>
+
+          {!isSidebarCollapsed && (
+            <div className="min-w-0 flex-1 animate-in fade-in duration-500">
+              <h3 className="text-slate-900 dark:text-white font-black text-sm md:text-base leading-tight truncate">
+                {userData?.organizationName || userData?.name || (lang === 'ar' ? 'عميل' : 'Customer')}
+              </h3>
+              <Link
+                to="/profile"
+                onClick={() => setIsSidebarOpen(false)}
+                className="text-primary font-bold text-[10px] md:text-[11px] hover:underline flex items-center gap-1 mt-1"
+              >
+                {lang === 'ar' ? 'عرض الملف' : 'View Profile'}
+                <span className="material-symbols-outlined text-[14px] rtl-flip">arrow_forward</span>
+              </Link>
+            </div>
+          )}
         </div>
 
-        <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar px-4 pb-4 mt-2">
-           <div className="space-y-1">
-             {sidebarNavItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.disabled ? '#' : item.path}
-                onClick={(e) => {
-                  if (item.disabled) { e.preventDefault(); return; }
-                  setIsSidebarOpen(false);
-                }}
-                className={({ isActive }) => `
-                  flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 relative group
-                  ${isActive && !item.disabled
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                    : item.disabled 
-                      ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed opacity-50 grayscale'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'}
-                `}
+        <div className={`flex-1 flex flex-col min-h-0 ${isSidebarCollapsed ? 'lg:overflow-visible' : 'overflow-hidden'}`}>
+          {/* Scrollable Navigation Items */}
+          <div className={`flex-1 overflow-y-auto no-scrollbar ${isSidebarCollapsed ? 'lg:px-2 lg:overflow-visible' : 'px-4'} py-2 ${isSidebarCollapsed ? 'lg:overflow-visible' : ''}`}>
+            <div className={`space-y-1 ${isSidebarCollapsed ? 'lg:overflow-visible' : ''}`}>
+              {sidebarNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.disabled ? '#' : item.path}
+                  onClick={(e) => {
+                    if (item.disabled) { e.preventDefault(); return; }
+                    setIsSidebarOpen(false);
+                  }}
+                  className={({ isActive }) => `
+                    flex items-center ${isSidebarCollapsed ? 'lg:justify-center' : 'gap-4'} px-4 py-3 rounded-2xl transition-all duration-300 relative group ${isSidebarCollapsed ? 'lg:overflow-visible' : ''}
+                    ${isActive && !item.disabled
+                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                      : item.disabled
+                        ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed opacity-50 grayscale'
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'}
+                  `}
+                >
+                  <span className={`material-symbols-outlined text-[22px] shrink-0`}>{item.icon}</span>
+                  {!isSidebarCollapsed && (
+                    <>
+                      <span className="text-[14px] font-bold ">{item.name}</span>
+                      {isAdmin && pendingCounts && item.path === '/plans' && ((pendingCounts.pendingSubscriptions || 0) + (pendingCounts.pendingAddSearches || 0)) > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-black tabular-nums">
+                          {Math.min((pendingCounts.pendingSubscriptions || 0) + (pendingCounts.pendingAddSearches || 0), 99)}
+                        </span>
+                      )}
+                      {isAdmin && pendingCounts && item.path === '/ad-packages' && (pendingCounts.pendingAdSubscriptions || 0) > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-black tabular-nums">
+                          {Math.min(pendingCounts.pendingAdSubscriptions || 0, 99)}
+                        </span>
+                      )}
+                      {item.disabled && (
+                        <span className="material-symbols-outlined text-[14px] ml-auto opacity-40">lock</span>
+                      )}
+                    </>
+                  )}
+                  {/* Tooltip for collapsed state */}
+                  {isSidebarCollapsed && (
+                    <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
+                      {item.name}
+                      <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
+                    </div>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          {/* Fixed Bottom Buttons */}
+          <div className={`shrink-0 sticky bottom-0 border-t border-primary/30 dark:border-slate-800 bg-white dark:bg-slate-900 ${isSidebarCollapsed ? 'lg:px-2 lg:overflow-visible' : 'px-2'} pt-4 pb-4 overflow-visible`}>
+            <div className="space-y-2">
+              <button
+                onClick={toggleDarkMode}
+                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200`}
+                title={isSidebarCollapsed ? (lang === 'ar' ? 'المظهر' : 'Appearance') : undefined}
               >
-                <span className={`material-symbols-outlined text-[22px]`}>{item.icon}</span>
-                <span className="text-[14px] font-bold ">{item.name}</span>
-                {item.disabled && (
-                   <span className="material-symbols-outlined text-[14px] ml-auto opacity-40">lock</span>
-                )}
-              </NavLink>
-             ))}
-           </div>
-           
-           <div className="mt-auto pt-6 px-2">
-             <div className="space-y-2 border-t border-primary/30 dark:border-slate-800 pt-6">
-               <button 
-                  onClick={toggleDarkMode}
-                  className="w-full flex items-center transition-all duration-300 rounded-2xl group gap-4 px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200"
-               >
-                  <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">
-                    {isDarkMode ? 'light_mode' : 'dark_mode'}
-                  </span>
+                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">
+                  {isDarkMode ? 'light_mode' : 'dark_mode'}
+                </span>
+                {!isSidebarCollapsed && (
                   <div className="flex-1 flex justify-between items-center">
                     <span className="text-[12px] font-bold">{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
                     <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md ">
                       {isDarkMode ? (lang === 'ar' ? 'نهاري' : 'Light') : (lang === 'ar' ? 'ليلي' : 'Dark')}
                     </span>
                   </div>
-               </button>
-               <button 
-                  onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                  className="w-full flex items-center transition-all duration-300 rounded-2xl group gap-4 px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200"
-               >
-                  <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">language</span>
+                )}
+                {isSidebarCollapsed && (
+                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
+                    {lang === 'ar' ? 'المظهر' : 'Appearance'}
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center lg:overflow-visible' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200`}
+                title={isSidebarCollapsed ? (lang === 'ar' ? 'اللغة' : 'Language') : undefined}
+              >
+                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">language</span>
+                {!isSidebarCollapsed && (
                   <div className="flex-1 flex justify-between items-center">
                     <span className="text-[12px] font-bold">{lang === 'ar' ? 'اللغة' : 'Language'}</span>
                     <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md ">{lang === 'ar' ? 'English' : 'العربية'}</span>
                   </div>
-               </button>
-               <button 
-                  onClick={onLogout}
-                  className="w-full flex items-center transition-all duration-300 rounded-2xl group gap-4 px-4 py-3 border border-primary/30 hover:border-red-100 hover:bg-red-50/30 text-slate-700 dark:text-slate-200 hover:text-red-500"
-               >
-                  <span className="material-symbols-outlined rtl-flip text-slate-400 group-hover:text-red-500">logout</span>
+                )}
+                {isSidebarCollapsed && (
+                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
+                    {lang === 'ar' ? 'اللغة' : 'Language'}
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  if (showLogoutConfirm) {
+                    onLogout();
+                    setShowLogoutConfirm(false);
+                  } else {
+                    setShowLogoutConfirm(true);
+                    setTimeout(() => setShowLogoutConfirm(false), 3000);
+                  }
+                }}
+                onBlur={() => setTimeout(() => setShowLogoutConfirm(false), 200)}
+                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center lg:overflow-visible' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-red-100 hover:bg-red-50/30 text-slate-700 dark:text-slate-200 hover:text-red-500`}
+              >
+                <span className="material-symbols-outlined rtl-flip text-slate-400 group-hover:text-red-500">logout</span>
+                {!isSidebarCollapsed && (
                   <span className="text-[12px] font-black">{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
-               </button>
-             </div>
-           </div>
+                )}
+                {/* Tooltip for collapsed state */}
+                {isSidebarCollapsed && !showLogoutConfirm && (
+                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
+                    {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
+                  </div>
+                )}
+                {/* Confirmation Tooltip */}
+                {showLogoutConfirm && (
+                  <div className={`flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-red-600 dark:bg-red-700 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center gap-2 animate-in fade-in zoom-in-95 duration-200`}>
+                    <span className="material-symbols-outlined text-sm">warning</span>
+                    <span>{lang === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?'}</span>
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-red-600 dark:border-l-red-700' : 'border-r-[4px] border-r-red-600 dark:border-r-red-700'}`}></div>
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
       {/* Main content: on lg+ add margin so content is beside sidebar */}
-      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${lang === 'ar' ? 'lg:mr-64' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-primary/30 px-6 flex items-end md:items-center justify-between shrink-0 shadow-sm mobile-header-safe-height pb-4 md:pb-0 md:h-20">
-          
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-500 ${isSidebarCollapsed ? (lang === 'ar' ? 'lg:mr-20' : 'lg:ml-20') : (lang === 'ar' ? 'lg:mr-64' : 'lg:ml-64')}`}>
+        <header className={`fixed top-0 z-[100] bg-white dark:bg-slate-900 border-b border-primary/30 px-6 flex items-end md:items-center justify-between shrink-0 shadow-sm mobile-header-safe-height pb-4 md:pb-0 md:h-20 transition-all duration-500 ${isSidebarCollapsed ? (lang === 'ar' ? 'lg:right-20 lg:left-0' : 'lg:left-20 lg:right-0') : (lang === 'ar' ? 'lg:right-64 lg:left-0' : 'lg:left-64 lg:right-0')} ${lang === 'ar' ? 'right-0 left-0' : 'left-0 right-0'}`}>
+
           <div className="flex items-center gap-4 min-w-0">
-             <button 
-               onClick={() => navigate('/')}
-               className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-all active:scale-90 shadow-sm shrink-0"
-               title={lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
-             >
-               <span className="material-symbols-outlined rtl-flip text-[22px]">arrow_back</span>
-             </button>
-             
-             <div className="min-w-0 animate-in fade-in slide-in-from-right-2 duration-500">
-                <h1 className="text-sm md:text-base font-black text-slate-900 dark:text-white  leading-tight truncate">
-                   {pageInfo.title}
-                </h1>
-                <p className="text-[10px] md:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-tight opacity-80">
-                   {pageInfo.subtitle}
-                </p>
-             </div>
+            {/* Collapse Button - Desktop only */}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={`hidden lg:flex size-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 items-center justify-center text-slate-500 hover:text-primary transition-all active:scale-90 shadow-sm shrink-0`}
+              title={isSidebarCollapsed ? (lang === 'ar' ? 'توسيع' : 'Expand') : (lang === 'ar' ? 'طي' : 'Collapse')}
+            >
+              <span className={`material-symbols-outlined text-[22px] transition-transform duration-300 ${isSidebarCollapsed ? (lang === 'ar' ? 'chevron_left' : 'chevron_right') : (lang === 'ar' ? 'chevron_right' : 'chevron_left')}`}>
+                {lang === 'ar' ? (isSidebarCollapsed ? 'chevron_left' : 'chevron_right') : (isSidebarCollapsed ? 'chevron_right' : 'chevron_left')}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => navigate('/')}
+              className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-all active:scale-90 shadow-sm shrink-0"
+              title={lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
+            >
+              <span className="material-symbols-outlined rtl-flip text-[22px]">arrow_back</span>
+            </button>
+
+            <div className="min-w-0 animate-in fade-in slide-in-from-right-2 duration-500">
+              <h1 className="text-sm md:text-base font-black text-slate-900 dark:text-white  leading-tight truncate">
+                {pageInfo.title}
+              </h1>
+              <p className="text-[10px] md:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-tight opacity-80">
+                {pageInfo.subtitle}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center relative" ref={notifRef}>
-            <button 
+            <button
               className={`relative p-2.5 transition-colors active:scale-95 rounded-xl ${showNotifications ? 'bg-primary/10 text-primary shadow-inner' : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'}`}
               onClick={() => setShowNotifications(!showNotifications)}
             >
@@ -344,15 +453,15 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
             {showNotifications && (
               <div className={`absolute top-full mt-3 ${lang === 'ar' ? 'left-0' : 'right-0'} w-[320px] sm:w-[400px] z-[300] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300`}>
-                 <div className="shadow-2xl ring-1 ring-black/5 rounded-[2rem] overflow-hidden">
-                    <RecentNotifications />
-                 </div>
+                <div className="shadow-2xl ring-1 ring-black/5 rounded-[2rem] overflow-hidden">
+                  <RecentNotifications />
+                </div>
               </div>
             )}
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-32 lg:pb-8">
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-24 lg:pb-0 min-h-0 pt-[85px] md:pt-20">
           <Outlet />
         </main>
 
@@ -360,12 +469,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         <div className="fixed bottom-6 left-6 right-6 z-[120] pointer-events-none lg:hidden">
           <div className="relative w-full max-w-[450px] mx-auto h-[85px] pointer-events-auto">
             <svg className="absolute inset-0 w-full h-full drop-shadow-[0_-8px_25px_rgba(0,0,0,0.12)]" viewBox="0 0 350 85" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path 
-                className="transition-all duration-500 ease-out" 
-                d={getDynamicPath()} 
-                fill={isDarkMode ? "#1e293b" : "white"} 
-                stroke="#009aa7" 
-                strokeWidth="1.2" 
+              <path
+                className="transition-all duration-500 ease-out"
+                d={getDynamicPath()}
+                fill={isDarkMode ? "#1e293b" : "white"}
+                stroke="#009aa7"
+                strokeWidth="1.2"
                 strokeOpacity="0.3"
               />
             </svg>
@@ -373,7 +482,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
             <nav className="relative z-10 flex items-center justify-between h-full px-2">
               {bottomNavItems.map((item, idx) => {
                 const isSidebarTrigger = item.path === 'SIDEBAR_TRIGGER';
-                
+
                 if (isSidebarTrigger) {
                   return (
                     <button key="bottom-more" onClick={() => setIsSidebarOpen(true)} className={`flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 ${isSidebarOpen ? 'text-primary' : 'text-slate-400'}`}>
@@ -384,9 +493,9 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                 }
 
                 return (
-                  <NavLink 
-                    key={item.path} 
-                    to={item.disabled ? '#' : item.path} 
+                  <NavLink
+                    key={item.path}
+                    to={item.disabled ? '#' : item.path}
                     onClick={(e) => { if (item.disabled) e.preventDefault(); }}
                     className={({ isActive }) => `
                       flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 

@@ -1,516 +1,263 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, PieChart, Pie, LineChart, Line, Legend
-} from 'recharts';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import GeminiInsights from '../../components/GeminiInsights';
 import RecentNotifications from '../../components/RecentNotifications';
-import Dropdown from '../../components/Dropdown';
 import { useNavigate } from 'react-router-dom';
 
-interface MonthlyStat {
-  month: string;
-  orderCount: number;
-  growthPercentage: number;
+interface SubscriptionSummary {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  pendingSubscriptions: number;
+  subscriptionsThisMonth: number;
 }
 
-interface DashboardStats {
-  totalOrders: number;
-  pendingOrders: number;
-  negotiatingOrders: number;
-  underConfirmationOrders: number;
-  sentOrders: number;
-  completedOrders: number;
-  cancelledOrders: number;
-  monthlyStats: MonthlyStat[];
-  monthlyGrowthPercentage: number;
-  ordersThisMonth: number;
-  ordersLastMonth: number;
-  totalOrderLines: number;
-  pendingOrderLines: number;
-  respondedOrderLines: number;
+interface UserStats {
+  totalUsers: number;
+  totalSuppliers: number;
+  totalCustomers: number;
+}
+
+interface AdSubscriptionStats {
+  totalAdSubscriptions: number;
+  activeAdSubscriptions: number;
+  pendingAdSubscriptions: number;
+}
+
+interface HistoricalSub {
+  id: string;
+  userId: string;
+  planName: string;
+  userName: string;
+  finalPrice: number;
+  status: string;
+  submissionDate: string;
+  expiryDate: string;
 }
 
 const Dashboard: React.FC = () => {
-  const { lang, t } = useLanguage();
+  const { lang } = useLanguage();
   const navigate = useNavigate();
-  const [chartPeriod, setChartPeriod] = useState('7');
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
+
+  const [subscriptionSummary, setSubscriptionSummary] = useState<SubscriptionSummary | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [loadingUserStats, setLoadingUserStats] = useState(true);
+
+  const [adStats, setAdStats] = useState<AdSubscriptionStats | null>(null);
+  const [loadingAdStats, setLoadingAdStats] = useState(true);
+
+  const [historicalSubscriptions, setHistoricalSubscriptions] = useState<HistoricalSub[]>([]);
+  const [loadingHistorical, setLoadingHistorical] = useState(true);
+
   useEffect(() => {
-    fetchStats();
+    api.get<SubscriptionSummary>('/api/v1/admin/dashboard/subscription-summary')
+      .then(setSubscriptionSummary)
+      .catch(() => setSubscriptionSummary(null))
+      .finally(() => setLoadingSubscription(false));
   }, []);
 
-  const fetchStats = async () => {
-    setIsLoading(true);
-    try {
-      const data = await api.get<DashboardStats>('/api/v1/admin/dashboard/stats');
-      setStats(data);
-    } catch (err) {
-      console.error("Failed to fetch admin stats", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    api.get<UserStats>('/api/v1/admin/dashboard/user-stats')
+      .then(setUserStats)
+      .catch(() => setUserStats(null))
+      .finally(() => setLoadingUserStats(false));
+  }, []);
 
-  const chartData = stats?.monthlyStats.map(s => {
-    const monthParts = s.month.split(' ');
-    const label = lang === 'ar' ? monthParts[0] : monthParts[0].substring(0, 3);
-    return { 
-      name: label, 
-      orders: s.orderCount,
-      growth: s.growthPercentage 
-    };
-  }) || [];
+  useEffect(() => {
+    api.get<AdSubscriptionStats>('/api/v1/admin/dashboard/ad-subscription-stats')
+      .then(setAdStats)
+      .catch(() => setAdStats(null))
+      .finally(() => setLoadingAdStats(false));
+  }, []);
 
-  const statusDistributionData = stats ? [
-    { name: lang === 'ar' ? 'قيد المراجعة' : 'Pending', value: stats.pendingOrders || 0, color: '#f59e0b' },
-    { name: lang === 'ar' ? 'قيد التفاوض' : 'Negotiating', value: stats.negotiatingOrders || 0, color: '#3b82f6' },
-    { name: lang === 'ar' ? 'مكتملة' : 'Completed', value: stats.completedOrders || 0, color: '#10b981' },
-    { name: lang === 'ar' ? 'ملغاة' : 'Cancelled', value: stats.cancelledOrders || 0, color: '#ef4444' },
-  ].filter(d => d.value > 0) : [];
-
-  const orderLinesData = stats ? [
-    { name: lang === 'ar' ? 'بانتظار الرد' : 'Pending', value: stats.pendingOrderLines || 0, color: '#f59e0b' },
-    { name: lang === 'ar' ? 'تم الرد' : 'Responded', value: stats.respondedOrderLines || 0, color: '#10b981' },
-  ].filter(d => d.value > 0) : [];
-
-  const completionRate = stats && stats.totalOrders > 0 
-    ? ((stats.completedOrders / stats.totalOrders) * 100).toFixed(1) 
-    : '0';
-  
-  const responseRate = stats && stats.totalOrderLines > 0 
-    ? ((stats.respondedOrderLines / stats.totalOrderLines) * 100).toFixed(1) 
-    : '0';
+  useEffect(() => {
+    api.get<HistoricalSub[]>('/api/v1/admin/dashboard/historical-subscriptions')
+      .then((data) => setHistoricalSubscriptions(Array.isArray(data) ? data : []))
+      .catch(() => setHistoricalSubscriptions([]))
+      .finally(() => setLoadingHistorical(false));
+  }, []);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 md:px-8 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-2">
-            {lang === 'ar' ? 'لوحة تحكم المسؤول' : 'Admin Dashboard'}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
-            {lang === 'ar' ? 'نظرة شاملة على النظام' : 'System Overview'}
-          </p>
-        </div>
-        <button 
-          onClick={() => navigate('/analytics')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 px-6 py-2.5 text-[11px] font-black tracking-widest text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
-        >
-          <span className="material-symbols-outlined text-lg">analytics</span>
-          {lang === 'ar' ? 'تحليلات متقدمة' : 'Advanced Analytics'}
-        </button>
-      </div>
-
-      {/* Quick Stats Cards */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse">
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
-              <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-            </div>
-          ))}
-        </div>
-      ) : stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/orders')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-2.5 text-blue-600 dark:text-blue-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">receipt_long</span>
-              </div>
-              {stats.monthlyGrowthPercentage > 0 && (
-                <span className="text-[10px] font-black text-emerald-500 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-lg border border-emerald-100 dark:border-emerald-800">
-                  <span className="material-symbols-outlined text-xs">trending_up</span>
-                  {Math.abs(stats.monthlyGrowthPercentage).toFixed(0)}%
-                </span>
-              )}
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.totalOrders}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/approvals')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-2.5 text-amber-600 dark:text-amber-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">pending_actions</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pendingOrders}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'قيد المراجعة' : 'Pending'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/orders')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-purple-50 dark:bg-purple-900/20 p-2.5 text-purple-600 dark:text-purple-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">handshake</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.negotiatingOrders}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'قيد التفاوض' : 'Negotiating'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/orders')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-2.5 text-emerald-600 dark:text-emerald-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">task_alt</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.completedOrders}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/orders')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-2.5 text-red-600 dark:text-red-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">cancel</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.cancelledOrders}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'ملغاة' : 'Cancelled'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20 group cursor-pointer" onClick={() => navigate('/users')}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-2.5 text-indigo-600 dark:text-indigo-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">receipt</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.totalOrderLines}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'بنود الطلبات' : 'Order Lines'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-cyan-50 dark:bg-cyan-900/20 p-2.5 text-cyan-600 dark:text-cyan-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">pending_actions</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pendingOrderLines}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting'}</p>
-            </div>
-          </div>
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl hover:border-primary/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="rounded-xl bg-teal-50 dark:bg-teal-900/20 p-2.5 text-teal-600 dark:text-teal-400 shadow-inner transition-transform group-hover:scale-110">
-                <span className="material-symbols-outlined text-2xl">rate_review</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.respondedOrderLines}</h3>
-              <p className="text-[11px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'تم الرد' : 'Responded'}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mb-8">
-        {isLoading ? (
-          <div className="lg:col-span-2 rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-pulse">
-            <div className="h-80 bg-slate-200 dark:bg-slate-700 rounded"></div>
-          </div>
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 1) كروت الاشتراكات الأربعة أولاً - من API منفصل */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {loadingSubscription ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-xl bg-slate-200 dark:bg-slate-700 h-36 animate-pulse" />
+            ))}
+          </>
         ) : (
-          <div className="lg:col-span-2 rounded-[2.5rem] bg-white dark:bg-slate-900 p-8 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="mb-8 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white tracking-wider">{lang === 'ar' ? 'حجم الطلبات الشهري' : 'Monthly Order Volume'}</h3>
-                <p className="text-xs text-slate-400 font-bold mt-1">
-                  {stats && stats.ordersThisMonth > 0 && stats.ordersLastMonth > 0 && (
-                    <span className={stats.monthlyGrowthPercentage >= 0 ? 'text-emerald-500' : 'text-red-500'}>
-                      {stats.monthlyGrowthPercentage >= 0 ? '↑' : '↓'} {Math.abs(stats.monthlyGrowthPercentage).toFixed(1)}% {lang === 'ar' ? 'نمو' : 'growth'} {lang === 'ar' ? 'هذا الشهر' : 'this month'}
-                    </span>
-                  )}
-                </p>
+          <>
+            <div
+              className="bg-gradient-to-br from-primary to-accent rounded-xl p-6 text-white shadow-xl shadow-primary/20 cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => navigate('/plans')}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="rounded-lg bg-white/10 backdrop-blur-md p-3">
+                  <span className="material-symbols-outlined text-2xl">subscriptions</span>
+                </div>
               </div>
-              <Dropdown 
-                options={[
-                  { value: '7', label: lang === 'ar' ? 'آخر 7 أيام' : 'Last 7 days' }, 
-                  { value: '30', label: lang === 'ar' ? 'آخر 30 يوم' : 'Last 30 days' }
-                ]} 
-                value={chartPeriod} 
-                onChange={setChartPeriod} 
-                placeholder={lang === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'} 
-                showClear={false} 
-                isRtl={lang === 'ar'} 
-                triggerClassName="min-h-[36px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl text-[10px] font-black text-slate-500 outline-none border border-transparent focus:border-primary/20 cursor-pointer pl-4 pr-8 rtl:pl-8 rtl:pr-4" 
-              />
+              <h3 className="text-2xl font-black mb-1 tabular-nums">{subscriptionSummary?.totalSubscriptions ?? 0}</h3>
+              <p className="text-sm font-bold text-white/80">{lang === 'ar' ? 'إجمالي الاشتراكات' : 'Total Subscriptions'}</p>
             </div>
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartData.length > 0 ? (
-                  <BarChart data={chartData} barSize={36}>
-                    <defs>
-                      <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#009aa7" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#009aa7" stopOpacity={0.2}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" opacity={0.5} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} allowDecimals={false} />
-                    <Tooltip 
-                      contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', backgroundColor: '#0f172a', color: '#fff'}}
-                      itemStyle={{fontWeight: 900, color: '#009aa7'}}
-                      labelStyle={{color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px'}}
-                    />
-                    <Bar dataKey="orders" radius={[10, 10, 4, 4]} animationDuration={2000}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.orders > 0 ? '#009aa7' : '#f1f5f9'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    <div className="text-center">
-                      <span className="material-symbols-outlined text-5xl mb-4">bar_chart</span>
-                      <p className="text-sm font-bold">{lang === 'ar' ? 'لا توجد بيانات' : 'No data available'}</p>
-                    </div>
-                  </div>
-                )}
-              </ResponsiveContainer>
+            <div
+              className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-xl shadow-emerald-500/20 cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => navigate('/plans')}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="rounded-lg bg-white/10 backdrop-blur-md p-3">
+                  <span className="material-symbols-outlined text-2xl">check_circle</span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-black mb-1 tabular-nums">{subscriptionSummary?.activeSubscriptions ?? 0}</h3>
+              <p className="text-sm font-bold text-white/80">{lang === 'ar' ? 'اشتراكات نشطة' : 'Active Subscriptions'}</p>
             </div>
-          </div>
+            <div
+              className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-xl shadow-amber-500/20 cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => navigate('/plans')}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="rounded-lg bg-white/10 backdrop-blur-md p-3">
+                  <span className="material-symbols-outlined text-2xl">pending_actions</span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-black mb-1 tabular-nums">{subscriptionSummary?.pendingSubscriptions ?? 0}</h3>
+              <p className="text-sm font-bold text-white/80">{lang === 'ar' ? 'في الانتظار' : 'Pending Subscriptions'}</p>
+            </div>
+            <div
+              className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-6 text-white shadow-xl shadow-purple-500/20 cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => navigate('/plans')}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="rounded-lg bg-white/10 backdrop-blur-md p-3">
+                  <span className="material-symbols-outlined text-2xl">calendar_month</span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-black mb-1 tabular-nums">{subscriptionSummary?.subscriptionsThisMonth ?? 0}</h3>
+              <p className="text-sm font-bold text-white/80">{lang === 'ar' ? 'هذا الشهر' : 'This Month'}</p>
+            </div>
+          </>
         )}
-
-        <div className="flex flex-col gap-8">
-          <RecentNotifications />
-          
-          {/* Additional Stats Card */}
-          {stats && (
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-primary to-accent p-8 text-white shadow-xl shadow-primary/20">
-              <div className="mb-6">
-                <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'ملخص الأداء' : 'Performance Summary'}</h3>
-                <p className="text-white/70 text-sm font-bold">{lang === 'ar' ? 'إحصائيات سريعة' : 'Quick Stats'}</p>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-2xl">pending_actions</span>
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting Response'}</span>
-                  </div>
-                  <span className="text-xl font-black tabular-nums">{stats.pendingOrderLines}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-2xl">rate_review</span>
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'تم الرد' : 'Responded'}</span>
-                  </div>
-                  <span className="text-xl font-black tabular-nums">{stats.respondedOrderLines}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-2xl">calendar_month</span>
-                    <span className="text-sm font-bold">{lang === 'ar' ? 'هذا الشهر' : 'This Month'}</span>
-                  </div>
-                  <span className="text-xl font-black tabular-nums">{stats.ordersThisMonth}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Charts Grid */}
-      {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Order Status Distribution */}
-          {statusDistributionData.length > 0 && (
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-              <div className="mb-6">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'توزيع حالة الطلبات' : 'Order Status Distribution'}</h3>
-                <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'توزيع الطلبات حسب الحالة' : 'Orders distribution by status'}</p>
+      {/* 2) كروت المستخدمين + إعلانات - من APIs منفصلة */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
+        {loadingUserStats ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl bg-slate-200 dark:bg-slate-700 h-28 animate-pulse" />
+          ))
+        ) : (
+          <>
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/users')}>
+              <div className="rounded-lg bg-indigo-50 dark:bg-indigo-900/20 p-2 text-indigo-600 dark:text-indigo-400 w-fit mb-3">
+                <span className="material-symbols-outlined text-xl">people</span>
               </div>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusDistributionData}
-                      innerRadius="50%"
-                      outerRadius="85%"
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationDuration={1500}
-                      stroke="none"
-                    >
-                      {statusDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: '900'}}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      formatter={(value) => <span style={{ fontSize: '11px', fontWeight: '900' }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalUsers ?? 0}</h3>
+              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</p>
             </div>
-          )}
-
-          {/* Order Lines Distribution */}
-          {orderLinesData.length > 0 && (
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-              <div className="mb-6">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'توزيع بنود الطلبات' : 'Order Lines Distribution'}</h3>
-                <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'حالة بنود الطلبات' : 'Order lines status'}</p>
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/users')}>
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2 text-blue-600 dark:text-blue-400 w-fit mb-3">
+                <span className="material-symbols-outlined text-xl">store</span>
               </div>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={orderLinesData}
-                      innerRadius="50%"
-                      outerRadius="85%"
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationDuration={1500}
-                      stroke="none"
-                    >
-                      {orderLinesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: '900'}}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      formatter={(value) => <span style={{ fontSize: '11px', fontWeight: '900' }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalSuppliers ?? 0}</h3>
+              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'الموردين' : 'Suppliers'}</p>
             </div>
-          )}
-        </div>
-      )}
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/users')}>
+              <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-2 text-purple-600 dark:text-purple-400 w-fit mb-3">
+                <span className="material-symbols-outlined text-xl">person</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalCustomers ?? 0}</h3>
+              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'العملاء' : 'Customers'}</p>
+            </div>
+            {loadingAdStats ? (
+              <div className="rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            ) : (
+              <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/ad-packages')}>
+                <div className="rounded-lg bg-teal-50 dark:bg-teal-900/20 p-2 text-teal-600 dark:text-teal-400 w-fit mb-3">
+                  <span className="material-symbols-outlined text-xl">campaign</span>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{adStats?.activeAdSubscriptions ?? 0}</h3>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'إعلانات نشطة' : 'Active Ads'}</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
-      {/* Growth Trend Chart */}
-      {!isLoading && stats && chartData.length > 1 && (
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 mb-8">
-          <div className="mb-8">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'اتجاه النمو الشهري' : 'Monthly Growth Trend'}</h3>
-            <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'مقارنة النمو بين الأشهر' : 'Growth comparison across months'}</p>
+      <div className="grid grid-cols-1 gap-8 mb-8">
+        <RecentNotifications />
+      </div>
+
+      {/* 3) جدول الاشتراكات السابقة - من API منفصل */}
+      {loadingHistorical ? (
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 h-64 animate-pulse" />
+      ) : historicalSubscriptions.length > 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8 overflow-hidden">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+              {lang === 'ar' ? 'الاشتراكات السابقة' : 'Historical Subscriptions'}
+            </h3>
+            <p className="text-xs text-slate-400 font-bold">
+              {lang === 'ar' ? 'الاشتراكات القديمة عند تجديد المستخدمين' : 'Old subscriptions when users renew'}
+            </p>
           </div>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorAdminGrowth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#009aa7" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#009aa7" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" opacity={0.5} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 900}} />
-                <Tooltip 
-                  contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', backgroundColor: '#0f172a', color: '#fff'}}
-                  itemStyle={{fontWeight: 900, color: '#009aa7'}}
-                />
-                <Area type="monotone" dataKey="orders" stroke="#009aa7" fillOpacity={1} fill="url(#colorAdminGrowth)" strokeWidth={3} animationDuration={2000} />
-                <Line type="monotone" dataKey="growth" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* Performance Metrics */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-gradient-to-br from-primary to-accent rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary/20">
-            <div className="mb-6">
-              <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'مؤشرات الأداء' : 'Performance Metrics'}</h3>
-              <p className="text-white/70 text-sm font-bold">{lang === 'ar' ? 'إحصائيات الأداء الرئيسية' : 'Key performance indicators'}</p>
-            </div>
-            <div className="space-y-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}</span>
-                  <span className="text-2xl font-black">{completionRate}%</span>
-                </div>
-                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-white rounded-full transition-all" style={{ width: `${completionRate}%` }}></div>
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</span>
-                  <span className="text-2xl font-black">{responseRate}%</span>
-                </div>
-                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-white rounded-full transition-all" style={{ width: `${responseRate}%` }}></div>
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{lang === 'ar' ? 'هذا الشهر' : 'This Month'}</span>
-                  <span className="text-2xl font-black">{stats.ordersThisMonth}</span>
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">{lang === 'ar' ? 'الشهر السابق' : 'Last Month'}</span>
-                  <span className="text-2xl font-black">{stats.ordersLastMonth}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">{lang === 'ar' ? 'إحصائيات إضافية' : 'Additional Statistics'}</h3>
-              <p className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'معلومات تفصيلية' : 'Detailed information'}</p>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-purple-500 text-2xl">handshake</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'قيد التفاوض' : 'Negotiating'}</span>
-                </div>
-                <span className="text-xl font-black text-slate-900 dark:text-white">{stats.negotiatingOrders}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-violet-500 text-2xl">hourglass_empty</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'تحت التأكيد' : 'Under Confirmation'}</span>
-                </div>
-                <span className="text-xl font-black text-slate-900 dark:text-white">{stats.underConfirmationOrders || 0}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-red-500 text-2xl">cancel</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'ملغاة' : 'Cancelled'}</span>
-                </div>
-                <span className="text-xl font-black text-slate-900 dark:text-white">{stats.cancelledOrders}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-cyan-500 text-2xl">pending_actions</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting Response'}</span>
-                </div>
-                <span className="text-xl font-black text-slate-900 dark:text-white">{stats.pendingOrderLines}</span>
-              </div>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'الباقة' : 'Plan'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'السعر' : 'Price'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'الحالة' : 'Status'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'تاريخ الطلب' : 'Request Date'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {historicalSubscriptions.map((sub) => (
+                  <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-black text-slate-900 dark:text-white">{sub.userName}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{sub.planName}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-black text-primary">{sub.finalPrice} EGP</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black ${
+                          sub.status === 'APPROVED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                            : sub.status === 'PENDING'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                            : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                        }`}
+                      >
+                        {sub.status === 'APPROVED' ? (lang === 'ar' ? 'معتمد' : 'Approved') : sub.status === 'PENDING' ? (lang === 'ar' ? 'قيد المراجعة' : 'Pending') : (lang === 'ar' ? 'مرفوض' : 'Rejected')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                        {sub.submissionDate ? new Date(sub.submissionDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') : '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                        {sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') : '-'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 gap-8">
         <GeminiInsights />

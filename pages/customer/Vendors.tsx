@@ -87,7 +87,7 @@ const Vendors: React.FC = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  const [activeVendorDetailId, setActiveVendorDetailId] = useState<string | null>(null);
+  const [detailsModalVendor, setDetailsModalVendor] = useState<Supplier | null>(null);
 
   // Catalog Modal States
   const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
@@ -122,7 +122,6 @@ const Vendors: React.FC = () => {
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const manualFileInputRef = useRef<HTMLInputElement>(null);
 
-  const popoverRef = useRef<HTMLDivElement>(null);
   const catalogFilterRef = useRef<HTMLDivElement>(null);
   const hasOpenedFromAdRef = useRef<boolean>(false);
 
@@ -131,9 +130,6 @@ const Vendors: React.FC = () => {
     fetchCart();
     
     const handleClickOutside = (event: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        setActiveVendorDetailId(null);
-      }
       if (catalogFilterRef.current && !catalogFilterRef.current.contains(event.target as Node)) {
         setShowCatalogFilters(false);
       }
@@ -393,113 +389,72 @@ const Vendors: React.FC = () => {
         {suppliers.map((vendor, idx) => (
           <div 
             key={vendor.id} 
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm animate-in fade-in slide-in-from-bottom-2"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-lg transition-shadow animate-in fade-in slide-in-from-bottom-2"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="size-14 rounded-xl bg-primary/5 text-primary flex items-center justify-center font-black text-lg shrink-0 overflow-hidden border border-primary/10 shadow-sm">
-                {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" /> : vendor.name.charAt(0)}
+            {/* Header: avatar + info + details btn */}
+            <div className="p-4 pb-3 flex items-center gap-3">
+              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-base shrink-0 overflow-hidden border border-primary/20">
+                {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" alt="" /> : (vendor.organizationName || vendor.name).charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-black text-slate-900 dark:text-white text-base mb-1 truncate">
+                <h3 className="font-black text-slate-900 dark:text-white text-sm leading-tight truncate">
                   {vendor.organizationName || vendor.name}
                 </h3>
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{vendor.email}</p>
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate mt-0.5">{vendor.email}</p>
                 {vendor.category && (
-                  <span className="inline-block mt-2 px-2.5 py-1 rounded-lg bg-primary/5 text-primary text-[10px] font-black border border-primary/10">
+                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-black">
                     {lang === 'ar' ? vendor.category.arabicName : vendor.category.name}
                   </span>
                 )}
               </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              {vendor.organizationCRN && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="material-symbols-outlined text-slate-400 text-base">badge</span>
-                  <span className="font-bold text-slate-600 dark:text-slate-300">{vendor.organizationCRN}</span>
-                </div>
-              )}
-              {vendor.phoneNumber && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="material-symbols-outlined text-slate-400 text-base">call</span>
-                  <span className="font-bold text-slate-600 dark:text-slate-300">{vendor.phoneNumber}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button 
-                onClick={() => openProducts(vendor)} 
-                className="flex-1 py-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined text-base">inventory_2</span>
-                {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
-              </button>
-              <div className="relative">
+              <div className="shrink-0">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveVendorDetailId(activeVendorDetailId === vendor.id ? null : vendor.id);
+                    setDetailsModalVendor(vendor);
                   }}
-                  className={`size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm ${activeVendorDetailId === vendor.id ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}
+                  className="size-9 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-primary hover:text-white"
+                  aria-label={lang === 'ar' ? 'عرض التفاصيل' : 'View details'}
                 >
-                  <span className="material-symbols-outlined text-xl">visibility</span>
+                  <span className="material-symbols-outlined text-[20px]">visibility</span>
                 </button>
-                {activeVendorDetailId === vendor.id && (
-                  <div ref={popoverRef} className={`absolute top-full mt-2 z-[500] w-[280px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-primary/20 p-4 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`} onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-3.5">
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-primary/5 border border-primary/10">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[8px] font-black text-primary leading-none mb-1">{lang === 'ar' ? 'القطاع' : 'Vertical'}</p>
-                          <p className="text-[12px] font-black text-slate-800 dark:text-white leading-tight truncate">{vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}</p>
-                        </div>
-                        <span className="material-symbols-outlined text-primary text-lg ml-2">category</span>
-                      </div>
-                      <div className="space-y-2.5 px-0.5">
-                        <div className="flex items-start gap-2.5">
-                          <div className="size-7 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0"><span className="material-symbols-outlined text-base">corporate_fare</span></div>
-                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'المؤسسة' : 'Organization'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.organizationName || vendor.name}</p></div>
-                        </div>
-                        <div className="flex items-start gap-2.5">
-                          <div className="size-7 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-base">badge</span></div>
-                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'السجل' : 'CRN'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.organizationCRN || '---'}</p></div>
-                        </div>
-                        <div className="flex items-start gap-2.5">
-                          <div className="size-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-base">call</span></div>
-                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'الهاتف' : 'Phone'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.phoneNumber || '---'}</p></div>
-                        </div>
-                        <div className="flex items-start gap-2.5">
-                          <div className="size-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500 shrink-0"><span className="material-symbols-outlined text-base">mail</span></div>
-                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البريد' : 'Email'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.email}</p></div>
-                        </div>
-                      </div>
-                      {vendor.subCategories && vendor.subCategories.length > 0 && (
-                        <div className="pt-2.5 border-t border-slate-50 dark:border-slate-800">
-                          <p className="text-[7px] font-black text-slate-400 mb-2">{lang === 'ar' ? 'التخصصات' : 'Domain'}</p>
-                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto no-scrollbar">
-                            {vendor.subCategories.slice(0, 3).map(sub => (
-                              <span key={sub.id} className="px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 text-[9px] font-bold border border-slate-100 dark:border-slate-700">
-                                {lang === 'ar' ? sub.arabicName : sub.name}
-                              </span>
-                            ))}
-                            {vendor.subCategories.length > 3 && <span className="text-[8px] font-black text-primary px-1">+{vendor.subCategories.length - 3}</span>}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className={`absolute -top-2 w-4 h-4 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
-                  </div>
-                )}
               </div>
+            </div>
+            {/* Contact row: compact */}
+            <div className="px-4 pb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
+              {vendor.organizationCRN && (
+                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <span className="material-symbols-outlined text-slate-400 text-sm">badge</span>
+                  <span className="font-bold tabular-nums">{vendor.organizationCRN}</span>
+                </span>
+              )}
+              {vendor.phoneNumber && (
+                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <span className="material-symbols-outlined text-slate-400 text-sm">call</span>
+                  <span className="font-bold tabular-nums">{vendor.phoneNumber}</span>
+                </span>
+              )}
+            </div>
+            {/* Single CTA: full-width Catalog */}
+            <div className="px-4 pb-4">
+              <button 
+                onClick={() => openProducts(vendor)} 
+                className="w-full py-3 rounded-xl bg-primary text-white hover:bg-primary/90 font-black text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+              >
+                <span className="material-symbols-outlined text-lg">inventory_2</span>
+                {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
+              </button>
             </div>
           </div>
         ))}
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 dark:border-slate-800 mb-6 relative overflow-visible">
-         <div className="overflow-visible rounded-[2.5rem]">
+      <div className="hidden md:block bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 dark:border-slate-800 mb-6 relative overflow-visible">
+         <div className="overflow-visible rounded-xl">
            <table className="w-full text-left rtl:text-right border-collapse">
-             <thead>
+             <thead className="sticky top-0 z-10">
                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 text-[12px] font-black text-slate-400 ">
                  <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
                  <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
@@ -536,64 +491,18 @@ const Vendors: React.FC = () => {
                    <td className="px-6 py-4 hidden lg:table-cell">
                       <span className="text-sm font-bold text-slate-500 tabular-nums">{vendor.phoneNumber || '---'}</span>
                    </td>
-                   <td className={`px-6 py-4 ${activeVendorDetailId === vendor.id ? 'z-[400] relative' : ''}`}>
+                   <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
-                         <div className="relative inline-block">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveVendorDetailId(activeVendorDetailId === vendor.id ? null : vendor.id);
-                              }}
-                              className={`size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm ${activeVendorDetailId === vendor.id ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:text-primary hover:border-primary/40'}`}
-                            >
-                               <span className="material-symbols-outlined text-[22px]">visibility</span>
-                            </button>
-                            {activeVendorDetailId === vendor.id && (
-                              <div ref={popoverRef} className={`absolute top-full mt-3 z-[500] w-[240px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-primary/20 p-4 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`} onClick={(e) => e.stopPropagation()}>
-                                 <div className="space-y-3.5">
-                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-primary/5 border border-primary/10">
-                                       <div className="min-w-0 flex-1">
-                                          <p className="text-[8px] font-black text-primary     leading-none mb-1">{lang === 'ar' ? 'القطاع' : 'Vertical'}</p>
-                                          <p className="text-[12px] font-black text-slate-800 dark:text-white leading-tight truncate">{vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}</p>
-                                       </div>
-                                       <span className="material-symbols-outlined text-primary text-lg ml-2">category</span>
-                                    </div>
-                                    <div className="space-y-2.5 px-0.5">
-                                       <div className="flex items-start gap-2.5">
-                                          <div className="size-7 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0"><span className="material-symbols-outlined text-base">corporate_fare</span></div>
-                                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400   leading-none mb-0.5">{lang === 'ar' ? 'المؤسسة' : 'Organization'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.organizationName || vendor.name}</p></div>
-                                       </div>
-                                       <div className="flex items-start gap-2.5">
-                                          <div className="size-7 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-base">badge</span></div>
-                                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400   leading-none mb-0.5">{lang === 'ar' ? 'السجل' : 'CRN'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.organizationCRN || '---'}</p></div>
-                                       </div>
-                                       <div className="flex items-start gap-2.5">
-                                          <div className="size-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-base">call</span></div>
-                                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400   leading-none mb-0.5">{lang === 'ar' ? 'الهاتف' : 'Phone'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums">{vendor.phoneNumber || '---'}</p></div>
-                                       </div>
-                                       <div className="flex items-start gap-2.5">
-                                          <div className="size-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500 shrink-0"><span className="material-symbols-outlined text-base">mail</span></div>
-                                          <div className="min-w-0 flex-1"><p className="text-[7px] font-black text-slate-400   leading-none mb-0.5">{lang === 'ar' ? 'البريد' : 'Email'}</p><p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{vendor.email}</p></div>
-                                       </div>
-                                    </div>
-                                    {vendor.subCategories && vendor.subCategories.length > 0 && (
-                                      <div className="pt-2.5 border-t border-slate-50 dark:border-slate-800">
-                                         <p className="text-[7px] font-black text-slate-400   mb-2   ">{lang === 'ar' ? 'التخصصات' : 'Domain'}</p>
-                                         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto no-scrollbar">
-                                            {vendor.subCategories.slice(0, 3).map(sub => (
-                                              <span key={sub.id} className="px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 text-[9px] font-bold border border-slate-100 dark:border-slate-700">
-                                                 {lang === 'ar' ? sub.arabicName : sub.name}
-                                              </span>
-                                            ))}
-                                            {vendor.subCategories.length > 3 && <span className="text-[8px] font-black text-primary px-1">+{vendor.subCategories.length - 3}</span>}
-                                         </div>
-                                      </div>
-                                    )}
-                                 </div>
-                                 <div className={`absolute -top-2 w-4 h-4 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
-                              </div>
-                            )}
-                         </div>
+                         <button 
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             setDetailsModalVendor(vendor);
+                           }}
+                           className="size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:text-primary hover:border-primary/40"
+                           title={lang === 'ar' ? 'التفاصيل' : 'Details'}
+                         >
+                           <span className="material-symbols-outlined text-[22px]">visibility</span>
+                         </button>
                          <button onClick={() => openProducts(vendor)} className="text-primary text-[11px] font-black hover:underline flex items-center gap-1.5   whitespace-nowrap active:scale-95 transition-all"><span className="material-symbols-outlined text-[20px]">inventory_2</span>{lang === 'ar' ? 'الكتالوج' : 'Catalog'}</button>
                       </div>
                    </td>
@@ -644,14 +553,91 @@ const Vendors: React.FC = () => {
         </div>
       )}
 
+      {/* Vendor Details Modal - opens on "التفاصيل" so content is fully visible */}
+      {detailsModalVendor && (
+        <div
+          className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDetailsModalVendor(null)}
+        >
+          <div
+            className="w-full max-h-[85vh] sm:max-w-md sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h3 className="text-base font-black text-slate-900 dark:text-white truncate flex-1 pr-2">
+                {detailsModalVendor.organizationName || detailsModalVendor.name}
+              </h3>
+              <button
+                onClick={() => setDetailsModalVendor(null)}
+                className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center active:scale-90"
+                aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-4 flex-1 min-h-0">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black text-primary leading-none mb-1">{lang === 'ar' ? 'القطاع' : 'Vertical'}</p>
+                  <p className="text-sm font-black text-slate-800 dark:text-white leading-tight">{detailsModalVendor.category ? (lang === 'ar' ? detailsModalVendor.category.arabicName : detailsModalVendor.category.name) : '---'}</p>
+                </div>
+                <span className="material-symbols-outlined text-primary text-xl ml-2">category</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 shrink-0"><span className="material-symbols-outlined text-lg">corporate_fare</span></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'المؤسسة' : 'Organization'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 break-words">{detailsModalVendor.organizationName || detailsModalVendor.name}</p></div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-lg">badge</span></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'السجل' : 'CRN'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.organizationCRN || '---'}</p></div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-lg">call</span></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'الهاتف' : 'Phone'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.phoneNumber || '---'}</p></div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500 shrink-0"><span className="material-symbols-outlined text-lg">mail</span></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البريد' : 'Email'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 break-all">{detailsModalVendor.email}</p></div>
+                </div>
+              </div>
+              {detailsModalVendor.subCategories && detailsModalVendor.subCategories.length > 0 && (
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-black text-slate-400 mb-2">{lang === 'ar' ? 'التخصصات' : 'Domain'}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {detailsModalVendor.subCategories.map(sub => (
+                      <span key={sub.id} className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-100 dark:border-slate-700">
+                        {lang === 'ar' ? sub.arabicName : sub.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+              <button
+                onClick={() => {
+                  openProducts(detailsModalVendor);
+                  setDetailsModalVendor(null);
+                }}
+                className="w-full py-3 rounded-xl bg-primary text-white font-black text-sm flex items-center justify-center gap-2 active:scale-[0.98] shadow-lg shadow-primary/20"
+              >
+                <span className="material-symbols-outlined text-lg">inventory_2</span>
+                {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Catalog Modal */}
       {isProductsModalOpen && viewingSupplier && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => closeProductsModal()}
         >
            <div
-             className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col h-[90vh] relative"
+             className="w-[90%] md:w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col h-[90vh] relative"
              onClick={(e) => e.stopPropagation()}
            >
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
@@ -736,7 +722,7 @@ const Vendors: React.FC = () => {
                   <div className="relative" ref={catalogFilterRef}>
                     <button onClick={() => setShowCatalogFilters(!showCatalogFilters)} className={`size-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-white/20' : 'bg-slate-900 text-white border-white/10'}`}><span className="material-symbols-outlined text-2xl">tune</span>{activeCatalogFiltersCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{activeCatalogFiltersCount}</span>}</button>
                     {showCatalogFilters && (
-                      <div className={`absolute bottom-full mb-4 z-[260] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-primary/10 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+                      <div className={`absolute bottom-full mb-4 z-[260] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-primary/10 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                          <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xs font-black     text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
                             <button onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
@@ -781,8 +767,8 @@ const Vendors: React.FC = () => {
 
       {/* Manual Order Modal */}
       {isManualModalOpen && viewingSupplier && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.manualOrder.title}</h3><p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? `طلب خاص من ${viewingSupplier.organizationName || viewingSupplier.name}` : `Special Request to ${viewingSupplier.organizationName || viewingSupplier.name}`}</p></div></div>
                  <button onClick={() => setIsManualModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>

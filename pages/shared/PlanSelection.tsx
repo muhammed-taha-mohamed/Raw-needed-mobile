@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
+import { useLocation } from 'react-router-dom';
 import { Plan, BillingFrequency, UserSubscription, PlanType, CalculatePriceResponse, PlanFeature, PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
 import { getPlanFeatureLabel } from '../../constants';
@@ -36,6 +37,19 @@ const PlanSelection: React.FC = () => {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Add more searches (partial renewal)
+  const [addSearchesCount, setAddSearchesCount] = useState<number>(50);
+  const [addSearchesPrice, setAddSearchesPrice] = useState<number | null>(null);
+  const [addSearchesPriceLoading, setAddSearchesPriceLoading] = useState(false);
+  const [addSearchesFile, setAddSearchesFile] = useState<File | null>(null);
+  const [addSearchesFilePreview, setAddSearchesFilePreview] = useState<string | null>(null);
+  const [addSearchesSubmitting, setAddSearchesSubmitting] = useState(false);
+  const [addSearchesSuccess, setAddSearchesSuccess] = useState(false);
+  const [addSearchesError, setAddSearchesError] = useState<string | null>(null);
+  const [addSearchesModalOpen, setAddSearchesModalOpen] = useState(false);
+  const addSearchesRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,6 +64,74 @@ const PlanSelection: React.FC = () => {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if ((location.state as any)?.openAddSearches) {
+      setAddSearchesModalOpen(true);
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location.state, location.pathname]);
+
+  const fetchAddSearchesPrice = async () => {
+    if (addSearchesCount < 1) return;
+    setAddSearchesPriceLoading(true);
+    setAddSearchesError(null);
+    try {
+      const res = await api.get<any>(`/api/v1/user-subscriptions/add-searches/price?numberOfSearches=${addSearchesCount}`);
+      const data = res?.content?.data ?? res?.data ?? res;
+      setAddSearchesPrice(typeof data?.totalPrice === 'number' ? data.totalPrice : null);
+    } catch (err: any) {
+      setAddSearchesPrice(null);
+      setAddSearchesError(err?.message || (lang === 'ar' ? 'فشل حساب السعر' : 'Failed to get price'));
+    } finally {
+      setAddSearchesPriceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subscription && subscription.remainingSearches != null && subscription.status === 'APPROVED' && addSearchesCount >= 1) {
+      fetchAddSearchesPrice();
+    } else {
+      setAddSearchesPrice(null);
+    }
+  }, [addSearchesCount, subscription?.id, subscription?.status]);
+
+  const handleAddSearchesFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAddSearchesFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAddSearchesFilePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmitAddSearches = async () => {
+    if (addSearchesCount < 1) return;
+    setAddSearchesSubmitting(true);
+    setAddSearchesError(null);
+    try {
+      let receiptUrl = '';
+      if (addSearchesFile) {
+        const formData = new FormData();
+        formData.append('file', addSearchesFile);
+        receiptUrl = await api.post<string>('/api/v1/image/upload', formData);
+      }
+      await api.post('/api/v1/user-subscriptions/add-searches', {
+        numberOfSearches: addSearchesCount,
+        receiptFile: receiptUrl || ''
+      });
+      clearSubscriptionCache();
+      setAddSearchesSuccess(true);
+      await fetchInitialData();
+      setAddSearchesFile(null);
+      setAddSearchesFilePreview(null);
+    } catch (err: any) {
+      setAddSearchesError(err?.message || (lang === 'ar' ? 'فشل إرسال الطلب' : 'Submission failed'));
+    } finally {
+      setAddSearchesSubmitting(false);
+    }
+  };
 
   const fetchInitialData = async () => {
     setIsLoading(true);
@@ -240,7 +322,7 @@ const PlanSelection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-800 mx-4 md:px-10 my-8">
+      <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800 mx-4 md:px-10 my-8">
         <div className="h-8 w-8 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
         <p className="text-slate-500 font-bold text-[12px]">Retrieving Pricing...</p>
       </div>
@@ -248,11 +330,11 @@ const PlanSelection: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-x-hidden min-w-0">
       
       {subscription && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-1000">
-           <div className="bg-slate-900 dark:bg-slate-800 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl border border-white/5">
+           <div className="bg-slate-900 dark:bg-slate-800 rounded-xl p-6 text-white relative overflow-hidden shadow-xl border border-white/5">
               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                  <span className="material-symbols-outlined text-[80px]">verified</span>
               </div>
@@ -296,22 +378,24 @@ const PlanSelection: React.FC = () => {
                        <p className=" text-[12px] font-black text-slate-300 ">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expires'}</p>
                        <p className="text-[11px] font-bold tabular-nums  text-primary">{formatDate(subscription.expiryDate)}</p>
                     </div>
+                    {subscription.remainingSearches != null && subscription.status === 'APPROVED' && (
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => setAddSearchesModalOpen(true)}
+                          className="px-4 py-2.5 rounded-xl bg-primary text-white font-black text-[11px] hover:bg-primary/90 active:scale-95 flex items-center gap-1.5 shrink-0"
+                        >
+                          <span className="material-symbols-outlined text-base">add_circle</span>
+                          {lang === 'ar' ? 'تجديد جزئي' : 'Partial renewal'}
+                        </button>
+                      </div>
+                    )}
                  </div>
               </div>
            </div>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-         <h1 className="text-2xl font-black text-primary dark:text-white  leading-none">
-            {t.planSelection.pageTitle}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-500 font-medium text-sm max-w-2xl">
-            {t.planSelection.pageSubtitle}
-          </p>
-        </div>
-      </div>
 
       <div className="flex gap-2 flex-wrap">
         <div className="relative inline-block">
@@ -501,190 +585,253 @@ const PlanSelection: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch pb-6">
+      {/* بوب اب شراء عمليات بحث */}
+      {addSearchesModalOpen && subscription && subscription.remainingSearches != null && subscription.status === 'APPROVED' && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'شراء عمليات بحث إضافية' : 'Buy more searches'}</h2>
+              <button type="button" onClick={() => setAddSearchesModalOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-5 space-y-5">
+              {addSearchesSuccess ? (
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-sm font-bold">
+                  {lang === 'ar' ? 'تم إرسال طلبك. سيتم مراجعته من الإدارة وتفعيل عمليات البحث بعد التأكد من الدفع.' : 'Request submitted. It will be reviewed by admin and searches will be added after payment verification.'}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[12px] font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'عدد عمليات البحث' : 'Number of searches'}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={addSearchesCount}
+                      onChange={(e) => setAddSearchesCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-black outline-none focus:border-primary"
+                    />
+                    <div className="flex items-center gap-2">
+                      {addSearchesPriceLoading ? (
+                        <span className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'جاري الحساب...' : 'Calculating...'}</span>
+                      ) : addSearchesPrice != null ? (
+                        <span className="text-sm font-black text-primary">{addSearchesPrice.toLocaleString()} {t.plans.currency}</span>
+                      ) : addSearchesError ? (
+                        <span className="text-xs font-bold text-red-500">{addSearchesError}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[12px] font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'إيصال الدفع (صورة) — اختياري' : 'Payment receipt (image) — optional'}</label>
+                    {!addSearchesFilePreview ? (
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 hover:border-primary cursor-pointer">
+                        <span className="material-symbols-outlined text-2xl text-slate-400 mb-1">cloud_upload</span>
+                        <span className="text-[11px] font-bold text-slate-500">{lang === 'ar' ? 'اختر صورة' : 'Select image'}</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={handleAddSearchesFileChange} />
+                      </label>
+                    ) : (
+                      <div className="relative">
+                        <img src={addSearchesFilePreview} alt="" className="h-24 w-full object-cover rounded-xl border border-slate-200 dark:border-slate-700" />
+                        <button type="button" onClick={() => { setAddSearchesFile(null); setAddSearchesFilePreview(null); }} className="absolute top-1 right-1 size-8 rounded-full bg-red-500 text-white flex items-center justify-center">
+                          <span className="material-symbols-outlined text-lg">close</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleSubmitAddSearches}
+                      disabled={addSearchesSubmitting || addSearchesPriceLoading}
+                      className="px-6 py-3 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {addSearchesSubmitting ? (
+                        <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="material-symbols-outlined text-lg">add_circle</span>
+                      )}
+                      {lang === 'ar' ? 'إرسال طلب إضافة البحث' : 'Submit Add Searches Request'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 items-stretch pb-6 overflow-visible min-w-0">
         {plans.map((plan, idx) => {
           const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
           return (
-            <div 
+            <div
               key={plan.id}
-              className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-5 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group flex flex-col animate-in zoom-in-95 duration-700"
+              className="bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group overflow-visible flex flex-col animate-in zoom-in-95 duration-700 min-w-0"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
+              <div
+                className={`absolute top-0 ${lang === 'ar' ? 'right-0' : 'left-0'} w-1.5 h-full bg-primary transition-all duration-300 rounded-b ${lang === 'ar' ? 'rounded-r-[1.5rem]' : 'rounded-l-[1.5rem]'}`}
+                style={{ clipPath: lang === 'ar' ? 'polygon(0 0, 100% 10%, 100% 100%, 0 100%)' : 'polygon(0 0, 100% 0, 100% 100%, 0 10%)' }}
+              />
+
               <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary shadow-inner border border-primary/5 shrink-0">
-                    <span className="material-symbols-outlined text-[24px]">
+                <div className="flex gap-4 items-center min-w-0">
+                  <div className="size-12 rounded-xl bg-primary/5 text-primary border border-primary/10 flex items-center justify-center shrink-0 shadow-sm">
+                    <span className="material-symbols-outlined text-[26px]">
                       {plan.billingFrequency === 'YEARLY' ? 'calendar_month' : plan.billingFrequency === 'QUARTERLY' ? 'grid_view' : 'schedule'}
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-black text-slate-700 dark:text-white text-base leading-tight  truncate">{plan.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[10px] font-black text-primary ">{getFreqLabel(plan.billingFrequency, lang)}</p>
-                      
+                    <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate">{plan.name}</h3>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="text-[12px] font-bold text-slate-500">{t.plans.statusActive}</span>
+                      {plan.hasAdvertisements && (
+                        <span className="flex items-center gap-1 ml-2 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-black border border-emerald-100 dark:border-emerald-900/30">
+                          <span className="material-symbols-outlined text-[12px]">ads_click</span>
+                          {lang === 'ar' ? 'إعلانات' : 'ADS'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  {plan.isPopular && (
-                    <span className="bg-primary text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md ">
-                      {t.plans.popular}
+                  {plan.exclusive && (
+                    <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-sm">
+                      {lang === 'ar' ? 'حصري' : 'Exclusive'}
                     </span>
                   )}
-                  {plan.exclusive && (
-                    <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md">
-                      {lang === 'ar' ? 'حصري' : 'VIP'}
+                  {plan.isPopular && (
+                    <span className="bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap border border-primary/20">
+                      {t.plans.popular}
                     </span>
                   )}
                 </div>
               </div>
 
-              {plan.planType === 'CUSTOMER' && plan.productSearchesConfig ? (
-                <div className="mb-5 space-y-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <span className="material-symbols-outlined text-primary text-[20px]">search</span>
-                    <span className="text-[11px] font-black">{lang === 'ar' ? 'إعدادات بحث المنتجات' : 'Product searches'}</span>
-                  </div>
-                  {plan.productSearchesConfig.unlimited ? (
-                    <p className="text-sm font-black text-primary">{lang === 'ar' ? 'غير محدود' : 'Unlimited'}</p>
-                  ) : (
-                    <>
-                      {(plan.productSearchesConfig.from != null || plan.productSearchesConfig.to != null) && (
-                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                          {lang === 'ar' ? 'من' : 'From'} {plan.productSearchesConfig.from ?? '—'} {lang === 'ar' ? 'إلى' : 'to'} {plan.productSearchesConfig.to ?? '—'}
-                        </p>
-                      )}
-                      {!plan.productSearchesConfig.unlimited && plan.productSearchesConfig.pricePerSearch != null && (
-                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                          {lang === 'ar' ? 'السعر لكل بحث:' : 'Price per search:'} {plan.productSearchesConfig.pricePerSearch} {t.plans.currency}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              ) : plan.planType !== 'CUSTOMER' ? (
-                <div className="mb-5 flex items-baseline gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <span className="text-2xl font-black text-slate-700 dark:text-white tabular-nums er">{plan.pricePerUser}</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[11px] text-slate-500 font-black ">{t.plans.currency}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">/ {lang === 'ar' ? 'لكل مستخدم' : 'Per User'}</span>
+              <div className="space-y-2 mb-6 flex-grow">
+                <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.pricePerUser}</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{plan.pricePerUser}</span>
+                    <span className="text-[12px] text-slate-500 font-bold">{t.plans.currency}</span>
                   </div>
                 </div>
-              ) : null}
-
-              <div className="space-y-3 flex-grow mb-5">
-                <div className="relative">
-                  <button 
+                <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.frequency}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 text-[13px]">{getFreqLabel(plan.billingFrequency, lang)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-4">
+                  <div className="relative">
+                    {(() => {
+                      const featureCount = (plan.features?.length || 0) + (plan.planType === 'CUSTOMER' && plan.productSearchesConfig ? 1 : 0);
+                      return (
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveFeatureId(activeFeatureId === plan.id ? null : plan.id);
                         setActiveOfferId(null);
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${
-                        activeFeatureId === plan.id 
-                        ? 'bg-primary text-white border-primary' 
-                        : 'bg-white dark:bg-slate-800 text-slate-600 border-primary/20 hover:border-primary'
-                      }`}
-                  >
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-base">verified</span>
-                        <span>{plan.features?.length || 0} {lang === 'ar' ? 'مميزات' : 'Features'}</span>
-                      </div>
-                      <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeFeatureId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
-                  </button>
-
-                  {activeFeatureId === plan.id && (
-                    <div 
-                      onClick={(e) => e.stopPropagation()}
-                      className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${activeFeatureId === plan.id ? 'bg-primary text-white border-primary' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-primary/10 hover:border-primary'}`}
                     >
-                      <div className="space-y-3 max-h-[200px] overflow-y-auto no-scrollbar">
-                        <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5 ">
-                          {lang === 'ar' ? 'المميزات' : 'Included'}
-                        </p>
-                        
-                      
-
-                        {plan.features && plan.features.length > 0 ? (
-                          plan.features.map((feat, fidx) => {
-                            const label = typeof feat === 'string' ? feat : getPlanFeatureLabel(String((feat as PlanFeature).feature), lang === 'ar' ? 'ar' : 'en');
-                            const price = typeof feat === 'object' && feat && 'price' in feat ? (feat as PlanFeature).price : null;
-                            return (
-                              <div key={fidx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
-                                <span className="material-symbols-outlined text-[16px] text-emerald-500 mt-0.5">check_circle</span>
-                                <span className="text-[11px] font-bold leading-tight">{label}{price != null ? ` (+${price} ${t.plans.currency})` : ''}</span>
-                              </div>
-                            );
-                          })
-                        ) : null}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{featureCount} {lang === 'ar' ? 'مزايا' : 'Feats'}</span>
                       </div>
-                      <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-primary/10 rotate-45 ${lang === 'ar' ? 'right-10' : 'left-10'}`}></div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <button 
+                      <span className={`material-symbols-outlined text-base shrink-0 transition-transform duration-300 ${activeFeatureId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
+                    </button>
+                    ); })()}
+                    {activeFeatureId === plan.id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`absolute bottom-full mb-3 z-[80] w-[min(18rem,calc(100vw-2rem))] sm:w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                      >
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5">{lang === 'ar' ? 'مميزات الباقة' : 'Features'}</p>
+                          <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
+                            {plan.features && plan.features.length > 0 ? (
+                              plan.features.map((feat, fidx) => {
+                                const label = typeof feat === 'string' ? feat : getPlanFeatureLabel(String((feat as PlanFeature).feature), lang === 'ar' ? 'ar' : 'en');
+                                const price = typeof feat === 'object' && feat && 'price' in feat ? (feat as PlanFeature).price : null;
+                                return (
+                                  <div key={fidx} className="flex items-start justify-between gap-3 text-slate-700 dark:text-slate-300">
+                                    <div className="flex items-start gap-3">
+                                      <span className="material-symbols-outlined text-[18px] text-emerald-500 fill-1">check_circle</span>
+                                      <span className="text-[11px] font-bold leading-tight">{label}{price != null ? ` (+${price} ${t.plans.currency})` : ''}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : null}
+                            {plan.planType === 'CUSTOMER' && plan.productSearchesConfig && (
+                              <div className="pt-2 mt-2 border-t border-primary/10">
+                                {plan.productSearchesConfig.unlimited ? (
+                                  <p className="text-[11px] font-bold text-primary">{lang === 'ar' ? 'غير محدود' : 'Unlimited'}</p>
+                                ) : (
+                                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap overflow-x-auto no-scrollbar">
+                                    {lang === 'ar'
+                                      ? `من ${plan.productSearchesConfig.from ?? 0} إلى ${plan.productSearchesConfig.to ?? '—'} عملية بحث${plan.productSearchesConfig.pricePerSearch != null ? ` : ${plan.productSearchesConfig.pricePerSearch} ${t.plans.currency} للعمليه` : ''}`
+                                      : `${plan.productSearchesConfig.from ?? 0} to ${plan.productSearchesConfig.to ?? '—'} searches${plan.productSearchesConfig.pricePerSearch != null ? ` : ${plan.productSearchesConfig.pricePerSearch} ${t.plans.currency} per search` : ''}`}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {(!plan.features || plan.features.length === 0) && !(plan.planType === 'CUSTOMER' && plan.productSearchesConfig) && (
+                              <p className="text-[10px] text-slate-400 italic">No features</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveOfferId(activeOfferId === plan.id ? null : plan.id);
                         setActiveFeatureId(null);
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${
-                        activeOfferId === plan.id 
-                        ? 'bg-amber-500 text-white border-amber-500' 
-                        : 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 border-amber-500/20 hover:border-amber-500'
-                      }`}
-                  >
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${activeOfferId === plan.id ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 border-amber-500/20 hover:border-amber-500'}`}
+                    >
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-base">loyalty</span>
-                        <span>{validOffers.length} {lang === 'ar' ? 'خصومات متاحة' : 'Discounts'}</span>
+                        <span>{validOffers.length} {lang === 'ar' ? 'خصم' : 'Offers'}</span>
                       </div>
                       <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeOfferId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
-                  </button>
-
-                  {activeOfferId === plan.id && (
-                    <div 
-                      onClick={(e) => e.stopPropagation()}
-                      className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-amber-500/20 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
-                    >
-                      <div className="space-y-3 max-h-[200px] overflow-y-auto no-scrollbar">
-                        <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/10 ">
-                          {lang === 'ar' ? 'العروض والخصومات' : 'Exclusive Offers'}
-                        </p>
-                        {validOffers.length > 0 ? (
-                          validOffers.map((offer, oidx) => (
-                            <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black text-orange-600 ">
-                                  {lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Min Seats:'} {offer.minUserCount}
-                                </span>
-                                <span className="text-xs font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
-                              </div>
-                              <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-[10px] text-slate-400 italic">No current volume discounts.</p>
-                        )}
+                    </button>
+                    {activeOfferId === plan.id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`absolute bottom-full mb-3 z-[80] w-[min(18rem,calc(100vw-2rem))] sm:w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                      >
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/5">{lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}</p>
+                          <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
+                            {validOffers.length > 0 ? (
+                              validOffers.map((offer, oidx) => (
+                                <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[9px] font-black text-orange-600">{lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Seats:'} {offer.minUserCount}+</span>
+                                    <span className="text-[10px] font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
+                                  </div>
+                                  <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[10px] text-slate-400 italic">No valid offers</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
                       </div>
-                      <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/20 rotate-45 ${lang === 'ar' ? 'right-10' : 'left-10'}`}></div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <span className="material-symbols-outlined text-primary text-[18px]">schedule</span>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1 leading-tight">{t.planSelection.receiptUploadReminder}</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button 
+              <div className="pt-2 mt-auto flex flex-col gap-3">
+                <button
                   onClick={() => openCheckout(plan)}
-                  className="w-full py-3 bg-primary dark:bg-primary text-white rounded-xl font-black text-[12px] shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group/btn hover:bg-slate-900 "
+                  className="w-full py-3 bg-primary text-white rounded-xl font-black text-[12px] shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group/btn hover:bg-primary/90"
                 >
                   {lang === 'ar' ? 'اختيار الخطة' : 'Select'}
                   <span className="material-symbols-outlined text-base transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1">arrow_forward</span>
@@ -696,8 +843,8 @@ const PlanSelection: React.FC = () => {
       </div>
 
       {isModalOpen && selectedPlan && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 pb-24 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-white/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-white/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 flex flex-col max-h-[90vh]">
             
             <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-3">
@@ -777,7 +924,7 @@ const PlanSelection: React.FC = () => {
                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-white font-black outline-none text-sm"
                           />
                           {!productSearchesConfig?.unlimited && productSearchesConfig?.pricePerSearch != null && (
-                            <p className="text-[11px] font-bold text-slate-500">{lang === 'ar' ? 'السعر لكل بحث:' : 'Price per search:'} {productSearchesConfig.pricePerSearch} {t.plans.currency}</p>
+                            <p className="text-[11px] font-bold text-slate-500">{lang === 'ar' ? `${productSearchesConfig.pricePerSearch} ${t.plans.currency} / عملية` : `${productSearchesConfig.pricePerSearch} ${t.plans.currency} / search`}</p>
                           )}
                         </div>
                       )}

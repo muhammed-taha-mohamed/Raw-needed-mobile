@@ -114,18 +114,20 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
       // Interceptor: Handle errors when status is not 200
       if (!response.ok || data.error) {
         const errorMsg = data.error?.errorMessage || `Server error (${response.status}): ${response.statusText}`;
-        
-        // Check cooldown before showing error toast
+        const errorCode = data.error?.errorCode;
+
+        // Check cooldown before showing error toast (skip for 518 - no searches - so UI can show buy-searches CTA)
         const lastErrorTime = recentErrors.get(requestKey) || 0;
         const now = Date.now();
-        const shouldShowToast = (now - lastErrorTime) > ERROR_COOLDOWN;
-        
+        const shouldShowToast = (now - lastErrorTime) > ERROR_COOLDOWN && errorCode !== '518';
         if (shouldShowToast && toastService && errorMsg) {
           recentErrors.set(requestKey, now);
           toastService(errorMsg, 'error');
         }
-        
-        throw new Error(errorMsg);
+
+        const err = new Error(errorMsg) as Error & { errorCode?: string };
+        if (errorCode) err.errorCode = errorCode;
+        throw err;
       }
 
       // Clear error tracking on success

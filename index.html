@@ -5,8 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
     <title>Raw needed portal</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="/logo.png">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Cairo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -21,8 +23,8 @@
                         "background-dark": "#13181f",
                     },
                     fontFamily: {
-                        "sans": ["Inter", "Tajawal", "system-ui", "sans-serif"],
-                        "display": ["Inter", "Tajawal", "sans-serif"]
+                        "sans": ["Inter", "Cairo", "system-ui", "sans-serif"],
+                        "display": ["Inter", "Cairo", "sans-serif"]
                     },
                     borderRadius: {
                         "DEFAULT": "0.375rem",
@@ -44,10 +46,25 @@
                 font-size: 16px;
             }
         }
+        
+        /* Zoom for desktop/laptop screens */
+        @media screen and (min-width: 1024px) {
+            html {
+                zoom: 0.9;
+            }
+            @supports not (zoom: 0.9) {
+                body {
+                    transform: scale(0.9);
+                    transform-origin: top left;
+                    width: 111.11%; /* 100% / 0.9 */
+                    height: 111.11%;
+                }
+            }
+        }
 
         /* Global font normalization */
         body, input, button, textarea, select { 
-            font-family: 'Inter', 'Tajawal', sans-serif; 
+            font-family: 'Inter', 'Cairo', sans-serif; 
         }
         
         /* Fix for iOS/Android input zoom on focus */
@@ -60,7 +77,7 @@
         }
 
         [dir="rtl"] body, [dir="rtl"] input, [dir="rtl"] button, [dir="rtl"] textarea, [dir="rtl"] select { 
-            font-family: 'Tajawal', 'Inter', sans-serif; 
+            font-family: 'Cairo', 'Inter', sans-serif; 
         }
 
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
@@ -87,6 +104,10 @@
                 padding-top: env(safe-area-inset-top, 0px) !important;
             }
         }
+
+        /* Auth pages: body same as auth panel so no white strip at bottom */
+        body.auth-page { background: #20a7b2 !important; }
+        .dark body.auth-page { background: #0f172a !important; }
     </style>
 <script type="importmap">
 {

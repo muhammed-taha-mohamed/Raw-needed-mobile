@@ -123,24 +123,17 @@ const PaymentInfo: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-primary dark:text-white">
-            {lang === 'ar' ? 'معلومات الدفع' : 'Payment Information'}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-500 font-medium text-sm mt-1">
-            {lang === 'ar' ? 'إدارة حسابات التحويل والمحافظ المعروضة للمستخدمين.' : 'Manage transfer accounts and wallets shown to users.'}
-          </p>
+    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 pb-24 md:pb-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+      {/* Desktop: Add button at top when there are items */}
+      {!isLoading && list.length > 0 && (
+        <div className="hidden md:flex justify-start">
+          <button onClick={openCreate} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold text-sm transition-all active:scale-95">
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            {lang === 'ar' ? 'إضافة معلومات دفع' : 'Add Payment Info'}
+          </button>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          {lang === 'ar' ? 'إضافة معلومات دفع' : 'Add Payment Info'}
-        </button>
-      </div>
+      )}
 
       {error && !isModalOpen && (
         <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl flex items-center gap-3">
@@ -150,12 +143,12 @@ const PaymentInfo: React.FC = () => {
       )}
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800">
           <div className="h-10 w-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
           <p className="text-slate-500 font-bold text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
         </div>
       ) : list.length === 0 ? (
-        <div className="p-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
+        <div className="p-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
           <span className="material-symbols-outlined text-slate-300 dark:text-slate-600 text-5xl mb-4">account_balance_wallet</span>
           <h3 className="text-lg font-black text-slate-700 dark:text-slate-200 mb-2">{lang === 'ar' ? 'لا توجد معلومات دفع' : 'No payment info yet'}</h3>
           <p className="text-slate-500 text-sm mb-6">{lang === 'ar' ? 'أضف حساب تحويل أو محفظة لعرضها للمستخدمين.' : 'Add a transfer account or wallet to show to users.'}</p>
@@ -206,8 +199,8 @@ const PaymentInfo: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
                 {editingId ? (lang === 'ar' ? 'تعديل معلومات الدفع' : 'Edit Payment Info') : (lang === 'ar' ? 'إضافة معلومات دفع' : 'Add Payment Info')}
@@ -315,8 +308,8 @@ const PaymentInfo: React.FC = () => {
 
       {/* Delete confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-8">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8">
             <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6">
               <span className="material-symbols-outlined text-3xl">warning</span>
             </div>
@@ -333,6 +326,19 @@ const PaymentInfo: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile: FAB above bottom nav (same as Products/Categories) */}
+      <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+        <div className={`max-w-[1200px] mx-auto flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+          <button
+            onClick={openCreate}
+            className="size-12 rounded-full bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-all border-2 border-white/20"
+            aria-label={lang === 'ar' ? 'إضافة معلومات دفع' : 'Add Payment Info'}
+          >
+            <span className="material-symbols-outlined text-2xl">add</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

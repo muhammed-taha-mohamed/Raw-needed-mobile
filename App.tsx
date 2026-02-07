@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/super_admin/Dashboard';
 import Plans from './pages/super_admin/Plans';
 import Approvals from './pages/super_admin/Approvals';
 import Categories from './pages/super_admin/Categories';
-import Analytics from './pages/super_admin/Analytics';
 import Users from './pages/super_admin/Users';
 import AdPackages from './pages/super_admin/AdPackages';
 import PaymentInfo from './pages/super_admin/PaymentInfo';
@@ -121,6 +120,17 @@ const AppContent: React.FC = () => {
     localStorage.setItem('lang', lang);
   }, [lang]);
 
+  const location = useLocation();
+  const isAuthRoute = ['/', '/login', '/register', '/forgot-password'].includes(location.pathname);
+  useEffect(() => {
+    if (isAuthRoute && !user) {
+      document.body.classList.add('auth-page');
+    } else {
+      document.body.classList.remove('auth-page');
+    }
+    return () => document.body.classList.remove('auth-page');
+  }, [isAuthRoute, user]);
+
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   const handleLogin = (userData: UserData) => {
@@ -151,8 +161,11 @@ const AppContent: React.FC = () => {
   const PortalContent = () => {
     if (!user) return <Navigate to="/" replace />;
     const role = (user.role || '').toUpperCase();
-    const hasSubscription = !!user.userInfo?.subscription;
-    
+    const sub = user.userInfo?.subscription;
+    // Active = has subscription, (approved if status present), and not expired (no expiry or expiryDate > now)
+    const hasActiveSubscription = sub && (sub.status == null || sub.status === 'APPROVED') && (!sub.expiryDate || new Date(sub.expiryDate) > new Date());
+    const mustRestrictToSubscription = (role === 'CUSTOMER_OWNER' || role === 'SUPPLIER_OWNER') && !hasActiveSubscription;
+
     if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
       return (
         <Routes>
@@ -165,7 +178,6 @@ const AppContent: React.FC = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/users" element={<Users />} />
             <Route path="/ad-packages" element={<AdPackages />} />
-            <Route path="/analytics" element={<Analytics />} />
             <Route path="/market-requests" element={<MarketRequests />} />
             <Route path="/support" element={<Complaints />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -174,7 +186,8 @@ const AppContent: React.FC = () => {
       );
     }
 
-    if (!hasSubscription && (role === 'CUSTOMER_OWNER' || role === 'SUPPLIER_OWNER')) {
+    // No subscription, pending, or expired: only subscription / profile / support
+    if (mustRestrictToSubscription) {
       return (
         <Routes>
           <Route element={<Layout onLogout={handleLogout} />}>

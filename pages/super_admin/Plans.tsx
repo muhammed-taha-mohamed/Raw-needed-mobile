@@ -12,6 +12,7 @@ interface ApprovedSubscription {
   planId: string;
   planName: string | null;
   userName?: string;
+  userOrganizationName?: string;
   numberOfUsers: number;
   usedUsers?: number;
   remainingUsers?: number;
@@ -33,15 +34,14 @@ interface PaginatedResponse<T> {
 
 const Plans: React.FC = () => {
   const { lang, t } = useLanguage();
-  const [viewType, setViewType] = useState<'grid' | 'table'>('grid');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [isStatusChanging, setIsStatusChanging] = useState<string | null>(null);
-  
+
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -50,7 +50,9 @@ const Plans: React.FC = () => {
   const [loadingApproved, setLoadingApproved] = useState(false);
   const [approvedPage, setApprovedPage] = useState(0);
   const [approvedTotalPages, setApprovedTotalPages] = useState(0);
-  const approvedPageSize = 15;
+  const [approvedTotalElements, setApprovedTotalElements] = useState(0);
+  const approvedPageSize = 10;
+  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
 
   // Tooltip states for features and offers
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null);
@@ -58,7 +60,7 @@ const Plans: React.FC = () => {
 
   useEffect(() => {
     fetchPlans();
-    
+
     const handleClickOutside = () => {
       setActiveFeatureId(null);
       setActiveOfferId(null);
@@ -80,7 +82,8 @@ const Plans: React.FC = () => {
         `/api/v1/admin/user-subscriptions/approved?page=${page}&size=${approvedPageSize}`
       );
       setApprovedSubscriptions(response.content || []);
-      setApprovedTotalPages(response.totalPages || 0);
+      setApprovedTotalPages(response.totalPages ?? 0);
+      setApprovedTotalElements(response.totalElements ?? 0);
     } catch (err: any) {
       setApprovedSubscriptions([]);
     } finally {
@@ -148,11 +151,11 @@ const Plans: React.FC = () => {
   const togglePlanStatus = async (plan: Plan) => {
     const isCurrentlyActive = plan.active;
     const action = isCurrentlyActive ? 'deactivate' : 'activate';
-    
+
     setIsStatusChanging(plan.id);
     try {
       await api.put(`/api/v1/plans/${plan.id}/${action}`, {});
-      setPlans(prev => prev.map(p => 
+      setPlans(prev => prev.map(p =>
         p.id === plan.id ? { ...p, active: !isCurrentlyActive } : p
       ));
     } catch (err: any) {
@@ -206,415 +209,249 @@ const Plans: React.FC = () => {
           onClick={() => setActiveTab('subscriptions')}
           className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'subscriptions' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
         >
-          {lang === 'ar' ? 'الاشتراكات النشطة' : 'Active'}
+          <span className="hidden md:inline">{lang === 'ar' ? 'الاشتراكات النشطة' : 'Active'}</span>
+          <span className="md:hidden">{lang === 'ar' ? 'الاشتراكات' : 'Active'}</span>
+        </button>
+        <button
+          onClick={openAddModal}
+          className={`flex items-center justify-center py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'add' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          title={t.plans.addNew}
+        >
+          <span className="material-symbols-outlined text-[20px]">add</span>
         </button>
       </div>
 
       {/* Tab: Plans */}
       {activeTab === 'plans' && (
         <>
-          <div className="flex items-center justify-end gap-4">
-            <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-                <span className="material-symbols-outlined text-[22px]">grid_view</span>
-              </button>
-              <button onClick={() => setViewType('table')} className={`p-2 rounded-lg transition-all ${viewType === 'table' ? 'bg-primary/10 text-primary dark:bg-primary/30 dark:text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-                <span className="material-symbols-outlined text-[22px]">view_list</span>
-              </button>
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+              <div className="h-10 w-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 font-bold text-[11px]">Syncing Pricing Data...</p>
             </div>
-            <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/20 font-bold transition-all active:scale-95 whitespace-nowrap text-sm  ">
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              <span>{t.plans.addNew}</span>
-            </button>
-          </div>
-
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
-          <div className="h-10 w-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-          <p className="text-slate-500 font-bold text-[11px]">Syncing Pricing Data...</p>
-        </div>
-      ) : error ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-lg">
-          <span className="material-symbols-outlined text-red-400 text-5xl mb-4">cloud_off</span>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Failed to load plans</h3>
-          <p className="text-slate-500 text-base mb-6">{error}</p>
-          <button onClick={fetchPlans} className="px-10 py-3 bg-primary text-white rounded-xl font-bold text-base shadow-md active:scale-95">Retry</button>
-        </div>
-      ) : (
-        <>
-
-          {viewType === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-              {plans.map((plan, idx) => {
-                const typeConfig = getPlanTypeConfig(plan.planType);
-                const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
-                return (
-                  <div 
-                    key={plan.id}
-                    className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group overflow-hidden flex flex-col animate-in zoom-in-95 duration-700 ${plan.active ? '' : 'opacity-85 grayscale-[0.15]'}`}
-                    style={{ animationDelay: `${idx * 40}ms` }}
-                  >
-                    <div className={`absolute top-0 ${lang === 'ar' ? 'right-0' : 'left-0'} w-1.5 h-full ${plan.active ? 'bg-primary' : 'bg-slate-300'} transition-all duration-300`}></div>
-
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex gap-4 items-center min-w-0">
-                        <div className={`size-12 rounded-xl flex items-center justify-center border shrink-0 shadow-sm transition-all duration-300 ${plan.active ? 'bg-primary/5 text-primary border-primary/10' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                          <span className="material-symbols-outlined text-[26px]">
-                            {plan.billingFrequency === 'YEARLY' ? 'calendar_month' : plan.billingFrequency === 'QUARTERLY' ? 'grid_view' : 'schedule'}
-                          </span>
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate  ">{plan.name}</h3>
-                          <div className="flex items-center gap-1.5 mt-1">
-                             <span className={`size-2 rounded-full ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                             <span className="text-[12px] font-bold text-slate-500  ">
-                               {plan.active ? t.plans.statusActive : t.plans.statusArchived}
-                             </span>
-                             {plan.hasAdvertisements && (
-                               <span className="flex items-center gap-1 ml-2 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-black border border-emerald-100 dark:border-emerald-900/30">
-                                 <span className="material-symbols-outlined text-[12px]">ads_click</span>
-                                 {lang === 'ar' ? 'إعلانات' : 'ADS'}
-                               </span>
-                             )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        {plan.exclusive && (
-                          <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg  shadow-sm  ">
-                            {lang === 'ar' ? 'حصري' : 'Exclusive'}
-                          </span>
-                        )}
-                        {plan.isPopular && (
-                          <span className="bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full  whitespace-nowrap border border-primary/20">
-                            {t.plans.popular}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mb-6 flex-grow">
-                      <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.pricePerUser}</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{plan.pricePerUser}</span>
-                          <span className="text-[12px] text-slate-500 font-bold ">{t.plans.currency}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.frequency}</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200 text-[13px]">{getFreqLabel(plan.billingFrequency)}</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 pt-4">
-                        <div className="relative">                      
-                          <button 
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               setActiveFeatureId(activeFeatureId === plan.id ? null : plan.id);
-                               setActiveOfferId(null);
-                             }}
-                             className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${
-                               activeFeatureId === plan.id 
-                               ? 'bg-primary text-white border-primary' 
-                               : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-primary/10 hover:border-primary'
-                             }`}
-                          >
-                             <div className="flex items-center gap-2">
-                                <span>{plan.features?.length || 0} {lang === 'ar' ? 'مزايا' : 'Feats'}</span>
-                             </div>
-                             <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeFeatureId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
-                          </button>
-
-                          {activeFeatureId === plan.id && (
-                            <div 
-                              onClick={(e) => e.stopPropagation()}
-                              className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
-                            >
-                              <div className="space-y-3">
-                                <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5  ">
-                                  {lang === 'ar' ? 'مميزات الباقة' : 'Features'}
-                                </p>
-                                <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
-                                  {plan.features && plan.features.length > 0 ? (
-                                    plan.features.map((feat, fidx) => {
-                                      const label = typeof feat === 'string' ? feat : getPlanFeatureLabel(String((feat as PlanFeature).feature), lang === 'ar' ? 'ar' : 'en');
-                                      const price = typeof feat === 'object' && feat && 'price' in feat ? (feat as PlanFeature).price : null;
-                                      return (
-                                        <div key={fidx} className="flex items-start justify-between gap-3 text-slate-700 dark:text-slate-300">
-                                          <div className="flex items-start gap-3">
-                                            <span className="material-symbols-outlined text-[18px] text-emerald-500 fill-1">check_circle</span>
-                                            <span className="text-[11px] font-bold leading-tight">{label}{price != null ? ` (+${price})` : ''}</span>
-                                          </div>
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <p className="text-[10px] text-slate-400 italic">No features</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="relative">                      
-                          <button 
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               setActiveOfferId(activeOfferId === plan.id ? null : plan.id);
-                               setActiveFeatureId(null);
-                             }}
-                             className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${
-                               activeOfferId === plan.id 
-                               ? 'bg-amber-500 text-white border-amber-500' 
-                               : 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 border-amber-500/20 hover:border-amber-500'
-                             }`}
-                          >
-                             <div className="flex items-center gap-2">
-                                <span>{validOffers.length} {lang === 'ar' ? 'خصم' : 'Offers'}</span>
-                             </div>
-                             <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeOfferId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
-                          </button>
-
-                          {activeOfferId === plan.id && (
-                            <div 
-                              onClick={(e) => e.stopPropagation()}
-                              className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
-                            >
-                              <div className="space-y-3">
-                                <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/5  ">
-                                  {lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}
-                                </p>
-                                <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
-                                  {validOffers.length > 0 ? (
-                                    validOffers.map((offer, oidx) => (
-                                      <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="text-[9px] font-black text-orange-600">
-                                            {lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Seats:'} {offer.minUserCount}+
-                                          </span>
-                                          <span className="text-[10px] font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
-                                        </div>
-                                        <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <p className="text-[10px] text-slate-400 italic">No valid offers</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto -mx-6 px-6 -mb-6 pb-6 bg-slate-50/30 dark:bg-slate-800/20">
-                      <div className="flex gap-3 items-center">
-                        <span className={`px-3 py-1 rounded-lg text-[10px] font-black    border shrink-0 shadow-sm transition-colors ${typeConfig.classes}`}>
-                          {typeConfig.label}
-                        </span>
-                        <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                        <button onClick={() => openEditModal(plan.id)} className="text-primary text-sm font-bold hover:text-primary/80 flex items-center gap-1 transition-all group/btn">
-                          {t.plans.edit}
-                          <span className="material-symbols-outlined text-[16px]">edit_square</span>
-                        </button>
-                        
-                        <button 
-                          onClick={() => togglePlanStatus(plan)}
-                          disabled={isStatusChanging === plan.id}
-                          className={`text-sm font-bold flex items-center gap-1 transition-all disabled:opacity-50 ${plan.active ? 'text-orange-500' : 'text-emerald-500'}`}
-                        >
-                          {isStatusChanging === plan.id ? (
-                             <div className="size-4 border-2 border-current/20 border-t-current rounded-full animate-spin"></div>
-                          ) : (
-                            <>
-                              {plan.active ? t.plans.deactivate : t.plans.activate}
-                              <span className="material-symbols-outlined text-[20px]">
-                                {plan.active ? 'pause_circle' : 'play_circle'}
-                              </span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      <button onClick={() => setDeleteConfirmId(plan.id)} className="size-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm" title="Delete">
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              <div onClick={openAddModal} className="rounded-[1.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group animate-in zoom-in-95 duration-700">
-                <div className="bg-slate-50 dark:bg-slate-800 group-hover:bg-primary text-slate-500 group-hover:text-white rounded-xl p-4 mb-3 transition-all shadow-sm duration-300">
-                  <span className="material-symbols-outlined text-3xl">add</span>
-                </div>
-                <h3 className="text-sm font-bold text-slate-500 group-hover:text-primary transition-colors ">{t.plans.addNew}</h3>
-              </div>
+          ) : error ? (
+            <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-lg">
+              <span className="material-symbols-outlined text-red-400 text-5xl mb-4">cloud_off</span>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Failed to load plans</h3>
+              <p className="text-slate-500 text-base mb-6">{error}</p>
+              <button onClick={fetchPlans} className="px-10 py-3 bg-primary text-white rounded-xl font-bold text-base shadow-md active:scale-95">Retry</button>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
-              <div className="overflow-x-auto">
-                <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-500 font-bold   whitespace-nowrap">
-                      <th className="px-8 py-5">{t.plans.name}</th>
-                      <th className="px-8 py-5">{t.plans.pricePerUser}</th>
-                      <th className="px-8 py-5">{t.plans.frequency}</th>
-                      <th className="px-8 py-5">{lang === 'ar' ? 'النوع' : 'Target'}</th>
-                      <th className="px-8 py-5">{lang === 'ar' ? 'الإعلانات' : 'Ads'}</th>
-                      <th className="px-8 py-5">{t.plans.status}</th>
-                      <th className={`px-8 py-5 ${lang === 'ar' ? 'text-left' : 'text-right'}`}></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {plans.map((plan, idx) => {
-                      const typeConfig = getPlanTypeConfig(plan.planType);
-                      const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
-                      return (
-                        <tr key={plan.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-all group animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${idx * 25}ms` }}>
-                          <td className="px-8 py-5">
-                            <div className="flex items-center gap-4">
-                              <div className={`size-11 rounded-xl flex items-center justify-center transition-all shadow-sm ${plan.active ? 'bg-primary/10 text-primary' : 'bg-slate-50 text-slate-500'}`}>
-                                 <span className="material-symbols-outlined text-[22px]">
-                                    {plan.billingFrequency === 'YEARLY' ? 'calendar_month' : plan.billingFrequency === 'QUARTERLY' ? 'grid_view' : 'schedule'}
-                                 </span>
-                              </div>
-                              <div className="flex gap-4">
-                                <div className="flex flex-col relative">
-                                  <span className="font-bold text-slate-900 dark:text-white text-base leading-tight">
-                                    {plan.name}
-                                    {plan.exclusive && <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-amber-500 text-[8px] text-white">VIP</span>}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                  {plans.map((plan, idx) => {
+                    const typeConfig = getPlanTypeConfig(plan.planType);
+                    const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group overflow-hidden flex flex-col animate-in zoom-in-95 duration-700 ${plan.active ? '' : 'opacity-85 grayscale-[0.15]'}`}
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                      >
+                        <div className={`absolute top-0 ${lang === 'ar' ? 'right-0' : 'left-0'} w-1.5 h-full ${plan.active ? 'bg-primary' : 'bg-slate-300'} transition-all duration-300`}></div>
+
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex gap-4 items-center min-w-0">
+                            <div className={`size-12 rounded-xl flex items-center justify-center border shrink-0 shadow-sm transition-all duration-300 ${plan.active ? 'bg-primary/5 text-primary border-primary/10' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                              <span className="material-symbols-outlined text-[26px]">
+                                {plan.billingFrequency === 'YEARLY' ? 'calendar_month' : plan.billingFrequency === 'QUARTERLY' ? 'grid_view' : 'schedule'}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate  ">{plan.name}</h3>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className={`size-2 rounded-full ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                                <span className="text-[12px] font-bold text-slate-500  ">
+                                  {plan.active ? t.plans.statusActive : t.plans.statusArchived}
+                                </span>
+                                {plan.hasAdvertisements && (
+                                  <span className="flex items-center gap-1 ml-2 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-black border border-emerald-100 dark:border-emerald-900/30">
+                                    <span className="material-symbols-outlined text-[12px]">ads_click</span>
+                                    {lang === 'ar' ? 'إعلانات' : 'ADS'}
                                   </span>
-                                  
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveFeatureId(activeFeatureId === plan.id ? null : plan.id);
-                                      setActiveOfferId(null);
-                                    }}
-                                    className="text-[11px] font-black text-primary hover:underline mt-1 flex items-center gap-1"
-                                  >
-                                    {plan.features?.length || 0} {lang === 'ar' ? 'مميزات' : 'features'}
-                                  </button>
-    
-                                  {activeFeatureId === plan.id && (
-                                    <div 
-                                      onClick={(e) => e.stopPropagation()}
-                                      className={`absolute top-full left-0 mt-2 z-[60] w-64 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200`}
-                                    >
-                                      <div className="space-y-2">
-                                        {plan.features?.map((feat, fidx) => {
-                                            const label = typeof feat === 'string' ? feat : getPlanFeatureLabel(String((feat as PlanFeature).feature), lang === 'ar' ? 'ar' : 'en');
-                                            const price = typeof feat === 'object' && feat && 'price' in feat ? (feat as PlanFeature).price : null;
-                                            return (
-                                              <div key={fidx} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                                <span className="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
-                                                <span className="text-xs font-bold">{label}{price != null ? ` (+${price})` : ''}</span>
-                                              </div>
-                                            );
-                                          })}
-                                      </div>
-                                      <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-primary/10 rotate-45 left-6`}></div>
-                                    </div>
-                                  )}
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            {plan.exclusive && (
+                              <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg  shadow-sm  ">
+                                {lang === 'ar' ? 'حصري' : 'Exclusive'}
+                              </span>
+                            )}
+                            {plan.isPopular && (
+                              <span className="bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 rounded-full  whitespace-nowrap border border-primary/20">
+                                {t.plans.popular}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-6 flex-grow">
+                          <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.pricePerUser}</span>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{plan.pricePerUser}</span>
+                              <span className="text-[12px] text-slate-500 font-bold ">{t.plans.currency}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.frequency}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 text-[13px]">{getFreqLabel(plan.billingFrequency)}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 pt-4">
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveFeatureId(activeFeatureId === plan.id ? null : plan.id);
+                                  setActiveOfferId(null);
+                                }}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${activeFeatureId === plan.id
+                                    ? 'bg-primary text-white border-primary'
+                                    : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-primary/10 hover:border-primary'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>{plan.features?.length || 0} {lang === 'ar' ? 'مزايا' : 'Feats'}</span>
                                 </div>
+                                <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeFeatureId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
+                              </button>
 
-                                <div className="flex flex-col relative">
-                                  <span className="text-transparent pointer-events-none text-base leading-tight">.</span>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveOfferId(activeOfferId === plan.id ? null : plan.id);
-                                      setActiveFeatureId(null);
-                                    }}
-                                    className="text-[11px] font-black text-amber-600 hover:underline mt-1 flex items-center gap-1"
-                                  >
-                                    {validOffers.length} {lang === 'ar' ? 'عروض' : 'offers'}
-                                  </button>
-
-                                  {activeOfferId === plan.id && (
-                                    <div 
-                                      onClick={(e) => e.stopPropagation()}
-                                      className={`absolute top-full left-0 mt-2 z-[60] w-64 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-amber-500/20 animate-in fade-in zoom-in-95 duration-200`}
-                                    >
-                                      <div className="space-y-2">
-                                        {validOffers.length > 0 ? (
-                                          validOffers.map((offer, oidx) => (
-                                            <div key={oidx} className="flex items-start gap-2 text-slate-600 dark:text-slate-300 border-b border-slate-50 dark:border-slate-800 pb-2 last:border-0">
-                                              <span className="material-symbols-outlined text-[16px] text-orange-500">loyalty</span>
-                                              <div className="flex flex-col">
-                                                <span className="text-xs font-black text-emerald-600">%{offer.discountPercentage} Discount</span>
-                                                <span className="text-[10px] font-bold opacity-60">
-                                                  {lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Min Seats:'} {offer.minUserCount}
-                                                </span>
+                              {activeFeatureId === plan.id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                                >
+                                  <div className="space-y-3">
+                                    <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5  ">
+                                      {lang === 'ar' ? 'مميزات الباقة' : 'Features'}
+                                    </p>
+                                    <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
+                                      {plan.features && plan.features.length > 0 ? (
+                                        plan.features.map((feat, fidx) => {
+                                          const label = typeof feat === 'string' ? feat : getPlanFeatureLabel(String((feat as PlanFeature).feature), lang === 'ar' ? 'ar' : 'en');
+                                          const price = typeof feat === 'object' && feat && 'price' in feat ? (feat as PlanFeature).price : null;
+                                          return (
+                                            <div key={fidx} className="flex items-start justify-between gap-3 text-slate-700 dark:text-slate-300">
+                                              <div className="flex items-start gap-3">
+                                                <span className="material-symbols-outlined text-[18px] text-emerald-500 fill-1">check_circle</span>
+                                                <span className="text-[11px] font-bold leading-tight">{label}{price != null ? ` (+${price})` : ''}</span>
                                               </div>
                                             </div>
-                                          ))
-                                        ) : (
-                                          <p className="text-xs text-slate-400 italic">No valid offers</p>
-                                        )}
-                                      </div>
-                                      <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-l border-t border-amber-500/20 rotate-45 left-6`}></div>
+                                          );
+                                        })
+                                      ) : (
+                                        <p className="text-[10px] text-slate-400 italic">No features</p>
+                                      )}
                                     </div>
-                                  )}
+                                  </div>
+                                  <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-primary/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
                                 </div>
-                              </div>
+                              )}
                             </div>
-                          </td>
-                          <td className="px-8 py-5">
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-lg font-black text-slate-900 dark:text-white tabular-nums">{plan.pricePerUser}</span>
-                              <span className="text-[12px] text-slate-500 font-bold  ">{t.plans.currency}</span>
+
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveOfferId(activeOfferId === plan.id ? null : plan.id);
+                                  setActiveFeatureId(null);
+                                }}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${activeOfferId === plan.id
+                                    ? 'bg-amber-500 text-white border-amber-500'
+                                    : 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 border-amber-500/20 hover:border-amber-500'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>{validOffers.length} {lang === 'ar' ? 'خصم' : 'Offers'}</span>
+                                </div>
+                                <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeOfferId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
+                              </button>
+
+                              {activeOfferId === plan.id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                                >
+                                  <div className="space-y-3">
+                                    <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/5  ">
+                                      {lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}
+                                    </p>
+                                    <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
+                                      {validOffers.length > 0 ? (
+                                        validOffers.map((offer, oidx) => (
+                                          <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-[9px] font-black text-orange-600">
+                                                {lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Seats:'} {offer.minUserCount}+
+                                              </span>
+                                              <span className="text-[10px] font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-[10px] text-slate-400 italic">No valid offers</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
+                                </div>
+                              )}
                             </div>
-                          </td>
-                          <td className="px-8 py-5">
-                             <span className="text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
-                               {getFreqLabel(plan.billingFrequency)}
-                             </span>
-                          </td>
-                          <td className="px-8 py-5">
-                            <span className={`px-3 py-1 rounded-lg text-[11px] font-black    border transition-colors ${typeConfig.classes}`}>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto -mx-6 px-6 -mb-6 pb-6 bg-slate-50/30 dark:bg-slate-800/20">
+                          <div className="flex gap-3 items-center">
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black    border shrink-0 shadow-sm transition-colors ${typeConfig.classes}`}>
                               {typeConfig.label}
                             </span>
-                          </td>
-                          <td className="px-8 py-5">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border ${plan.hasAdvertisements ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-                               <span className="material-symbols-outlined text-[14px]">{plan.hasAdvertisements ? 'ads_click' : 'block'}</span>
-                               {plan.hasAdvertisements ? (lang === 'ar' ? 'نعم' : 'Yes') : (lang === 'ar' ? 'لا' : 'No')}
-                            </span>
-                          </td>
-                          <td className="px-8 py-5">
-                             <span className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold border ${plan.active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                <span className={`size-2 rounded-full ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                                {plan.active ? t.plans.statusActive : t.plans.statusArchived}
-                             </span>
-                          </td>
-                          <td className="px-8 py-5">
-                            <div className={`flex items-center ${lang === 'ar' ? 'justify-start' : 'justify-end'} gap-5`}>
-                              <button onClick={() => togglePlanStatus(plan)} disabled={isStatusChanging === plan.id} className={`text-sm font-bold hover:underline disabled:opacity-50 ${plan.active ? 'text-orange-500' : 'text-emerald-500'}`}>
-                                {isStatusChanging === plan.id ? '...' : (plan.active ? t.plans.deactivate : t.plans.activate)}
-                              </button>
-                              <button onClick={() => openEditModal(plan.id)} className="text-primary hover:underline text-sm font-bold">{t.plans.edit}</button>
-                              <button onClick={() => setDeleteConfirmId(plan.id)} className="text-slate-300 hover:text-red-500 transition-all active:scale-90 flex items-center justify-center p-2 rounded-xl hover:bg-red-50">
-                                 <span className="material-symbols-outlined text-[24px]">delete</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                            <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                            <button onClick={() => openEditModal(plan.id)} className="text-primary text-sm font-bold hover:text-primary/80 flex items-center gap-1 transition-all group/btn">
+                              {t.plans.edit}
+                              <span className="material-symbols-outlined text-[16px]">edit_square</span>
+                            </button>
+
+                            <button
+                              onClick={() => togglePlanStatus(plan)}
+                              disabled={isStatusChanging === plan.id}
+                              className={`text-sm font-bold flex items-center gap-1 transition-all disabled:opacity-50 ${plan.active ? 'text-orange-500' : 'text-emerald-500'}`}
+                            >
+                              {isStatusChanging === plan.id ? (
+                                <div className="size-4 border-2 border-current/20 border-t-current rounded-full animate-spin"></div>
+                              ) : (
+                                <>
+                                  {plan.active ? t.plans.deactivate : t.plans.activate}
+                                  <span className="material-symbols-outlined text-[20px]">
+                                    {plan.active ? 'pause_circle' : 'play_circle'}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <button onClick={() => setDeleteConfirmId(plan.id)} className="size-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm" title="Delete">
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div onClick={openAddModal} className="rounded-[1.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group animate-in zoom-in-95 duration-700">
+                    <div className="bg-slate-50 dark:bg-slate-800 group-hover:bg-primary text-slate-500 group-hover:text-white rounded-xl p-4 mb-3 transition-all shadow-sm duration-300">
+                      <span className="material-symbols-outlined text-3xl">add</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-500 group-hover:text-primary transition-colors ">{t.plans.addNew}</h3>
+                  </div>
+                </div>
+            </>
           )}
-        </>
-        )
+
         </>
       )}
 
@@ -625,59 +462,277 @@ const Plans: React.FC = () => {
 
       {/* Tab: Active subscriptions (approved, non-pending) */}
       {activeTab === 'subscriptions' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-          <h2 className="text-base font-black text-slate-800 dark:text-white mb-4">
-            {lang === 'ar' ? 'الاشتراكات النشطة (المعتمدة)' : 'Active subscriptions (approved)'}
-          </h2>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-in fade-in duration-500">
           {loadingApproved && approvedSubscriptions.length === 0 ? (
-            <div className="flex justify-center py-12">
-              <div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40">
+              <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
             </div>
           ) : approvedSubscriptions.length === 0 ? (
-            <p className="text-slate-500 dark:text-slate-400 text-sm py-6">
-              {lang === 'ar' ? 'لا توجد اشتراكات معتمدة.' : 'No approved subscriptions.'}
-            </p>
+            <div className="flex flex-col items-center justify-center py-24">
+              <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
+                <span className="material-symbols-outlined text-5xl">subscriptions</span>
+              </div>
+              <h3 className="text-xl font-black text-slate-700 dark:text-white mb-2">{lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                {lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'}
+              </p>
+            </div>
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-700">
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الخطة' : 'Plan'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المقاعد' : 'Seats'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'المستخدم / المتبقي' : 'Used / Left'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'تاريخ البدء' : 'Start'}</th>
-                      <th className="text-left p-3 font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</th>
+                <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-800/50 border-b-2 border-primary/20">
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">person</span>
+                          <span className="hidden md:inline">{lang === 'ar' ? 'المستخدم' : 'User'}</span>
+                        </div>
+                      </th>
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">loyalty</span>
+                          <span className="hidden md:inline">{lang === 'ar' ? 'الخطة' : 'Plan'}</span>
+                        </div>
+                      </th>
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">groups</span>
+                          {lang === 'ar' ? 'المقاعد' : 'Seats'}
+                        </div>
+                      </th>
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">payments</span>
+                          {lang === 'ar' ? 'الإجمالي' : 'Total'}
+                        </div>
+                      </th>
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">play_circle</span>
+                          {lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}
+                        </div>
+                      </th>
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base">event</span>
+                          {lang === 'ar' ? 'صلاحية حتى' : 'Expires'}
+                        </div>
+                      </th>
+                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        {lang === 'ar' ? 'المزيد' : 'More'}
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {approvedSubscriptions.map((sub) => (
-                      <tr key={sub.id} className="border-b border-slate-100 dark:border-slate-800">
-                        <td className="p-3 font-bold text-slate-800 dark:text-white">{sub.userName || sub.userId?.slice(-8) || '—'}</td>
-                        <td className="p-3 text-slate-600 dark:text-slate-400">{sub.planName || '—'}</td>
-                        <td className="p-3 font-bold text-slate-800 dark:text-white">{sub.numberOfUsers ?? '—'}</td>
-                        <td className="p-3 text-slate-600 dark:text-slate-400">
-                          {(sub.usedUsers ?? 0)} / {(sub.remainingUsers ?? sub.numberOfUsers ?? 0)}
-                        </td>
-                        <td className="p-3 font-bold text-primary">{sub.finalPrice != null ? `${Number(sub.finalPrice).toLocaleString()} ${t.plans.currency}` : '—'}</td>
-                        <td className="p-3 text-slate-600 dark:text-slate-400">{formatDate(sub.subscriptionDate || sub.submissionDate)}</td>
-                        <td className="p-3 text-slate-600 dark:text-slate-400">{formatDate(sub.expiryDate)}</td>
-                      </tr>
-                    ))}
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                    {approvedSubscriptions.map((sub, idx) => {
+                      const isExpiringSoon = sub.expiryDate && new Date(sub.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                      const isExpanded = expandedSubscriptionId === sub.id;
+                      return (
+                        <tr 
+                          key={sub.id} 
+                          className="group hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-300 animate-in slide-in-from-right-2"
+                          style={{ animationDelay: `${idx * 30}ms` }}
+                        >
+                          <td className="px-4 md:px-6 py-4">
+                            <div className="flex items-center gap-2 md:gap-3">
+                              <div className="size-8 md:size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+                                <span className="material-symbols-outlined text-lg md:text-xl">person</span>
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-black text-slate-900 dark:text-white text-xs md:text-sm truncate">
+                                  {sub.userOrganizationName || sub.userName || '—'}
+                                </div>
+                                {(sub.userOrganizationName && sub.userName) && (
+                                  <div className="text-[9px] md:text-[10px] text-slate-400 font-bold mt-0.5">
+                                    {sub.userName}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 md:px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
+                                {sub.planName || '—'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-slate-900 dark:text-white text-base tabular-nums">
+                                {sub.numberOfUsers ?? '—'}
+                              </span>
+                              <span className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'مقعد' : 'seat'}</span>
+                            </div>
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-5">
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-black text-primary text-lg tabular-nums">
+                                {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
+                              </span>
+                              {sub.finalPrice != null && (
+                                <span className="text-xs text-slate-400 font-bold">{t.plans.currency}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-slate-400 text-base">schedule</span>
+                              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                                {formatDate(sub.subscriptionDate || sub.submissionDate)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-5">
+                            <div className={`flex items-center gap-2 ${isExpiringSoon ? 'text-orange-500' : ''}`}>
+                              <span className={`material-symbols-outlined text-base ${isExpiringSoon ? 'text-orange-500' : 'text-slate-400'}`}>
+                                {isExpiringSoon ? 'warning' : 'event'}
+                              </span>
+                              <span className={`text-sm font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                                {formatDate(sub.expiryDate)}
+                              </span>
+                              {isExpiringSoon && (
+                                <span className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-black border border-orange-200 dark:border-orange-800">
+                                  {lang === 'ar' ? 'قريب' : 'Soon'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {/* Mobile: More button with tooltip */}
+                          <td className="md:hidden px-4 py-4 relative">
+                            <button
+                              onClick={() => setExpandedSubscriptionId(isExpanded ? null : sub.id)}
+                              className="size-8 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center border border-primary/20 hover:bg-primary/20 transition-all active:scale-90"
+                            >
+                              <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                                expand_more
+                              </span>
+                            </button>
+                            {isExpanded && (
+                              <>
+                                {/* Backdrop */}
+                                <div 
+                                  className="fixed inset-0 z-[290] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+                                  onClick={() => setExpandedSubscriptionId(null)}
+                                ></div>
+                                {/* Popup */}
+                                <div className={`fixed inset-0 z-[300] flex items-center justify-center pointer-events-none`}>
+                                  <div 
+                                    className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/20 p-6 pointer-events-auto animate-in zoom-in-95 fade-in duration-200"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                                      <h3 className="text-base font-black text-slate-900 dark:text-white">
+                                        {lang === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription Details'}
+                                      </h3>
+                                      <button
+                                        onClick={() => setExpandedSubscriptionId(null)}
+                                        className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-xl">close</span>
+                                      </button>
+                                    </div>
+                                    <div className="space-y-4">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'المقاعد' : 'Seats'}</span>
+                                        <span className="font-black text-slate-900 dark:text-white text-lg tabular-nums">
+                                          {sub.numberOfUsers ?? '—'}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                                        <div className="flex items-baseline gap-1">
+                                          <span className="font-black text-primary text-xl tabular-nums">
+                                            {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
+                                          </span>
+                                          {sub.finalPrice != null && (
+                                            <span className="text-sm text-slate-400 font-bold">{t.plans.currency}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</span>
+                                        <span className="text-base font-bold text-slate-600 dark:text-slate-400">
+                                          {formatDate(sub.subscriptionDate || sub.submissionDate)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</span>
+                                        <div className="flex items-center gap-2">
+                                          <span className={`text-base font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                                            {formatDate(sub.expiryDate)}
+                                          </span>
+                                          {isExpiringSoon && (
+                                            <span className="px-2 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-200 dark:border-orange-800">
+                                              {lang === 'ar' ? 'قريب' : 'Soon'}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              {approvedTotalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-4">
-                  <button onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} disabled={approvedPage === 0} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-sm disabled:opacity-50">
-                    {lang === 'ar' ? 'السابق' : 'Prev'}
-                  </button>
-                  <span className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400">{approvedPage + 1} / {approvedTotalPages}</span>
-                  <button onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} disabled={approvedPage >= approvedTotalPages - 1} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-sm disabled:opacity-50">
-                    {lang === 'ar' ? 'التالي' : 'Next'}
-                  </button>
+              {approvedTotalElements > 0 && (
+                <div className="sticky bottom-0 left-0 right-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm mt-6 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto border border-slate-200 dark:border-slate-700">
+                  <div className="px-3 py-1.5 bg-white dark:bg-slate-900 rounded-lg shrink-0">
+                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                      {approvedPage * approvedPageSize + 1}-{Math.min((approvedPage + 1) * approvedPageSize, approvedTotalElements)} {lang === 'ar' ? 'من' : 'of'} {approvedTotalElements}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} 
+                      disabled={approvedPage === 0} 
+                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(approvedTotalPages, 5) }, (_, i) => {
+                        let pageNum;
+                        if (approvedTotalPages <= 5) {
+                          pageNum = i;
+                        } else if (approvedPage < 3) {
+                          pageNum = i;
+                        } else if (approvedPage > approvedTotalPages - 4) {
+                          pageNum = approvedTotalPages - 5 + i;
+                        } else {
+                          pageNum = approvedPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setApprovedPage(pageNum)}
+                            className={`size-8 md:size-9 rounded-full font-black text-[11px] md:text-xs transition-all ${
+                              approvedPage === pageNum 
+                              ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                              : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'
+                            }`}
+                          >
+                            {pageNum + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button 
+                      onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} 
+                      disabled={approvedPage >= approvedTotalPages - 1} 
+                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -687,8 +742,8 @@ const Plans: React.FC = () => {
 
       {/* Delete Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 text-center">
               <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6">
                 <span className="material-symbols-outlined text-4xl">warning</span>

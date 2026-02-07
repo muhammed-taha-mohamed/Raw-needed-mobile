@@ -199,7 +199,7 @@ const MyTeam: React.FC = () => {
       </div>
 
       {/* Main Content Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-primary/10 dark:border-slate-800 mb-10 overflow-visible">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 dark:border-slate-800 mb-10 overflow-visible">
          <div className="overflow-visible min-h-[400px]">
            {isLoading && members.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-40"><div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-slate-400 font-black text-xs    ">Loading team...</p></div>
@@ -207,7 +207,7 @@ const MyTeam: React.FC = () => {
              <div className="py-40 text-center opacity-30"><span className="material-symbols-outlined text-7xl">group_off</span><h3 className="text-xl font-black mt-4">{t.team.noTeam}</h3></div>
            ) : (
              <table className="w-full text-left rtl:text-right border-collapse">
-               <thead>
+               <thead className="sticky top-0 z-10">
                  <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 text-[12px] font-black text-slate-500    ">
                    <th className="px-8 py-5">{t.team.name}</th>
                    <th className="px-8 py-5 hidden md:table-cell">{t.team.email}</th>
@@ -322,8 +322,8 @@ const MyTeam: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-[90%] md:w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">person_add</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingMember ? t.team.editStaff : t.team.addStaff}</h3><p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.team.memberIdentityAccess}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
@@ -366,8 +366,8 @@ const MyTeam: React.FC = () => {
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl p-10 text-center animate-in zoom-in-95">
+        <div className="fixed inset-0 z-[700] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-10 text-center animate-in zoom-in-95">
              <div className="size-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-8 ring-red-50/50"><span className="material-symbols-outlined text-4xl">warning</span></div>
              <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'حذف الموظف؟' : 'Remove Staff?'}</h3>
              <p className="text-sm text-slate-500 font-bold mb-10">{lang === 'ar' ? 'سيتم إلغاء صلاحيات الوصول فوراً.' : 'Access will be revoked immediately.'}</p>
