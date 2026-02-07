@@ -13,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const { lang, setLang, t, isDarkMode, toggleDarkMode } = useApp();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
