@@ -39,6 +39,16 @@ const Register: React.FC = () => {
 
   const profileInputRef = useRef<HTMLInputElement>(null);
   const crnInputRef = useRef<HTMLInputElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [formData, setFormData] = useState({
     role: '' as Role,
@@ -195,32 +205,6 @@ const Register: React.FC = () => {
         .animate-fade-up { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
       `}</style>
 
-      {/* Floating Auth Header */}
-      <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none">
-        <div className="pointer-events-auto">
-          <Link 
-            to="/" 
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-          >
-            <span className="material-symbols-outlined text-lg">home</span>
-          </Link>
-        </div>
-        <div className="flex gap-2 pointer-events-auto">
-          <button 
-            onClick={toggleDarkMode}
-            className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-          >
-            <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60 "
-          >
-            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
-          </button>
-        </div>
-      </div>
-
       {/* Left (mobile: top) - Image / Branding */}
       <div className={`flex-none h-[45vh] md:h-full md:w-1/2 md:min-h-screen bg-white dark:bg-slate-900 relative overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 border-white/10 dark:border-primary/20 rounded-b-[4rem] md:rounded-none ${lang === 'ar' ? 'md:order-2 md:border-l-4' : 'md:order-1 md:border-r-4'}`}>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -236,6 +220,20 @@ const Register: React.FC = () => {
              <div key={s} className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-primary' : 'w-4 bg-slate-200 dark:bg-slate-700'}`}></div>
            ))}
         </div>
+      </div>
+
+      {/* Floating settings - bottom right (EN) / bottom left (AR), opens toward screen */}
+      <div className={`fixed z-[200] ${lang === 'ar' ? 'left-6 bottom-6' : 'right-6 bottom-6'}`} ref={settingsRef}>
+        <button type="button" onClick={() => setSettingsOpen((o) => !o)} className={`size-14 flex items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-2xl text-white border border-white/30 shadow-2xl transition-all duration-300 active:scale-95 hover:bg-slate-800/70 hover:scale-105 ${settingsOpen ? 'rotate-90' : ''}`} aria-label={lang === 'ar' ? 'الإعدادات' : 'Settings'}>
+          <span className="material-symbols-outlined text-[24px]">settings</span>
+        </button>
+        {settingsOpen && (
+          <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`absolute bottom-full mb-2 flex flex-col gap-1.5 p-1.5 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-white/30 dark:border-slate-600/50 shadow-xl origin-bottom duration-300 ease-out ${lang === 'ar' ? 'left-0 animate-in fade-in slide-in-from-left-2 zoom-in-95' : 'right-0 animate-in fade-in slide-in-from-right-2 zoom-in-95'}`}>
+            <Link to="/" onClick={() => setSettingsOpen(false)} className="size-11 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 transition-all active:scale-95" aria-label={lang === 'ar' ? 'الرئيسية' : 'Home'}><span className="material-symbols-outlined text-[22px]">home</span></Link>
+            <button type="button" onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); setSettingsOpen(false); }} className="size-11 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 transition-all active:scale-95" aria-label={lang === 'ar' ? 'اللغة' : 'Language'}><span className="material-symbols-outlined text-[22px]">language</span></button>
+            <button type="button" onClick={() => { toggleDarkMode(); setSettingsOpen(false); }} className="size-11 flex items-center justify-center rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 transition-all active:scale-95" aria-label={isDarkMode ? (lang === 'ar' ? 'الوضع الفاتح' : 'Light mode') : (lang === 'ar' ? 'الوضع الداكن' : 'Dark mode')}><span className="material-symbols-outlined text-[22px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
+          </div>
+        )}
       </div>
 
       {/* Right (mobile: bottom) - Form */}

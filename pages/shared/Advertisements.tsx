@@ -46,6 +46,8 @@ const Advertisements: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [hasActiveAdSubscription, setHasActiveAdSubscription] = useState<boolean | null>(null);
+  /** First APPROVED subscription for supplier – used as the only allowed package when adding an ad */
+  const [supplierApprovedSubscription, setSupplierApprovedSubscription] = useState<AdSubscription | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -60,19 +62,32 @@ const Advertisements: React.FC = () => {
     const isSupplier = role.includes('SUPPLIER') && role !== 'SUPER_ADMIN' && role !== 'ADMIN';
     if (!isSupplier) {
       setHasActiveAdSubscription(true);
+      setSupplierApprovedSubscription(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.get<AdSubscription[] | { data: AdSubscription[] }>('/api/v1/supplier/ad-subscriptions');
-        const list = Array.isArray(res) ? res : (res as { data?: AdSubscription[] })?.data ?? [];
-        const active = list.some(
-          (s) => s.status === 'APPROVED' && s.endDate && new Date(s.endDate) > new Date()
+        const res = await api.get<any>('/api/v1/supplier/ad-subscriptions');
+        const list = Array.isArray(res)
+          ? res
+          : (res?.content?.data ?? res?.data ?? []);
+        const approved = list.filter(
+          (s: AdSubscription) =>
+            s.status === 'APPROVED' &&
+            (s.remainingAds == null || s.remainingAds > 0) &&
+            (s.endDate == null || s.endDate === '' || new Date(s.endDate) > new Date())
         );
-        if (!cancelled) setHasActiveAdSubscription(active);
+        const active = approved.length > 0;
+        if (!cancelled) {
+          setHasActiveAdSubscription(active);
+          setSupplierApprovedSubscription(active ? approved[0] : null);
+        }
       } catch {
-        if (!cancelled) setHasActiveAdSubscription(false);
+        if (!cancelled) {
+          setHasActiveAdSubscription(false);
+          setSupplierApprovedSubscription(null);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -124,8 +139,13 @@ const Advertisements: React.FC = () => {
     setSelectedFile(null);
     setImagePreview(null);
     setFormData({ text: '', image: '' });
-    setSelectedPackageId('');
-    setFeatured(false);
+    if (isSupplier && supplierApprovedSubscription) {
+      setSelectedPackageId(supplierApprovedSubscription.adPackageId);
+      setFeatured(!!(supplierApprovedSubscription as any).featured);
+    } else {
+      setSelectedPackageId('');
+      setFeatured(false);
+    }
     if (isSupplier || isAdmin) {
       try {
         const [pkgRes, setRes] = await Promise.all([
@@ -134,7 +154,7 @@ const Advertisements: React.FC = () => {
         ]);
         setAdPackages(pkgRes.data || []);
         setAdSettings(setRes.data || null);
-        if ((pkgRes.data?.length ?? 0) > 0) setSelectedPackageId(pkgRes.data![0].id);
+        if (isAdmin && (pkgRes.data?.length ?? 0) > 0) setSelectedPackageId((prev) => prev || pkgRes.data![0].id);
       } catch (e) {
         setToast({ message: (e as Error).message || 'Failed to load options', type: 'error' });
       }
@@ -175,8 +195,16 @@ const Advertisements: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canCreateAds) return;
-    if (!editingAd && isSupplier && !selectedPackageId) {
-      setToast({ message: lang === 'ar' ? 'اختر باقة عرض' : 'Select an ad package', type: 'error' });
+    const effectivePackageId = isSupplier && supplierApprovedSubscription
+      ? supplierApprovedSubscription.adPackageId
+      : (selectedPackageId || adPackages[0]?.id);
+    if (!editingAd && !effectivePackageId) {
+      setToast({
+        message: lang === 'ar'
+          ? 'لا يمكن نشر إعلان بدون اشتراك معتمد. اشترك في باقة وانتظر الموافقة.'
+          : 'You need an approved ad subscription to publish. Subscribe to a package and wait for approval.',
+        type: 'error',
+      });
       return;
     }
     setIsProcessing(true);
@@ -199,13 +227,9 @@ const Advertisements: React.FC = () => {
         const payload = {
           text: formData.text,
           image: finalImageUrl,
-          adPackageId: selectedPackageId || adPackages[0]?.id,
+          adPackageId: effectivePackageId,
           featured: isSupplier ? featured : false,
         };
-        if (!payload.adPackageId) {
-          setToast({ message: lang === 'ar' ? 'لا توجد باقات إعلانات. أضف باقة من لوحة الأدمن.' : 'No ad packages. Add a package from admin.', type: 'error' });
-          return;
-        }
         await api.post('/api/v1/advertisements', payload);
         setToast({ message: t.ads.successAdd, type: 'success' });
       }
@@ -443,22 +467,30 @@ const Advertisements: React.FC = () => {
                   />
                 </div>
 
-                {!editingAd && isSupplier && adPackages.length > 0 && (
+                {!editingAd && isAdmin && adPackages.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'باقة العرض' : 'Ad package'}</label>
+                    <select
+                      required
+                      value={selectedPackageId}
+                      onChange={(e) => setSelectedPackageId(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base"
+                    >
+                      {adPackages.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {lang === 'ar' ? (p.nameAr || `${p.numberOfDays} أيام`) : (p.nameEn || `${p.numberOfDays} days`)} — {(p as any).pricePerAd ?? (p as any).price ?? 0} EGP / {lang === 'ar' ? 'إعلان' : 'ad'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {!editingAd && isSupplier && supplierApprovedSubscription && (
                   <>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'باقة العرض' : 'Ad package'}</label>
-                      <select
-                        required
-                        value={selectedPackageId}
-                        onChange={(e) => setSelectedPackageId(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base"
-                      >
-                        {adPackages.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {lang === 'ar' ? (p.nameAr || `${p.numberOfDays} أيام`) : (p.nameEn || `${p.numberOfDays} days`)} — {(p as any).pricePerAd ?? (p as any).price ?? 0} EGP / {lang === 'ar' ? 'إعلان' : 'ad'}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20">
+                      <p className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الباقة المعتمدة' : 'Approved package'}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
+                        {lang === 'ar' ? (supplierApprovedSubscription.packageNameAr || supplierApprovedSubscription.packageNameEn) : (supplierApprovedSubscription.packageNameEn || supplierApprovedSubscription.packageNameAr)} — {lang === 'ar' ? 'متبقي' : 'remaining'}: {supplierApprovedSubscription.remainingAds ?? 0}
+                      </p>
                     </div>
                     <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
                       <label className="flex items-center gap-2 cursor-pointer">
