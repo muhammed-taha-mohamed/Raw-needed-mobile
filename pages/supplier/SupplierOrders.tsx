@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
+import EmptyState from '../../components/EmptyState';
 
 interface SupplierResponse {
   price: number;
@@ -212,7 +213,7 @@ const SupplierOrders: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
+    <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
       
       {/* Top Filter Bar - Web only */}
       <div className="hidden md:flex flex-wrap items-center gap-2 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
@@ -248,16 +249,10 @@ const SupplierOrders: React.FC = () => {
         {isLoading && offers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-40">
              <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-slate-400 font-black text-xs uppercase tracking-widest opacity-50">Accessing Supply Ledger...</p>
+             <p className="text-slate-400 font-black text-xs opacity-50">{t.common.accessingSupplyLedger}</p>
           </div>
         ) : offers.length === 0 ? (
-          <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700">
-             <span className="material-symbols-outlined text-7xl">request_quote</span>
-             <div className="space-y-1">
-               <h3 className="text-2xl font-black">{lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'}</h3>
-               <p className="text-base font-bold">{lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'}</p>
-             </div>
-          </div>
+          <EmptyState title={lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'} subtitle={lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'} />
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {offers.map((offer, idx) => {
@@ -291,7 +286,7 @@ const SupplierOrders: React.FC = () => {
                          <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
                          <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                         <span className="hidden sm:inline flex items-center gap-1 uppercase tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                         <span className="hidden sm:inline flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
                       </div>
                     </div>
                   </div>
@@ -311,7 +306,7 @@ const SupplierOrders: React.FC = () => {
                        <button 
                          disabled={completingId === offer.id}
                          onClick={() => handleCompleteOffer(offer.id)}
-                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10 uppercase tracking-wider"
+                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
                        >
                           {completingId === offer.id ? (
                             <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -323,14 +318,14 @@ const SupplierOrders: React.FC = () => {
                           )}
                        </button>
                     ) : offer.status === 'COMPLETED' ? (
-                       <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap uppercase tracking-wider">
+                       <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap">
                           <span className="material-symbols-outlined text-lg">check_circle</span>
                           {lang === 'ar' ? 'مكتمل' : 'Finalized'}
                        </div>
                     ) : (
                       <button 
                         onClick={() => handleOpenResponse(offer)}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md uppercase tracking-wider ${
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
                           offer.status === 'RESPONDED' 
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
                           : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
@@ -350,7 +345,7 @@ const SupplierOrders: React.FC = () => {
 
       {/* Floating Filter FAB - Mobile only */}
       <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-        <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
+        <div className="w-full flex flex-col items-end pointer-events-auto">
           <div className="relative" ref={filterRef}>
             <button 
               onClick={() => setShowFilterMenu(!showFilterMenu)}
@@ -367,9 +362,9 @@ const SupplierOrders: React.FC = () => {
             {showFilterMenu && (
               <div className={`absolute bottom-full mb-4 z-[250] w-60 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-between items-center mb-4 px-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
+                  <h3 className="text-xs font-black tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
                   {statusFilter && (
-                    <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500 uppercase">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
+                    <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -466,7 +461,7 @@ const SupplierOrders: React.FC = () => {
               <form onSubmit={handleSubmitResponse} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{lang === 'ar' ? 'سعر الوحدة' : 'Unit Price'}</label>
+                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'سعر الوحدة' : 'Unit Price'}</label>
                     <div className="relative group">
                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">EGP</span>
                        <input 
@@ -479,7 +474,7 @@ const SupplierOrders: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{lang === 'ar' ? 'تكلفة الشحن' : 'Shipping Cost'}</label>
+                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'تكلفة الشحن' : 'Shipping Cost'}</label>
                     <div className="relative group">
                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">EGP</span>
                        <input 
@@ -494,20 +489,20 @@ const SupplierOrders: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{lang === 'ar' ? 'الكمية المتوفرة' : 'Available Quantity'}</label>
+                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'الكمية المتوفرة' : 'Available Quantity'}</label>
                     <div className="relative group">
                       <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors">inventory</span>
                       <input 
                         type="number" required min="1"
                         value={formAvailableQty} onChange={(e) => setFormAvailableQty(e.target.value)}
                         className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner"
-                        placeholder="0"
+                        placeholder={t.orders.quantityPlaceholder}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{lang === 'ar' ? 'تاريخ التسليم المتوقع' : 'Estimated Delivery Date'}</label>
+                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'تاريخ التسليم المتوقع' : 'Estimated Delivery Date'}</label>
                     <div className="relative group">
                       <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors">calendar_today</span>
                       <input 
@@ -520,7 +515,7 @@ const SupplierOrders: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 px-1 uppercase tracking-wider">{lang === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</label>
+                  <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</label>
                   <div className="relative group">
                     <span className="material-symbols-outlined absolute left-4 top-4 text-slate-300 group-focus-within:text-primary transition-colors">local_shipping</span>
                     <textarea 
@@ -535,7 +530,7 @@ const SupplierOrders: React.FC = () => {
                   <button 
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-5 bg-primary text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-4 uppercase tracking-[0.1em]"
+                    className="w-full py-5 bg-primary text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-4 tracking-[0.1em]"
                   >
                     {isSubmitting ? (
                       <div className="size-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

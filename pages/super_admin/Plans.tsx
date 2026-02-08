@@ -3,6 +3,7 @@ import { useLanguage } from '../../App';
 import { Plan, BillingFrequency, PlanType, PlanFeature } from '../../types';
 import { api } from '../../api';
 import PlanModal from '../../components/PlanModal';
+import EmptyState from '../../components/EmptyState';
 import Approvals from './Approvals';
 import { getPlanFeatureLabel } from '../../constants';
 
@@ -190,14 +191,14 @@ const Plans: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Tabs - full width of container */}
       <div className="flex gap-1 p-1 mb-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 w-full min-w-0">
         <button
           onClick={() => setActiveTab('plans')}
           className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'plans' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
         >
-          {lang === 'ar' ? 'الخطط' : 'Plans'}
+          {lang === 'ar' ? 'الباقات' : 'Packages'}
         </button>
         <button
           onClick={() => setActiveTab('approvals')}
@@ -462,65 +463,57 @@ const Plans: React.FC = () => {
 
       {/* Tab: Active subscriptions (approved, non-pending) */}
       {activeTab === 'subscriptions' && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-in fade-in duration-500">
+        <div className="overflow-hidden animate-in fade-in duration-500">
           {loadingApproved && approvedSubscriptions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40">
               <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
               <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
             </div>
           ) : approvedSubscriptions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24">
-              <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-                <span className="material-symbols-outlined text-5xl">subscriptions</span>
-              </div>
-              <h3 className="text-xl font-black text-slate-700 dark:text-white mb-2">{lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'}</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                {lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'}
-              </p>
-            </div>
+            <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-thead-primary">
                 <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-800/50 border-b-2 border-primary/20">
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">person</span>
-                          <span className="hidden md:inline">{lang === 'ar' ? 'المستخدم' : 'User'}</span>
+                          <span>{lang === 'ar' ? 'المستخدم' : 'User'}</span>
                         </div>
                       </th>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">loyalty</span>
-                          <span className="hidden md:inline">{lang === 'ar' ? 'الخطة' : 'Plan'}</span>
+                          <span>{lang === 'ar' ? 'الخطة' : 'Plan'}</span>
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">groups</span>
                           {lang === 'ar' ? 'المقاعد' : 'Seats'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">payments</span>
                           {lang === 'ar' ? 'الإجمالي' : 'Total'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">play_circle</span>
                           {lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">event</span>
                           {lang === 'ar' ? 'صلاحية حتى' : 'Expires'}
                         </div>
                       </th>
-                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         {lang === 'ar' ? 'المزيد' : 'More'}
                       </th>
                     </tr>
@@ -541,6 +534,7 @@ const Plans: React.FC = () => {
                                 <span className="material-symbols-outlined text-lg md:text-xl">person</span>
                               </div>
                               <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'المستخدم' : 'User'}</p>
                                 <div className="font-black text-slate-900 dark:text-white text-xs md:text-sm truncate">
                                   {sub.userOrganizationName || sub.userName || '—'}
                                 </div>
@@ -554,9 +548,12 @@ const Plans: React.FC = () => {
                           </td>
                           <td className="px-4 md:px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
-                                {sub.planName || '—'}
-                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'الخطة' : 'Plan'}</p>
+                                <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
+                                  {sub.planName || '—'}
+                                </span>
+                              </div>
                             </div>
                           </td>
                           <td className="hidden md:table-cell px-6 py-5">

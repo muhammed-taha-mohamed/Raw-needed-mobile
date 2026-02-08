@@ -330,7 +330,7 @@ const PlanSelection: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-x-hidden min-w-0">
+    <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-x-hidden min-w-0">
       
       {subscription && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -585,7 +585,7 @@ const PlanSelection: React.FC = () => {
         )}
       </div>
 
-      {/* بوب اب شراء عمليات بحث */}
+      {/* Popup for purchasing search operations */}
       {addSearchesModalOpen && subscription && subscription.remainingSearches != null && subscription.status === 'APPROVED' && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>

@@ -3,6 +3,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import Dropdown from '../../components/Dropdown';
+import EmptyState from '../../components/EmptyState';
 
 interface User {
   id: string;
@@ -102,7 +103,7 @@ const Users: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700">
+    <div className="w-full py-6 animate-in fade-in duration-700">
 
       {isLoading && users.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2rem] border border-slate-200 dark:border-slate-800">
@@ -110,52 +111,44 @@ const Users: React.FC = () => {
           <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading users...'}</p>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl">
-          <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-            <span className="material-symbols-outlined text-5xl">people</span>
-          </div>
-          <h3 className="text-xl font-black text-slate-700 dark:text-white mb-2">{lang === 'ar' ? 'لا توجد مستخدمين' : 'No Users Found'}</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-            {lang === 'ar' ? 'لا توجد مستخدمين متاحين حالياً.' : 'No users available at the moment.'}
-          </p>
-        </div>
+        <EmptyState title={lang === 'ar' ? 'لا توجد مستخدمين' : 'No Users Found'} subtitle={lang === 'ar' ? 'لا توجد مستخدمين متاحين حالياً.' : 'No users available at the moment.'} />
       ) : (
         <>
-        <div className="overflow-x-auto animate-in fade-in duration-500">
+        <div className="overflow-x-auto animate-in fade-in duration-500 table-thead-primary">
           <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
               <thead className="sticky top-0 z-10">
-                <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-800/50 border-b-2 border-primary/20">
-                  <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">person</span>
-                      <span className="hidden md:inline">{lang === 'ar' ? 'المستخدم' : 'User'}</span>
+                      <span>{lang === 'ar' ? 'المستخدم' : 'User'}</span>
                     </div>
                   </th>
-                  <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">badge</span>
-                      <span className="hidden md:inline">{lang === 'ar' ? 'الدور' : 'Role'}</span>
+                      <span>{lang === 'ar' ? 'الدور' : 'Role'}</span>
                     </div>
                   </th>
-                  <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">phone</span>
                       {lang === 'ar' ? 'الهاتف' : 'Phone'}
                     </div>
                   </th>
-                  <th className="hidden md:table-cell px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">toggle_on</span>
                       {lang === 'ar' ? 'الحالة' : 'Status'}
                     </div>
                   </th>
-                  <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">settings</span>
                       {lang === 'ar' ? 'الإجراءات' : 'Actions'}
                     </div>
                   </th>
-                  <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                     {lang === 'ar' ? 'المزيد' : 'More'}
                   </th>
                 </tr>
@@ -175,6 +168,7 @@ const Users: React.FC = () => {
                             <span className="material-symbols-outlined text-lg md:text-xl">person</span>
                           </div>
                           <div className="min-w-0">
+                            <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'المستخدم' : 'User'}</p>
                             <div className={`font-black text-xs md:text-sm truncate ${
                               user.accountStatus === 'INACTIVE' 
                                 ? 'text-red-600 dark:text-red-400' 
@@ -190,6 +184,7 @@ const Users: React.FC = () => {
                       </td>
                       <td className="px-4 md:px-6 py-4">
                         <div className="flex flex-col gap-1">
+                          <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'الدور' : 'Role'}</p>
                           <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20 inline-block w-fit">
                             {lang === 'ar' ? getRoleLabel(user.role).ar : getRoleLabel(user.role).en}
                           </span>
@@ -427,7 +422,7 @@ const Users: React.FC = () => {
               <div className="mx-auto size-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-5xl">warning</span>
               </div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">
                 {lang === 'ar' ? 'تعطيل المستخدم؟' : 'Deactivate User?'}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-500 mb-10 leading-relaxed font-bold">

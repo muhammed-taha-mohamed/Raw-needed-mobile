@@ -44,6 +44,7 @@ export const translations = {
       send: 'Send Message',
       closeTicket: 'Close Ticket',
       empty: 'No tickets found.',
+      subjectDescriptionAttachment: 'Subject, description & attachment',
       successAdd: 'Complaint submitted successfully',
       successMessage: 'Message sent',
       successClose: 'Ticket closed successfully',
@@ -58,6 +59,9 @@ export const translations = {
       text: 'Ad Copy / Description',
       textPlaceholder: 'Describe the offer or promotion details...',
       image: 'Visual Content',
+      newPromotion: 'New promotion',
+      designPlacement: 'Ad design & placement',
+      refLabel: 'Ref',
       deleteConfirm: 'Are you sure you want to remove this promotion?',
       successAdd: 'Ad published successfully',
       successUpdate: 'Ad content updated',
@@ -144,6 +148,7 @@ export const translations = {
       expirationDate: 'Expiration Date (Optional)',
       exportStock: 'Export Stock',
       exporting: 'Exporting...',
+      stockQuantityPlaceholder: 'e.g. 0',
       exportSuccess: 'Stock exported successfully',
       exportError: 'Failed to export stock',
       duplicateNameError: 'A product with this name already exists for this supplier',
@@ -226,6 +231,8 @@ export const translations = {
       addSubCategory: 'Add Sub-category',
       nameEn: 'Name (English)',
       nameAr: 'Name (Arabic)',
+      nameEnArLabel: 'Name (English / Arabic)',
+      addingTo: 'Adding to',
       save: 'Save Category',
       saveSub: 'Save Sub-category',
       noSubs: 'No sub-categories yet',
@@ -251,7 +258,7 @@ export const translations = {
       subtitle: 'Create, update, or remove pricing tiers available to your users.',
       addNew: 'Add New Plan',
       searchPlaceholder: 'Search plans by name...',
-      popular: 'MOST POPULAR',
+      popular: 'Most popular',
       billedMonthly: 'Billed monthly',
       contactSales: 'Contact sales for pricing',
       edit: 'Edit',
@@ -270,7 +277,9 @@ export const translations = {
       specialOffers: 'Special Offers',
       addOffer: 'Add New Offer',
       minUsers: 'Min Users',
+      minUsersPlaceholder: 'e.g. 0',
       discount: 'Discount %',
+      discountPlaceholder: 'e.g. 0',
       offerDesc: 'Offer Description',
       savePlan: 'Save Plan',
       noOffers: 'No special offers defined for this plan.',
@@ -288,7 +297,8 @@ export const translations = {
     },
     orders: {
       featureRequired: 'Private orders feature is not included in your current subscription plan. Please upgrade your plan to access private orders.',
-      featureRequiredTitle: 'Feature Not Available'
+      featureRequiredTitle: 'Feature Not Available',
+      quantityPlaceholder: 'e.g. 1'
     },
     planSelection: {
       pageTitle: 'Subscription Tiers',
@@ -310,6 +320,13 @@ export const translations = {
       bankNamePlaceholder: 'Bank name',
       walletProviderPlaceholder: 'e.g. Vodafone Cash, Orange Cash',
       accountHolderPlaceholder: 'Account holder name'
+    },
+    adPackage: {
+      nameArPlaceholder: 'Package name in Arabic',
+      nameEnPlaceholder: 'Package name in English',
+      durationDaysPlaceholder: 'e.g. 7',
+      pricePerAdPlaceholder: 'e.g. 0',
+      featuredPricePlaceholder: 'e.g. 0'
     },
     login: {
       title: 'Raw needed portal',
@@ -389,7 +406,14 @@ export const translations = {
     },
     common: {
       langSwitchAr: 'ع',
-      langSwitchEn: 'En'
+      langSwitchEn: 'En',
+      clickToUpload: 'Click to upload',
+      synchronizing: 'Synchronizing...',
+      synchronizingProfile: 'Synchronizing profile...',
+      accessingSupplyLedger: 'Accessing supply ledger...',
+      live: 'Live',
+      noData: 'No data',
+      noDataSubtitle: 'There is nothing to show here yet'
     },
     loginExtra: {
       signInTitle: 'Sign In',
@@ -504,6 +528,7 @@ export const translations = {
       send: 'إرسال الرسالة',
       closeTicket: 'إغلاق التذكرة',
       empty: 'لا توجد تذاكر دعم حالياً.',
+      subjectDescriptionAttachment: 'الموضوع، الوصف والمرفق',
       successAdd: 'تم إرسال الشكوى بنجاح',
       successMessage: 'تم إرسال الرسالة',
       successClose: 'تم إغلاق التذكرة بنجاح',
@@ -518,6 +543,9 @@ export const translations = {
       text: 'نص الإعلان / الوصف',
       textPlaceholder: 'صف تفاصيل العرض أو الترويج...',
       image: 'المحتوى المرئي',
+      newPromotion: 'ترويج جديد',
+      designPlacement: 'تصميم وموضع الإعلان',
+      refLabel: 'مرجع',
       deleteConfirm: 'هل أنت متأكد من رغبتك في إزالة هذا العرض الترويجي؟',
       successAdd: 'تم نشر الإعلان بنجاح',
       successUpdate: 'تم تحديث محتوى الإعلان',
@@ -606,6 +634,7 @@ export const translations = {
       expirationDate: 'تاريخ الانتهاء',
       exportStock: 'تصدير المخزون',
       exporting: 'جاري التصدير...',
+      stockQuantityPlaceholder: 'مثال: 0',
       exportSuccess: 'تم تصدير المخزون بنجاح',
       exportError: 'فشل تصدير المخزون',
       duplicateNameError: 'منتج بهذا الاسم موجود بالفعل لهذا المورد',
@@ -688,6 +717,8 @@ export const translations = {
       addSubCategory: 'إضافة فئة فرعية',
       nameEn: 'الاسم (بالإنجليزي)',
       nameAr: 'الاسم (بالعربي)',
+      nameEnArLabel: 'الاسم (إنجليزي / عربي)',
+      addingTo: 'إضافة إلى',
       save: 'حفظ الفئة',
       saveSub: 'حفظ الفئة الفرعية',
       noSubs: 'لا توجد فئات فرعية حتى الآن',
@@ -732,7 +763,9 @@ export const translations = {
       specialOffers: 'عروض خاصة',
       addOffer: 'إضافة عرض جديد',
       minUsers: 'أقل عدد مستخدمين',
+      minUsersPlaceholder: 'مثال: 0',
       discount: 'الخصم %',
+      discountPlaceholder: 'مثال: 0',
       offerDesc: 'وصف العرض',
       savePlan: 'حفظ الخطة',
       noOffers: 'لا توجد عروض خاصة لهذه الخطة.',
@@ -750,7 +783,8 @@ export const translations = {
     },
     orders: {
       featureRequired: 'ميزة الطلبات الخاصة غير متوفرة في اشتراكك الحالي. يرجى ترقية باقاتك للوصول إلى الطلبات الخاصة.',
-      featureRequiredTitle: 'الميزة غير متوفرة'
+      featureRequiredTitle: 'الميزة غير متوفرة',
+      quantityPlaceholder: 'مثال: 1'
     },
     planSelection: {
       pageTitle: 'باقات الاشتراك',
@@ -772,6 +806,13 @@ export const translations = {
       bankNamePlaceholder: 'اسم البنك',
       walletProviderPlaceholder: 'مثال: فودافون كاش، أورانج كاش',
       accountHolderPlaceholder: 'اسم صاحب الحساب'
+    },
+    adPackage: {
+      nameArPlaceholder: 'اسم الباقة بالعربية',
+      nameEnPlaceholder: 'اسم الباقة بالإنجليزية',
+      durationDaysPlaceholder: 'مثال: 7',
+      pricePerAdPlaceholder: 'مثال: 0',
+      featuredPricePlaceholder: 'مثال: 0'
     },
     login: {
       title: 'بوابة Raw needed',
@@ -851,7 +892,14 @@ export const translations = {
     },
     common: {
       langSwitchAr: 'ع',
-      langSwitchEn: 'En'
+      langSwitchEn: 'En',
+      clickToUpload: 'اضغط لرفع الصورة',
+      synchronizing: 'جاري المزامنة...',
+      synchronizingProfile: 'جاري مزامنة الملف...',
+      accessingSupplyLedger: 'جاري الوصول لسجل التوريد...',
+      live: 'مباشر',
+      noData: 'مفيش بيانات',
+      noDataSubtitle: 'لا يوجد شيء لعرضه هنا بعد'
     },
     loginExtra: {
       signInTitle: 'تسجيل الدخول',

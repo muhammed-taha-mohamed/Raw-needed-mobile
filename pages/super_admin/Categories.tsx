@@ -152,7 +152,7 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 pb-24 md:pb-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 pb-24 md:pb-6 relative font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[200] flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -183,7 +183,7 @@ const Categories: React.FC = () => {
 
       {/* Mobile: Floating Action Button (FAB) — above bottom nav, same as Products */}
       <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-        <div className={`max-w-[1200px] mx-auto flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+        <div className={`w-full flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
           <button 
             onClick={() => setShowCatModal(true)}
             className="size-12 rounded-full bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-all border-2 border-white/20"
@@ -349,7 +349,7 @@ const Categories: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.categories.addCategory}</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Name (EN / AR)</p>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">{t.categories.nameEnArLabel}</p>
                 </div>
               </div>
               <button onClick={() => setShowCatModal(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
@@ -359,7 +359,7 @@ const Categories: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="addCatForm" onSubmit={handleAddCategory} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameEn}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameEn}</label>
                   <input
                     type="text"
                     value={newCat.name}
@@ -370,7 +370,7 @@ const Categories: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameAr}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameAr}</label>
                   <input
                     type="text"
                     value={newCat.arabicName}
@@ -385,7 +385,7 @@ const Categories: React.FC = () => {
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
               <button type="button" onClick={() => setShowCatModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
-              <button form="addCatForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+              <button form="addCatForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                 {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.save}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>
@@ -404,7 +404,7 @@ const Categories: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.categories.addSubCategory}</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{lang === 'ar' ? 'إضافة إلى: ' : 'Adding to: '} {newSub.parentName}</p>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">{t.categories.addingTo}: {newSub.parentName}</p>
                 </div>
               </div>
               <button onClick={() => setShowSubModal(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
@@ -414,7 +414,7 @@ const Categories: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="addSubForm" onSubmit={handleAddSubCategory} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameEn}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameEn}</label>
                   <input
                     type="text"
                     value={newSub.name}
@@ -425,7 +425,7 @@ const Categories: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.categories.nameAr}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameAr}</label>
                   <input
                     type="text"
                     value={newSub.arabicName}
@@ -440,7 +440,7 @@ const Categories: React.FC = () => {
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
               <button type="button" onClick={() => setShowSubModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
-              <button form="addSubForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+              <button form="addSubForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                 {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.saveSub}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>

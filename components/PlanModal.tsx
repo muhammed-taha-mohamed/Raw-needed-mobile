@@ -213,7 +213,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-1">{lang === 'ar' ? 'نوع الخطة' : 'Plan Type'}</label>
+                    <label className="text-[10px] font-bold text-slate-400 tracking-[0.2em] px-1">{lang === 'ar' ? 'نوع الخطة' : 'Plan Type'}</label>
                     <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
                       {planTypes.map((pt) => (
                         <button
@@ -221,7 +221,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
                           type="button"
                           disabled={isSubmitting}
                           onClick={() => setFormData({ ...formData, planType: pt.id })}
-                          className={`py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-all duration-200 ${formData.planType === pt.id ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 dark:text-slate-300'}`}
+                          className={`py-2.5 rounded-xl text-[10px] font-bold tracking-tight transition-all duration-200 ${formData.planType === pt.id ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 dark:text-slate-300'}`}
                         >
                           {pt.label}
                         </button>
@@ -230,7 +230,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-1">{t.plans.frequency}</label>
+                    <label className="text-[10px] font-bold text-slate-400 tracking-[0.2em] px-1">{t.plans.frequency}</label>
                     <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
                       {frequencies.map((f) => (
                         <button key={f.id} type="button" disabled={isSubmitting} onClick={() => setFormData({...formData, billingFrequency: f.id})} className={`py-2.5 rounded-xl text-[10px] font-bold    tracking-tight transition-all duration-200 ${formData.billingFrequency === f.id ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>{f.label}</button>
@@ -278,7 +278,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
                         <div className="flex-1 min-w-0">
                           <Dropdown options={availableFeatureKeys.map(k => ({ value: k, label: getPlanFeatureLabel(k, lang === 'ar' ? 'ar' : 'en') }))} value={pf.feature} onChange={(v) => updatePlanFeature(idx, 'feature', v)} placeholder={lang === 'ar' ? 'الميزة' : 'Feature'} showClear={false} isRtl={lang === 'ar'} disabled={isSubmitting} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-50 pl-4 pr-10 rtl:pl-10 rtl:pr-4" />
                         </div>
-                        <input type="number" step="0.01" min="0" value={pf.price} onChange={(e) => updatePlanFeature(idx, 'price', e.target.value)} className="w-24 px-3 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="0" disabled={isSubmitting} />
+                        <input type="number" step="0.01" min="0" value={pf.price} onChange={(e) => updatePlanFeature(idx, 'price', e.target.value)} className="w-24 px-3 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary outline-none text-slate-900 dark:text-white placeholder:text-slate-400" placeholder={t.plans.pricePlaceholder} disabled={isSubmitting} />
                         <button type="button" onClick={() => removePlanFeature(idx)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-[18px]">delete_outline</span></button>
                       </div>
                     ))}
@@ -303,17 +303,17 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
                       <>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-[9px] font-bold text-slate-400 uppercase px-1 block mb-1">{lang === 'ar' ? 'من' : 'From'}</label>
-                            <input type="number" min="0" value={productSearchesConfig.from ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, from: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white" disabled={isSubmitting} />
+                            <label className="text-[9px] font-bold text-slate-400 px-1 block mb-1">{lang === 'ar' ? 'من' : 'From'}</label>
+                            <input type="number" min="0" value={productSearchesConfig.from ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, from: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })} placeholder={t.plans.fromPlaceholder} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400" disabled={isSubmitting} />
                           </div>
                           <div>
-                            <label className="text-[9px] font-bold text-slate-400 uppercase px-1 block mb-1">{lang === 'ar' ? 'إلى' : 'To'}</label>
-                            <input type="number" min="0" value={productSearchesConfig.to ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, to: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white" disabled={isSubmitting} />
+                            <label className="text-[9px] font-bold text-slate-400 px-1 block mb-1">{lang === 'ar' ? 'إلى' : 'To'}</label>
+                            <input type="number" min="0" value={productSearchesConfig.to ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, to: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })} placeholder={t.plans.toPlaceholder} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400" disabled={isSubmitting} />
                           </div>
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-slate-400 uppercase px-1 block mb-1">{lang === 'ar' ? 'السعر لكل بحث' : 'Price per search'}</label>
-                          <input type="number" step="0.01" min="0" value={productSearchesConfig.pricePerSearch ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, pricePerSearch: e.target.value === '' ? undefined : parseFloat(e.target.value) })} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white" disabled={isSubmitting} />
+                          <label className="text-[9px] font-bold text-slate-400 px-1 block mb-1">{lang === 'ar' ? 'السعر لكل بحث' : 'Price per search'}</label>
+                          <input type="number" step="0.01" min="0" value={productSearchesConfig.pricePerSearch ?? ''} onChange={(e) => setProductSearchesConfig({ ...productSearchesConfig, pricePerSearch: e.target.value === '' ? undefined : parseFloat(e.target.value) })} placeholder={t.plans.pricePerSearchPlaceholder} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400" disabled={isSubmitting} />
                         </div>
                       </>
                     )}
@@ -339,8 +339,8 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
                       <div key={idx} className="p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-primary/20 relative">
                         <button type="button" disabled={isSubmitting} onClick={() => removeOffer(idx)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-[18px]">cancel</span></button>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5"><label className="text-[9px] font-bold text-slate-400       px-1">{t.plans.minUsers}</label><input type="number" value={offer.minUserCount} onChange={(e) => updateOffer(idx, 'minUserCount', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-1 focus:ring-primary outline-none" required disabled={isSubmitting} /></div>
-                          <div className="space-y-1.5"><label className="text-[9px] font-bold text-slate-400       px-1">{t.plans.discount}</label><input type="number" value={offer.discountPercentage} onChange={(e) => updateOffer(idx, 'discountPercentage', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-1 focus:ring-primary outline-none" required step="0.01" disabled={isSubmitting} /></div>
+                          <div className="space-y-1.5"><label className="text-[9px] font-bold text-slate-400       px-1">{t.plans.minUsers}</label><input type="number" value={offer.minUserCount} onChange={(e) => updateOffer(idx, 'minUserCount', e.target.value)} placeholder={t.plans.minUsersPlaceholder} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-1 focus:ring-primary outline-none placeholder:text-slate-400" required disabled={isSubmitting} /></div>
+                          <div className="space-y-1.5"><label className="text-[9px] font-bold text-slate-400       px-1">{t.plans.discount}</label><input type="number" value={offer.discountPercentage} onChange={(e) => updateOffer(idx, 'discountPercentage', e.target.value)} placeholder={t.plans.discountPlaceholder} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-1 focus:ring-primary outline-none placeholder:text-slate-400" required step="0.01" disabled={isSubmitting} /></div>
                         </div>
                         <div className="mt-3 space-y-1.5"><label className="text-[9px] font-bold text-slate-400       px-1">{t.plans.offerDesc}</label><input type="text" value={offer.description} onChange={(e) => updateOffer(idx, 'description', e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-primary/20 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-1 focus:ring-primary outline-none" placeholder={t.plans.offerDescPlaceholder} disabled={isSubmitting} /></div>
                       </div>

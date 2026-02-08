@@ -968,7 +968,7 @@ const Profile: React.FC = () => {
                     </div>
                     <div>
                        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
-                       <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.profileExtra.marketingTool}</p>
+                       <p className="text-[10px] font-black text-slate-400 mt-2">{t.profileExtra.marketingTool}</p>
                     </div>
                  </div>
                  <button onClick={() => setIsAdModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
@@ -979,11 +979,11 @@ const Profile: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 <form id="adFormProfile" onSubmit={handleAdSubmit} className="space-y-5">
                   <div className="space-y-1.5">
-                     <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.image}</label>
+                     <label className="text-[11px] font-black text-slate-500 px-1">{t.ads.image}</label>
                      {!adImagePreview ? (
                         <div onClick={() => adFileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
                           <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'اضغط لرفع الصورة' : 'Click to upload'}</span>
+                          <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
                         </div>
                      ) : (
                         <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
@@ -997,7 +997,7 @@ const Profile: React.FC = () => {
                      <input type="file" ref={adFileInputRef} className="hidden" accept="image/*" onChange={handleAdFileChange} />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.text}</label>
+                    <label className="text-[11px] font-black text-slate-500 px-1">{t.ads.text}</label>
                     <textarea
                       required
                       value={adFormData.text}
@@ -1011,7 +1011,7 @@ const Profile: React.FC = () => {
 
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
                  <button type="button" onClick={() => setIsAdModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.team.cancel}</button>
-                 <button type="submit" form="adFormProfile" disabled={isSaving} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+                 <button type="submit" form="adFormProfile" disabled={isSaving} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
                    {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.profileExtra.saveAd}<span className="material-symbols-outlined">verified</span></>}
                  </button>
               </div>

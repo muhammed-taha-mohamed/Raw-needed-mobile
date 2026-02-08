@@ -5,6 +5,7 @@ import { useLanguage } from '../../App';
 import { AdPackage, AdSettings, AdSubscription, Advertisement } from '../../types';
 import { api } from '../../api';
 import PaginationFooter from '../../components/PaginationFooter';
+import EmptyState from '../../components/EmptyState';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -225,7 +226,7 @@ const Advertisements: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[300] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -278,12 +279,8 @@ const Advertisements: React.FC = () => {
            <button onClick={() => fetchAds(0, pageSize)} className="px-12 py-4 bg-primary text-white rounded-2xl font-black active:scale-95 shadow-xl shadow-primary/20">Retry Sync</button>
         </div>
       ) : ads.length === 0 ? (
-        <div className="py-40 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-           <div className="size-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-              <span className="material-symbols-outlined text-6xl">campaign</span>
-           </div>
-           <h3 className="text-2xl font-black text-slate-800 dark:text-white">{t.ads.empty}</h3>
-           <p className="text-sm text-slate-400 font-bold mt-2">Check back later for exciting updates.</p>
+        <div className="bg-white/40 dark:bg-slate-900/40 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+           <EmptyState title={t.ads.empty} subtitle={lang === 'ar' ? 'عد لاحقاً لتحديثات جديدة.' : 'Check back later for exciting updates.'} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
@@ -309,10 +306,10 @@ const Advertisements: React.FC = () => {
                    {ad.text}
                  </p>
                  <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">Ref: #{ad.id.slice(-6)}</span>
+                    <span className="text-[10px] font-black text-slate-400 tabular-nums">{t.ads.refLabel}: #{ad.id.slice(-6)}</span>
                     <div className="flex items-center gap-1">
                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                       <span className="text-[9px] font-black text-emerald-500 uppercase">Live</span>
+                       <span className="text-[9px] font-black text-emerald-500">{t.common.live}</span>
                     </div>
                  </div>
               </div>
@@ -327,7 +324,7 @@ const Advertisements: React.FC = () => {
                <div className="size-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white shadow-sm transition-all">
                   <span className="material-symbols-outlined text-4xl">add</span>
                </div>
-               <p className="mt-4 text-xs font-black text-slate-400 group-hover:text-primary uppercase tracking-widest">New Promotion</p>
+               <p className="mt-4 text-xs font-black text-slate-400 group-hover:text-primary">{t.ads.newPromotion}</p>
             </div>
           )}
         </div>
@@ -350,7 +347,7 @@ const Advertisements: React.FC = () => {
               <div className="mx-auto size-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-5xl">warning</span>
               </div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">
                 {lang === 'ar' ? 'حذف الإعلان؟' : 'Delete Ad?'}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-500 mb-10 leading-relaxed font-bold">
@@ -396,7 +393,7 @@ const Advertisements: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingAd ? t.ads.edit : t.ads.addNew}</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Ad design & placement</p>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">{t.ads.designPlacement}</p>
                 </div>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
@@ -413,14 +410,14 @@ const Advertisements: React.FC = () => {
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.image}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.ads.image}</label>
                   {!imagePreview ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50"
                     >
                       <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'اضغط لرفع الصورة' : 'Click to upload'}</span>
+                      <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
                     </div>
                   ) : (
                     <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
@@ -432,11 +429,11 @@ const Advertisements: React.FC = () => {
                     </div>
                   )}
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                  <p className="text-[9px] font-black text-slate-400 uppercase px-1">16:9 recommended</p>
+                  <p className="text-[9px] font-black text-slate-400 px-1">16:9 recommended</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.ads.text}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.ads.text}</label>
                   <textarea
                     required
                     value={formData.text}
@@ -449,7 +446,7 @@ const Advertisements: React.FC = () => {
                 {!editingAd && isSupplier && adPackages.length > 0 && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'باقة العرض' : 'Ad package'}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'باقة العرض' : 'Ad package'}</label>
                       <select
                         required
                         value={selectedPackageId}
@@ -477,7 +474,7 @@ const Advertisements: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isProcessing}
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     {isProcessing ? (
                       <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -498,7 +495,7 @@ const Advertisements: React.FC = () => {
       {/* Floating Action Button - Mobile only */}
       {canCreateAds && (
         <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
-          <div className="max-w-[1200px] mx-auto flex flex-col items-start gap-3 pointer-events-auto">
+          <div className="w-full flex flex-col items-start gap-3 pointer-events-auto">
             <button 
               onClick={openAddModal}
               className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"

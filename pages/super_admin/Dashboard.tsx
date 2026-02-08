@@ -80,8 +80,8 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* 1) كروت الاشتراكات الأربعة أولاً - من API منفصل */}
+    <div className="w-full py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 1) Subscription cards - from separate API */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {loadingSubscription ? (
           <>
@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* 2) كروت المستخدمين + إعلانات - من APIs منفصلة */}
+      {/* 2) User stats + ads cards - from separate APIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
         {loadingUserStats ? (
           [1, 2, 3].map((i) => (
@@ -156,21 +156,21 @@ const Dashboard: React.FC = () => {
                 <span className="material-symbols-outlined text-xl">people</span>
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalUsers ?? 0}</h3>
-              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</p>
+              <p className="text-[10px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/users')}>
               <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2 text-blue-600 dark:text-blue-400 w-fit mb-3">
                 <span className="material-symbols-outlined text-xl">store</span>
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalSuppliers ?? 0}</h3>
-              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'الموردين' : 'Suppliers'}</p>
+              <p className="text-[10px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'الموردين' : 'Suppliers'}</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:shadow-xl hover:border-primary/20" onClick={() => navigate('/users')}>
               <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-2 text-purple-600 dark:text-purple-400 w-fit mb-3">
                 <span className="material-symbols-outlined text-xl">person</span>
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{userStats?.totalCustomers ?? 0}</h3>
-              <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'العملاء' : 'Customers'}</p>
+              <p className="text-[10px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'العملاء' : 'Customers'}</p>
             </div>
             {loadingAdStats ? (
               <div className="rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
                   <span className="material-symbols-outlined text-xl">campaign</span>
                 </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{adStats?.activeAdSubscriptions ?? 0}</h3>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1">{lang === 'ar' ? 'إعلانات نشطة' : 'Active Ads'}</p>
+                <p className="text-[10px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'إعلانات نشطة' : 'Active Ads'}</p>
               </div>
             )}
           </>
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
         <RecentNotifications />
       </div>
 
-      {/* 3) جدول الاشتراكات السابقة - من API منفصل */}
+      {/* 3) Historical subscriptions table - from separate API */}
       {loadingHistorical ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8 h-64 animate-pulse" />
       ) : historicalSubscriptions.length > 0 ? (
@@ -204,16 +204,16 @@ const Dashboard: React.FC = () => {
               {lang === 'ar' ? 'الاشتراكات القديمة عند تجديد المستخدمين' : 'Old subscriptions when users renew'}
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-thead-primary">
             <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10">
+              <thead className="sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'الباقة' : 'Plan'}</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'السعر' : 'Price'}</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'الحالة' : 'Status'}</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'تاريخ الطلب' : 'Request Date'}</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الباقة' : 'Plan'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'السعر' : 'Price'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الحالة' : 'Status'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ الطلب' : 'Request Date'}</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

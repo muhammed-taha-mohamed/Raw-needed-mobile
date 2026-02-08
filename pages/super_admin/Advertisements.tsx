@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { Advertisement } from '../../types';
 import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
+import EmptyState from '../../components/EmptyState';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -145,7 +146,7 @@ const Advertisements: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {toast && (
         <div className={`fixed top-24 ${lang === 'ar' ? 'left-10' : 'right-10'} z-[300] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border animate-in slide-in-from-top-10 duration-500 ${
@@ -179,12 +180,8 @@ const Advertisements: React.FC = () => {
            <button onClick={() => fetchAds(0, pageSize)} className="px-12 py-4 bg-primary text-white rounded-2xl font-black active:scale-95 shadow-xl shadow-primary/20">Retry Sync</button>
         </div>
       ) : ads.length === 0 ? (
-        <div className="py-40 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-           <div className="size-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-              <span className="material-symbols-outlined text-6xl">campaign</span>
-           </div>
-           <h3 className="text-2xl font-black text-slate-800 dark:text-white">{t.ads.empty}</h3>
-           <p className="text-sm text-slate-400 font-bold mt-2">Start your first marketing campaign now.</p>
+        <div className="bg-white/40 dark:bg-slate-900/40 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+           <EmptyState title={t.ads.empty} subtitle={lang === 'ar' ? 'ابدأ أول حملة إعلانية الآن.' : 'Start your first marketing campaign now.'} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
@@ -208,10 +205,10 @@ const Advertisements: React.FC = () => {
                    {ad.text}
                  </p>
                  <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400    tabular-nums">Ref: #{ad.id.slice(-6)}</span>
+                    <span className="text-[10px] font-black text-slate-400 tabular-nums">{t.ads.refLabel}: #{ad.id.slice(-6)}</span>
                     <div className="flex items-center gap-1">
                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                       <span className="text-[9px] font-black text-emerald-500 uppercase">Live</span>
+                       <span className="text-[9px] font-black text-emerald-500">{t.common.live}</span>
                     </div>
                  </div>
               </div>
@@ -285,7 +282,7 @@ const Advertisements: React.FC = () => {
               <div className="mx-auto size-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-5xl">warning</span>
               </div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 uppercase">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">
                 {lang === 'ar' ? 'حذف الإعلان؟' : 'Delete Ad?'}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-500 mb-10 leading-relaxed font-bold">

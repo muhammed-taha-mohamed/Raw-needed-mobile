@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
+import EmptyState from '../../components/EmptyState';
 
 interface PendingSubscription {
   id: string;
@@ -206,7 +207,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
   };
 
   return (
-    <div className={`animate-in fade-in slide-in-from-bottom-4 duration-700 font-display ${embedded ? 'pt-0 pb-6 w-full max-w-full px-0' : 'mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6'}`}>
+    <div className={`animate-in fade-in slide-in-from-bottom-4 duration-700 font-display ${embedded ? 'pt-0 pb-6 w-full max-w-full px-0' : 'w-full py-6'}`}>
       {/* Header: title + button to open Add Searches section */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-xl font-black text-slate-800 dark:text-white">
@@ -235,13 +236,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
           <button onClick={() => fetchPendingRequests(currentPage)} className="px-10 py-3 bg-primary text-white rounded-xl font-bold text-base shadow-md active:scale-95">Retry Sync</button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="py-32 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-          <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-            <span className="material-symbols-outlined text-4xl">check_circle</span>
-          </div>
-          <h3 className="text-xl font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'لا توجد طلبات معلقة' : 'No Pending Requests'}</h3>
-          <p className="text-sm text-slate-400 font-medium mt-2">{lang === 'ar' ? 'لقد قمت بمراجعة جميع الطلبات الحالية.' : 'You have reviewed all current subscription requests.'}</p>
-        </div>
+        <EmptyState title={lang === 'ar' ? 'لا توجد طلبات معلقة' : 'No Pending Requests'} subtitle={lang === 'ar' ? 'لقد قمت بمراجعة جميع الطلبات الحالية.' : 'You have reviewed all current subscription requests.'} />
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
@@ -400,7 +395,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
         </>
       )}
 
-      {/* بوب اب طلبات إضافة عمليات البحث */}
+      {/* Popup for add-search requests */}
       {showAddSearchesSection && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowAddSearchesSection(false)}>
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -476,7 +471,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
               {isFetchingUser ? (
                 <div className="py-20 flex flex-col items-center justify-center">
                    <div className="size-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-                   <p className="text-[12px] font-black text-slate-500 ">Synchronizing Profile...</p>
+                   <p className="text-[12px] font-black text-slate-500">{t.common.synchronizingProfile}</p>
                 </div>
               ) : selectedUser ? (
                 <div className="space-y-10">

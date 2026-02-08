@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
+import EmptyState from '../../components/EmptyState';
 
 const PaymentInfo: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -123,7 +124,7 @@ const PaymentInfo: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 pb-24 md:pb-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 pb-24 md:pb-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* Desktop: Add button at top when there are items */}
       {!isLoading && list.length > 0 && (
@@ -148,14 +149,14 @@ const PaymentInfo: React.FC = () => {
           <p className="text-slate-500 font-bold text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
         </div>
       ) : list.length === 0 ? (
-        <div className="p-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-          <span className="material-symbols-outlined text-slate-300 dark:text-slate-600 text-5xl mb-4">account_balance_wallet</span>
-          <h3 className="text-lg font-black text-slate-700 dark:text-slate-200 mb-2">{lang === 'ar' ? 'لا توجد معلومات دفع' : 'No payment info yet'}</h3>
-          <p className="text-slate-500 text-sm mb-6">{lang === 'ar' ? 'أضف حساب تحويل أو محفظة لعرضها للمستخدمين.' : 'Add a transfer account or wallet to show to users.'}</p>
-          <button onClick={openCreate} className="px-8 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg active:scale-95">
-            {lang === 'ar' ? 'إضافة أول عنصر' : 'Add first entry'}
-          </button>
-        </div>
+        <>
+          <EmptyState title={lang === 'ar' ? 'لا توجد معلومات دفع' : 'No payment info yet'} subtitle={lang === 'ar' ? 'أضف حساب تحويل أو محفظة لعرضها للمستخدمين.' : 'Add a transfer account or wallet to show to users.'} />
+          <div className="pb-8 flex justify-center">
+            <button onClick={openCreate} className="px-8 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg active:scale-95">
+              {lang === 'ar' ? 'إضافة أول عنصر' : 'Add first entry'}
+            </button>
+          </div>
+        </>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((item) => (
@@ -329,7 +330,7 @@ const PaymentInfo: React.FC = () => {
 
       {/* Mobile: FAB above bottom nav (same as Products/Categories) */}
       <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-        <div className={`max-w-[1200px] mx-auto flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+        <div className={`w-full flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={openCreate}
             className="size-12 rounded-full bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-all border-2 border-white/20"

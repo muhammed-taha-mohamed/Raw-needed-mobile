@@ -53,7 +53,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div className={wrapperClassName || undefined} ref={ref}>
       {label && (
-        <label htmlFor={id} className="text-[10px] font-black text-slate-500 uppercase px-1 block mb-1">
+        <label htmlFor={id} className="text-[10px] font-black text-slate-500 px-1 block mb-1">
           {label}
         </label>
       )}

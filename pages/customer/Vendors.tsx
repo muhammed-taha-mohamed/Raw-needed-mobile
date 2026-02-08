@@ -5,6 +5,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, SubCategory } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import EmptyState from '../../components/EmptyState';
 
 interface Supplier {
   id: string;
@@ -370,7 +371,7 @@ const Vendors: React.FC = () => {
   const activeCatalogFiltersCount = [prodSearchName, prodSearchOrigin, prodSearchCat, prodSearchSub].filter(Boolean).length;
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
@@ -451,11 +452,11 @@ const Vendors: React.FC = () => {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 dark:border-slate-800 mb-6 relative overflow-visible">
-         <div className="overflow-visible rounded-xl">
+      <div className="hidden md:block mb-6 relative overflow-visible table-thead-primary">
+         <div className="overflow-visible">
            <table className="w-full text-left rtl:text-right border-collapse">
              <thead className="sticky top-0 z-10">
-               <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 text-[12px] font-black text-slate-400 ">
+               <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                  <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
                  <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
                  <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
@@ -553,7 +554,7 @@ const Vendors: React.FC = () => {
         </div>
       )}
 
-      {/* Vendor Details Modal - opens on "التفاصيل" so content is fully visible */}
+      {/* Vendor Details Modal - opens from details button so content is fully visible */}
       {detailsModalVendor && (
         <div
           className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -661,7 +662,7 @@ const Vendors: React.FC = () => {
                  {isProductsLoading ? (
                     <div className="py-20 flex flex-col items-center justify-center"><div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-[11px] font-black text-slate-400 animate-pulse">Syncing Catalog...</p></div>
                  ) : supplierProducts.length === 0 ? (
-                    <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700"><span className="material-symbols-outlined text-7xl">search_off</span><div className="space-y-1"><h3 className="text-xl font-black">{t.productSearch.empty}</h3><p className="text-sm font-bold">{t.productSearch.refine}</p></div></div>
+                    <EmptyState title={t.productSearch.empty} subtitle={t.productSearch.refine} />
                  ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-24">
                        {supplierProducts.map((p, idx) => {
@@ -682,7 +683,7 @@ const Vendors: React.FC = () => {
                                        {p.unit && (
                                          <div className="flex items-center gap-1.5 text-slate-400">
                                            <span className="material-symbols-outlined text-[16px] text-primary/60">straighten</span>
-                                           <span className="text-[10px] font-bold uppercase">{p.unit}</span>
+                                           <span className="text-[10px] font-bold">{p.unit}</span>
                                          </div>
                                        )}
                                     </div>
@@ -698,7 +699,7 @@ const Vendors: React.FC = () => {
                                     </div>
                                   </div>
                                   <div className="mt-3 flex items-center justify-between gap-2">
-                                     <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black uppercase">{p.unit}</span> : <span className="text-[9px] font-black uppercase">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
+                                     <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black">{p.unit}</span> : <span className="text-[9px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
                                      <div className="flex items-center gap-2">
                                         {isInCart ? (
                                           <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20"><button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">remove</span></button><span className="px-2 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{cartQty}</span><button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">add</span></button></div>
@@ -717,7 +718,7 @@ const Vendors: React.FC = () => {
 
               {/* Floating Buttons in Modal */}
               <div className="absolute bottom-24 left-0 right-0 z-[250] pointer-events-none px-6">
-                <div className="max-w-5xl mx-auto flex flex-col items-end gap-3 pointer-events-auto">
+                <div className="w-full flex flex-col items-end gap-3 pointer-events-auto">
                   <button onClick={() => setIsManualModalOpen(true)} className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"><span className="material-symbols-outlined text-2xl">edit_document</span></button>
                   <div className="relative" ref={catalogFilterRef}>
                     <button onClick={() => setShowCatalogFilters(!showCatalogFilters)} className={`size-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-white/20' : 'bg-slate-900 text-white border-white/10'}`}><span className="material-symbols-outlined text-2xl">tune</span>{activeCatalogFiltersCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{activeCatalogFiltersCount}</span>}</button>
@@ -725,7 +726,7 @@ const Vendors: React.FC = () => {
                       <div className={`absolute bottom-full mb-4 z-[260] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-primary/10 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                          <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xs font-black     text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
-                            <button onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
+                            <button onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
                          </div>
                          
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -776,9 +777,9 @@ const Vendors: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                  <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-5">
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
-                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" alt="" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400 uppercase">Click to upload</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
+                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
+                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" alt="" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
                  </form>
               </div>
 

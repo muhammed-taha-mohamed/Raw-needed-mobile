@@ -3,6 +3,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { AdPackage, AdSubscription } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import EmptyState from '../../components/EmptyState';
 
 interface PendingPage {
   content: AdSubscription[];
@@ -13,13 +14,13 @@ interface PendingPage {
 }
 
 const AdPackages: React.FC = () => {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { showToast } = useToast();
   const [packages, setPackages] = useState<AdPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdPackage | null>(null);
-  const [form, setForm] = useState({ nameAr: '', nameEn: '', numberOfDays: 7, pricePerAd: '0', featuredPrice: '0', active: true, sortOrder: 0 });
+  const [form, setForm] = useState<{ nameAr: string; nameEn: string; numberOfDays: string; pricePerAd: string; featuredPrice: string; active: boolean; sortOrder: number }>({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: 0 });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<AdSubscription[]>([]);
@@ -96,7 +97,7 @@ const AdPackages: React.FC = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ nameAr: '', nameEn: '', numberOfDays: 7, pricePerAd: '0', featuredPrice: '0', active: true, sortOrder: packages.length });
+    setForm({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: packages.length });
     setModalOpen(true);
   };
 
@@ -105,9 +106,9 @@ const AdPackages: React.FC = () => {
     setForm({
       nameAr: p.nameAr || '',
       nameEn: p.nameEn || '',
-      numberOfDays: p.numberOfDays,
-      pricePerAd: String((p as any).pricePerAd ?? p.price ?? 0),
-      featuredPrice: String((p as any).featuredPrice ?? 0),
+      numberOfDays: p.numberOfDays != null ? String(p.numberOfDays) : '',
+      pricePerAd: String((p as any).pricePerAd ?? p.price ?? ''),
+      featuredPrice: String((p as any).featuredPrice ?? ''),
       active: p.active,
       sortOrder: p.sortOrder ?? 0,
     });
@@ -115,11 +116,19 @@ const AdPackages: React.FC = () => {
   };
 
   const handleSavePackage = async () => {
-    const numDays = form.numberOfDays;
-    const pricePerAd = parseFloat(form.pricePerAd);
-    const featuredPrice = parseFloat(form.featuredPrice);
-    if (numDays < 1 || isNaN(pricePerAd) || pricePerAd < 0 || isNaN(featuredPrice) || featuredPrice < 0) {
-      showToast(lang === 'ar' ? 'عدد الأيام والأسعار مطلوبة وصحيحة' : 'Valid days and prices required', 'error');
+    const numDays = parseInt(String(form.numberOfDays).trim(), 10);
+    const pricePerAd = parseFloat(String(form.pricePerAd).trim());
+    const featuredPrice = parseFloat(String(form.featuredPrice).trim());
+    if (isNaN(numDays) || numDays < 1) {
+      showToast(lang === 'ar' ? 'أدخل مدة صحيحة (يوم)' : 'Enter valid duration (days)', 'error');
+      return;
+    }
+    if (isNaN(pricePerAd) || pricePerAd < 0) {
+      showToast(lang === 'ar' ? 'أدخل سعر الإعلان الواحد صحيحاً' : 'Enter valid price per ad', 'error');
+      return;
+    }
+    if (isNaN(featuredPrice) || featuredPrice < 0) {
+      showToast(lang === 'ar' ? 'أدخل سعر عرض أولاً صحيحاً' : 'Enter valid featured price', 'error');
       return;
     }
     setSaving(true);
@@ -210,7 +219,7 @@ const AdPackages: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-[1200px] px-4 md:px-10 py-6 flex items-center justify-center min-h-[300px]">
+      <div className="w-full py-6 flex items-center justify-center min-h-[300px]">
         <div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
@@ -219,7 +228,7 @@ const AdPackages: React.FC = () => {
   const activePackages = packages.filter((p) => p.active);
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Tabs - full width of container */}
       <div className="flex gap-1 p-1 mb-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 w-full min-w-0">
         <button
@@ -259,13 +268,7 @@ const AdPackages: React.FC = () => {
               <p className="text-slate-400 font-bold text-[11px]">{lang === 'ar' ? 'جاري المراجعة...' : 'Reviewing submissions...'}</p>
             </div>
           ) : pendingSubscriptions.length === 0 ? (
-            <div className="py-32 flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
-              <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-                <span className="material-symbols-outlined text-4xl">check_circle</span>
-              </div>
-              <h3 className="text-xl font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'لا توجد طلبات معلقة' : 'No Pending Requests'}</h3>
-              <p className="text-sm text-slate-400 font-medium mt-2">{lang === 'ar' ? 'لقد قمت بمراجعة جميع الطلبات الحالية.' : 'You have reviewed all current subscription requests.'}</p>
-            </div>
+            <EmptyState title={lang === 'ar' ? 'لا توجد طلبات معلقة' : 'No Pending Requests'} subtitle={lang === 'ar' ? 'لقد قمت بمراجعة جميع الطلبات الحالية.' : 'You have reviewed all current subscription requests.'} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-500">
                 {pendingSubscriptions.map((sub, idx) => (
@@ -375,11 +378,13 @@ const AdPackages: React.FC = () => {
       {/* Tab: Packages */}
       {activeTab === 'packages' && (
         <>
-          {packages.length === 0 ? (
+          {loading && packages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
               <div className="h-10 w-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
               <p className="text-slate-500 font-bold text-[11px]">{lang === 'ar' ? 'جاري تحميل الباقات...' : 'Loading packages...'}</p>
             </div>
+          ) : packages.length === 0 ? (
+            <EmptyState title={lang === 'ar' ? 'لا توجد باقات' : 'No packages'} subtitle={lang === 'ar' ? 'أضف باقة إعلانات جديدة.' : 'Add a new ad package.'} />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
@@ -462,58 +467,50 @@ const AdPackages: React.FC = () => {
               <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
             </div>
           ) : approvedSubscriptions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 animate-in fade-in duration-500">
-              <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-6">
-                <span className="material-symbols-outlined text-5xl">subscriptions</span>
-              </div>
-              <h3 className="text-xl font-black text-slate-700 dark:text-white mb-2">{lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'}</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                {lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'}
-              </p>
-            </div>
+            <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
           ) : (
             <>
-              <div className="overflow-x-auto animate-in fade-in duration-500 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto animate-in fade-in duration-500 table-thead-primary">
                 <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-800/50 border-b-2 border-primary/20">
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">store</span>
-                          <span className="hidden md:inline">{lang === 'ar' ? 'المورد' : 'Supplier'}</span>
+                          <span>{lang === 'ar' ? 'المورد' : 'Supplier'}</span>
                         </div>
                       </th>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">loyalty</span>
-                          <span className="hidden md:inline">{lang === 'ar' ? 'الباقة' : 'Package'}</span>
+                          <span>{lang === 'ar' ? 'الباقة' : 'Package'}</span>
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">ads_click</span>
                           {lang === 'ar' ? 'متبقي / إجمالي' : 'Remaining / Total'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">payments</span>
                           {lang === 'ar' ? 'الإجمالي' : 'Total'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">play_circle</span>
                           {lang === 'ar' ? 'تاريخ الموافقة' : 'Approved'}
                         </div>
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-base">schedule</span>
                           {lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}
                         </div>
                       </th>
-                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
                         {lang === 'ar' ? 'المزيد' : 'More'}
                       </th>
                     </tr>
@@ -537,6 +534,7 @@ const AdPackages: React.FC = () => {
                                 <span className="material-symbols-outlined text-lg md:text-xl">store</span>
                               </div>
                               <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'المورد' : 'Supplier'}</p>
                                 <div className="font-black text-slate-900 dark:text-white text-xs md:text-sm truncate">
                                   {sub.supplierOrganizationName || sub.supplierName || '—'}
                                 </div>
@@ -550,9 +548,12 @@ const AdPackages: React.FC = () => {
                           </td>
                           <td className="px-4 md:px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
-                                {lang === 'ar' ? sub.packageNameAr || sub.packageNameEn : sub.packageNameEn || sub.packageNameAr}
-                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'الباقة' : 'Package'}</p>
+                                <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
+                                  {lang === 'ar' ? sub.packageNameAr || sub.packageNameEn : sub.packageNameEn || sub.packageNameAr}
+                                </span>
+                              </div>
                             </div>
                           </td>
                           <td className="hidden md:table-cell px-6 py-5">
@@ -734,7 +735,7 @@ const AdPackages: React.FC = () => {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
                     {editing ? (lang === 'ar' ? 'تعديل الباقة' : 'Edit package') : (lang === 'ar' ? 'إضافة باقة' : 'Add package')}
                   </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Name, days, prices & status</p>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">{lang === 'ar' ? 'الاسم، المدة، الأسعار والحالة' : 'Name, days, prices & status'}</p>
                 </div>
               </div>
               <button onClick={() => setModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
@@ -744,25 +745,25 @@ const AdPackages: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="adPkgForm" onSubmit={(e) => { e.preventDefault(); handleSavePackage(); }} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'الاسم (ع)' : 'Name (AR)'}</label>
-                  <input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الاسم (ع)' : 'Name (AR)'}</label>
+                  <input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} placeholder={t.adPackage.nameArPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'الاسم (en)' : 'Name (EN)'}</label>
-                  <input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الاسم (en)' : 'Name (EN)'}</label>
+                  <input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder={t.adPackage.nameEnPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'مدة كل إعلان (يوم)' : 'Per-ad duration (days)'}</label>
-                  <input type="number" min={1} value={form.numberOfDays} onChange={(e) => setForm({ ...form, numberOfDays: parseInt(e.target.value, 10) || 1 })} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'مدة كل إعلان (يوم)' : 'Per-ad duration (days)'}</label>
+                  <input type="number" min={1} value={form.numberOfDays} onChange={(e) => setForm({ ...form, numberOfDays: e.target.value })} placeholder={t.adPackage.durationDaysPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                   <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'كل إعلان يظهر لهذه المدة ثم يختفي' : 'Each ad is shown for this many days then hidden'}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'سعر الإعلان الواحد (EGP)' : 'Price per ad (EGP)'}</label>
-                  <input type="number" min={0} step={0.01} value={form.pricePerAd} onChange={(e) => setForm({ ...form, pricePerAd: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'سعر الإعلان الواحد (EGP)' : 'Price per ad (EGP)'}</label>
+                  <input type="number" min={0} step={0.01} value={form.pricePerAd} onChange={(e) => setForm({ ...form, pricePerAd: e.target.value })} placeholder={t.adPackage.pricePerAdPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'سعر عرض أولاً (EGP)' : 'Featured price (EGP)'}</label>
-                  <input type="number" min={0} step={0.01} value={form.featuredPrice} onChange={(e) => setForm({ ...form, featuredPrice: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'سعر عرض أولاً (EGP)' : 'Featured price (EGP)'}</label>
+                  <input type="number" min={0} step={0.01} value={form.featuredPrice} onChange={(e) => setForm({ ...form, featuredPrice: e.target.value })} placeholder={t.adPackage.featuredPricePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                   <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'السعر الإضافي الذي يدفعه المورد ليظهر إعلانه في الأول' : 'Extra price the supplier pays to display their ad first'}</p>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
@@ -773,7 +774,7 @@ const AdPackages: React.FC = () => {
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
               <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</button>
-              <button type="submit" form="adPkgForm" disabled={saving} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+              <button type="submit" form="adPkgForm" disabled={saving} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                 {saving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'حفظ' : 'Save'}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>
@@ -795,7 +796,7 @@ const AdPackages: React.FC = () => {
         </div>
       )}
 
-      {/* User Info Modal (عرض الحساب) */}
+      {/* User Info Modal */}
       {showUserModal && (
         <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
@@ -864,7 +865,7 @@ const AdPackages: React.FC = () => {
         </div>
       )}
 
-      {/* Receipt Lightbox (عرض الإيصال) */}
+      {/* Receipt Lightbox */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedReceipt(null)}>
           <div className="relative max-w-4xl w-[90%] md:w-full flex flex-col items-center animate-in zoom-in-95 duration-500" onClick={(e) => e.stopPropagation()}>

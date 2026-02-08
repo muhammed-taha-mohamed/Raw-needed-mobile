@@ -6,6 +6,7 @@ import { hasFeature } from '../../utils/subscription';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
+import EmptyState from '../../components/EmptyState';
 
 interface SpecialOffer {
   id: string;
@@ -119,7 +120,7 @@ const ViewSpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === null) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
         <div className="flex flex-col items-center justify-center py-40">
           <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
           <p className="text-slate-400 font-black text-[10px] md:text-xs opacity-50">Loading...</p>
@@ -130,7 +131,7 @@ const ViewSpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === false) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
         <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-red-100 dark:border-red-900/20 shadow-xl">
           <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
             <span className="material-symbols-outlined text-5xl">lock</span>
@@ -149,7 +150,7 @@ const ViewSpecialOffers: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+    <div className="w-full py-6 animate-in fade-in duration-700 font-display">
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
@@ -161,9 +162,8 @@ const ViewSpecialOffers: React.FC = () => {
           ))}
         </div>
       ) : offers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-12 text-center">
-          <span className="material-symbols-outlined text-5xl text-slate-300 mb-4">local_offer</span>
-          <p className="text-slate-500 font-bold">{lang === 'ar' ? 'لا توجد عروض خاصة متاحة حالياً' : 'No special offers available at the moment'}</p>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <EmptyState title={lang === 'ar' ? 'لا توجد عروض خاصة متاحة حالياً' : 'No special offers available at the moment'} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

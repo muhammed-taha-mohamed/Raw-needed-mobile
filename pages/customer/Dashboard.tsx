@@ -126,7 +126,7 @@ const CustomerDashboard: React.FC = () => {
     : '0';
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display text-slate-800 dark:text-slate-100 antialiased">
+    <div className="w-full py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display text-slate-800 dark:text-slate-100 antialiased">
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -159,42 +159,42 @@ const CustomerDashboard: React.FC = () => {
                   )}
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.totalOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-amber-500 text-2xl">pending_actions</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pendingOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'قيد المراجعة' : 'Pending'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'قيد المراجعة' : 'Pending'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-blue-500 text-2xl">handshake</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.negotiatingOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'قيد التفاوض' : 'Negotiating'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'قيد التفاوض' : 'Negotiating'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-purple-500 text-2xl">hourglass_empty</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.underConfirmationOrders || 0}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'تحت التأكيد' : 'Confirmation'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'تحت التأكيد' : 'Confirmation'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-emerald-500 text-2xl">task_alt</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.completedOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-red-500 text-2xl">cancel</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.cancelledOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'ملغاة' : 'Cancelled'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'ملغاة' : 'Cancelled'}</p>
               </div>
             </div>
           )}
@@ -427,7 +427,7 @@ const CustomerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* مؤشرات الأداء */}
+          {/* Performance indicators */}
           {!loadingStats && stats && (
             <div className="bg-gradient-to-br from-primary to-accent rounded-[2rem] p-6 text-white shadow-xl shadow-primary/20">
               <div className="mb-5">

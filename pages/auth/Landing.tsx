@@ -13,7 +13,7 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed inset-0 w-full h-full min-h-[100dvh] flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
+    <div className="fixed inset-0 w-full h-screen min-h-[100dvh] flex flex-col md:flex-row bg-[#20a7b2] dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-display relative">
       <style>{`
         @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -57,7 +57,7 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
         </div>
       </div>
 
-      <div className="flex-none h-[45vh] md:h-screen md:w-1/2 md:order-2 bg-white dark:bg-slate-900 relative rounded-b-[4rem] md:rounded-none overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 md:border-l-4 border-white/10 dark:border-primary/20">
+      <div className="flex-none h-[45vh] md:min-h-full md:h-full md:w-1/2 md:order-2 bg-white dark:bg-slate-900 relative rounded-b-[4rem] md:rounded-none overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 md:border-l-4 border-white/10 dark:border-primary/20">
         <div className="absolute inset-0 flex items-center justify-center">
           <img 
             src={APP_LOGO} 
@@ -68,7 +68,7 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
         <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
       </div>
 
-      <div className="flex-1 md:w-1/2 flex flex-col justify-center px-8 sm:px-12 md:px-20 lg:px-32 py-12 md:py-0 md:order-1 relative">
+      <div className="flex-1 min-h-0 md:w-1/2 md:min-h-full flex flex-col justify-center px-8 sm:px-12 md:px-20 lg:px-32 py-12 md:py-0 md:order-1 relative">
         <div className="max-w-xl mx-auto md:mx-0 w-full space-y-10">
           <div className="space-y-6 text-center md:text-left rtl:md:text-right">
             <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-black leading-[1.1] animate-fade-up" style={{ animationDelay: '0.4s' }}>

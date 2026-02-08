@@ -174,7 +174,7 @@ const MyTeam: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display min-h-screen pb-40">
+    <div className="w-full py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display min-h-screen pb-40">
       
       {/* Web: Add button bar at top — hidden on mobile */}
       <div className="hidden md:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm mb-6">
@@ -188,7 +188,7 @@ const MyTeam: React.FC = () => {
 
       {/* Floating Action Button — mobile only */}
       <div className="fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6 md:hidden">
-        <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
+        <div className="w-full flex flex-col items-end pointer-events-auto">
           <button 
             onClick={openAddModal}
             className="size-14 rounded-full bg-primary text-white shadow-[0_15px_35px_rgba(0,154,167,0.4)] flex items-center justify-center active:scale-90 transition-all border-2 border-white/20 group hover:bg-slate-900"
@@ -206,9 +206,9 @@ const MyTeam: React.FC = () => {
            ) : members.length === 0 ? (
              <div className="py-40 text-center opacity-30"><span className="material-symbols-outlined text-7xl">group_off</span><h3 className="text-xl font-black mt-4">{t.team.noTeam}</h3></div>
            ) : (
-             <table className="w-full text-left rtl:text-right border-collapse">
+             <table className="w-full text-left rtl:text-right border-collapse table-thead-primary">
                <thead className="sticky top-0 z-10">
-                 <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-primary/10 text-[12px] font-black text-slate-500    ">
+                 <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                    <th className="px-8 py-5">{t.team.name}</th>
                    <th className="px-8 py-5 hidden md:table-cell">{t.team.email}</th>
                    <th className="px-8 py-5">{lang === 'ar' ? 'الوصول' : 'Access'}</th>
@@ -325,7 +325,7 @@ const MyTeam: React.FC = () => {
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
            <div className="w-[90%] md:w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">person_add</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingMember ? t.team.editStaff : t.team.addStaff}</h3><p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.team.memberIdentityAccess}</p></div></div>
+                 <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">person_add</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingMember ? t.team.editStaff : t.team.addStaff}</h3><p className="text-[10px] font-black text-slate-400 mt-2">{t.team.memberIdentityAccess}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
               </div>
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
@@ -338,13 +338,13 @@ const MyTeam: React.FC = () => {
                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.team.name}</label><input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.team.email}</label><input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.team.phone}</label><input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
-                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.team.password}</label><input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.team.name}</label><input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.team.email}</label><input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.team.phone}</label><input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                       <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.team.password}</label><input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
                     </div>
                     <div className="space-y-1.5">
-                       <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.team.screens}</label>
+                       <label className="text-[11px] font-black text-slate-500 px-1">{t.team.screens}</label>
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 border border-primary/5 rounded-3xl bg-slate-50/30 custom-scrollbar">
                           {availableScreens.map(screen => (
                             <button key={screen.id} type="button" onClick={() => toggleScreen(screen.id)} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all group ${formData.allowedScreenIds.includes(screen.id) ? 'bg-primary border-primary text-white shadow-lg' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700 text-slate-600 hover:border-primary/30'}`}>
@@ -358,7 +358,7 @@ const MyTeam: React.FC = () => {
               </div>
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
                  <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.team.cancel}</button>
-                 <button type="submit" form="staffForm" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">{isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{editingMember ? t.team.save : t.team.addStaff}<span className="material-symbols-outlined">verified</span></>}</button>
+                 <button type="submit" form="staffForm" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">{isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{editingMember ? t.team.save : t.team.addStaff}<span className="material-symbols-outlined">verified</span></>}</button>
               </div>
            </div>
         </div>

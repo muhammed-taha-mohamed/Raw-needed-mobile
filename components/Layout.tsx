@@ -14,7 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -88,12 +88,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const sidebarNavItems = useMemo(() => {
     if (isAdmin) {
       return [
-        { name: lang === 'ar' ? 'لوحة القيادة' : 'Dashboard', icon: 'grid_view', path: '/' },
-        { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
-        { name: lang === 'ar' ? 'معلومات الدفع' : 'Payment Info', icon: 'payments', path: '/payment-info' },
+        { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'grid_view', path: '/' },
+        { name: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', icon: 'loyalty', path: '/plans' },
+        { name: lang === 'ar' ? 'ادارة الاعلانات' : 'Ad Management', icon: 'campaign', path: '/ad-packages' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
         { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
-        { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
         { name: lang === 'ar' ? 'الدعم' : 'Support', icon: 'support_agent', path: '/support' },
         { name: lang === 'ar' ? 'حسابي' : 'Profile', icon: 'person', path: '/profile' },
       ];
@@ -144,7 +143,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     if (isAdmin) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
-        { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
+        { name: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', icon: 'loyalty', path: '/plans' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
@@ -200,8 +199,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/profile') info = { title: t.profile.title, subtitle: t.profile.subtitle };
     else if (path === '/cart') info = { title: lang === 'ar' ? 'عربة الطلبات' : 'Procurement Cart', subtitle: lang === 'ar' ? 'راجع المواد قبل الإرسال.' : 'Review items before sending.' };
     else if (path === '/special-offers') info = { title: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', subtitle: lang === 'ar' ? 'عروض خاصة من الموردين' : 'Special offers from suppliers' };
-    else if (path === '/ad-packages') info = { title: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', subtitle: lang === 'ar' ? 'إدارة باقات الإعلانات وسعر عرض أولاً' : 'Manage ad packages and featured price' };
-    else if (path === '/plans') info = { title: lang === 'ar' ? 'الخطط' : 'Plans', subtitle: lang === 'ar' ? 'إدارة خطط الاشتراك والأسعار' : 'Manage subscription plans and pricing' };
+    else if (path === '/ad-packages') info = { title: lang === 'ar' ? 'ادارة الاعلانات' : 'Ad Management', subtitle: lang === 'ar' ? 'إدارة باقات الإعلانات وسعر عرض أولاً' : 'Manage ad packages and featured price' };
+    else if (path === '/plans') info = { title: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', subtitle: lang === 'ar' ? 'إدارة خطط الاشتراك والأسعار' : 'Manage subscription plans and pricing' };
     else if (path === '/categories') info = { title: lang === 'ar' ? 'الفئات' : 'Categories', subtitle: lang === 'ar' ? 'إدارة الفئات والتصنيفات' : 'Manage categories and classifications' };
     else if (path === '/approvals') info = { title: lang === 'ar' ? 'الموافقات' : 'Approvals', subtitle: lang === 'ar' ? 'مراجعة وموافقة على الطلبات' : 'Review and approve requests' };
     else if (path === '/users') info = { title: lang === 'ar' ? 'المستخدمين' : 'Users', subtitle: lang === 'ar' ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users' };
@@ -235,7 +234,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-[200] flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 ease-in-out border-primary/60 shadow-xl ${lang === 'ar' ? 'border-l' : 'border-r'}
         ${isSidebarOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}
         lg:translate-x-0
-        ${isSidebarCollapsed ? 'lg:w-20 lg:overflow-visible' : 'w-1/2 sm:w-1/2 lg:w-64'}
+        ${isSidebarCollapsed ? 'lg:w-20 lg:overflow-visible' : 'w-[50%] sm:w-[50%] lg:w-64'}
         overflow-visible
       `}>
 
@@ -367,35 +366,17 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                 )}
               </button>
               <button
-                onClick={() => {
-                  if (showLogoutConfirm) {
-                    onLogout();
-                    setShowLogoutConfirm(false);
-                  } else {
-                    setShowLogoutConfirm(true);
-                    setTimeout(() => setShowLogoutConfirm(false), 3000);
-                  }
-                }}
-                onBlur={() => setTimeout(() => setShowLogoutConfirm(false), 200)}
+                onClick={() => setShowLogoutModal(true)}
                 className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center lg:overflow-visible' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-red-100 hover:bg-red-50/30 text-slate-700 dark:text-slate-200 hover:text-red-500`}
               >
                 <span className="material-symbols-outlined rtl-flip text-slate-400 group-hover:text-red-500">logout</span>
                 {!isSidebarCollapsed && (
                   <span className="text-[12px] font-black">{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
                 )}
-                {/* Tooltip for collapsed state */}
-                {isSidebarCollapsed && !showLogoutConfirm && (
+                {isSidebarCollapsed && (
                   <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
                     {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
                     <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
-                  </div>
-                )}
-                {/* Confirmation Tooltip */}
-                {showLogoutConfirm && (
-                  <div className={`flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-red-600 dark:bg-red-700 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center gap-2 animate-in fade-in zoom-in-95 duration-200`}>
-                    <span className="material-symbols-outlined text-sm">warning</span>
-                    <span>{lang === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?'}</span>
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-red-600 dark:border-l-red-700' : 'border-r-[4px] border-r-red-600 dark:border-r-red-700'}`}></div>
                   </div>
                 )}
               </button>
@@ -406,7 +387,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
       {/* Main content: on lg+ add margin so content is beside sidebar */}
       <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-500 ${isSidebarCollapsed ? (lang === 'ar' ? 'lg:mr-20' : 'lg:ml-20') : (lang === 'ar' ? 'lg:mr-64' : 'lg:ml-64')}`}>
-        <header className={`fixed top-0 z-[100] bg-white dark:bg-slate-900 border-b border-primary/30 px-6 flex items-end md:items-center justify-between shrink-0 shadow-sm mobile-header-safe-height pb-4 md:pb-0 md:h-20 transition-all duration-500 ${isSidebarCollapsed ? (lang === 'ar' ? 'lg:right-20 lg:left-0' : 'lg:left-20 lg:right-0') : (lang === 'ar' ? 'lg:right-64 lg:left-0' : 'lg:left-64 lg:right-0')} ${lang === 'ar' ? 'right-0 left-0' : 'left-0 right-0'}`}>
+        <header className={`fixed top-0 z-[100] bg-white dark:bg-slate-900 border-b border-primary/30 px-6 flex items-center justify-between shrink-0 shadow-sm mobile-header-safe-height md:h-20 transition-all duration-500 ${isSidebarCollapsed ? (lang === 'ar' ? 'lg:right-20 lg:left-0' : 'lg:left-20 lg:right-0') : (lang === 'ar' ? 'lg:right-64 lg:left-0' : 'lg:left-64 lg:right-0')} ${lang === 'ar' ? 'right-0 left-0' : 'left-0 right-0'}`}>
 
           <div className="flex items-center gap-4 min-w-0">
             {/* Collapse Button - Desktop only */}
@@ -461,9 +442,48 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-24 lg:pb-0 min-h-0 pt-[85px] md:pt-20">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark focus:outline-none transition-all duration-300 custom-scrollbar pb-24 lg:pb-0 min-h-0 mobile-main-pt pt-[64px] md:pt-20">
+          {/* Main content area: horizontal padding as % of viewport, defined in one place */}
+          <div className="w-full px-[4%] min-[900px]:px-[5%] xl:px-[6%]">
+            <Outlet />
+          </div>
         </main>
+
+        {/* Logout confirmation modal */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-6 text-center">
+                <div className="size-14 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
+                  <span className="material-symbols-outlined text-3xl text-red-500">logout</span>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">
+                  {lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}
+                </h3>
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {lang === 'ar' ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Are you sure you want to log out?'}
+                </p>
+              </div>
+              <div className="flex gap-3 p-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-black text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowLogoutModal(false); onLogout(); }}
+                  className="flex-1 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[20px]">logout</span>
+                  {lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bottom nav: mobile only; hidden on desktop (lg+) */}
         <div className="fixed bottom-6 left-6 right-6 z-[120] pointer-events-none lg:hidden">
