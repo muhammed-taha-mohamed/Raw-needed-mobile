@@ -959,8 +959,42 @@ const Profile: React.FC = () => {
 
       {/* Add/Edit Ad Modal */}
       {isAdModalOpen && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsAdModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -1015,14 +1049,49 @@ const Profile: React.FC = () => {
                    {isSaving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.profileExtra.saveAd}<span className="material-symbols-outlined">verified</span></>}
                  </button>
               </div>
+              
            </div>
         </div>
       )}
 
       {/* Ad Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDeleteConfirmId(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
             <div className="p-10 text-center">
               <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-red-50/50">
                 <span className="material-symbols-outlined text-3xl">warning</span>
@@ -1035,6 +1104,7 @@ const Profile: React.FC = () => {
                   {isSaving ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined text-base">delete_forever</span> {t.profileExtra.confirmDelete}</>}
                 </button>
               </div>
+              
             </div>
           </div>
         </div>

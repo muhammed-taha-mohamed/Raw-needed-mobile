@@ -66,11 +66,13 @@ const AdPackages: React.FC = () => {
   const fetchApprovedSubscriptions = async (page: number) => {
     setLoadingApproved(true);
     try {
-      const res = await api.get<PendingPage>('/api/v1/admin/ad-subscriptions/approved?page=' + page + '&size=' + pageSize);
-      const list = res && typeof res === 'object' && 'content' in res ? (res as PendingPage).content : [];
+      const response = await api.get<any>('/api/v1/admin/ad-subscriptions/approved?page=' + page + '&size=' + pageSize);
+      // Handle nested response structure: content.data or data or direct response
+      const data = response?.content?.data || response?.data || response;
+      const list = data?.content || [];
       setApprovedSubscriptions(Array.isArray(list) ? list : []);
-      setTotalPages(res.totalPages || 0);
-      setTotalElements(res.totalElements || 0);
+      setTotalPages(data?.totalPages || 0);
+      setTotalElements(data?.totalElements || 0);
     } catch (e: any) {
       showToast(e.message || 'Failed to load approved', 'error');
     } finally {
@@ -405,7 +407,7 @@ const AdPackages: React.FC = () => {
                           </div>
                           <div className="min-w-0">
                             <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate">
-                              {lang === 'ar' ? (p.nameAr || `${p.numberOfDays} أيام`) : (p.nameEn || `${p.numberOfDays} days`)}
+                              {p.nameAr || p.nameEn || (lang === 'ar' ? `${p.numberOfDays} أيام` : `${p.numberOfDays} days`)}
                             </h3>
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className={`size-2 rounded-full ${p.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
@@ -420,7 +422,12 @@ const AdPackages: React.FC = () => {
                       <div className="space-y-2 mb-6 flex-grow">
                         <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
                           <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}</span>
-                          <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{p.numberOfDays}</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{p.numberOfDays}</span>
+                            <span className="text-sm text-slate-500 font-bold">
+                              {lang === 'ar' ? (p.numberOfDays === 1 ? 'يوم' : 'أيام') : (p.numberOfDays === 1 ? 'day' : 'days')}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
                           <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{lang === 'ar' ? 'سعر الإعلان' : 'Price per Ad'}</span>
@@ -429,6 +436,15 @@ const AdPackages: React.FC = () => {
                             <span className="text-[12px] text-slate-500 font-bold">EGP</span>
                           </div>
                         </div>
+                        {(p as any).featuredPrice != null && (
+                          <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{lang === 'ar' ? 'سعر عرض أولاً' : 'Featured Price'}</span>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-black text-primary text-xl tabular-nums">{(p as any).featuredPrice}</span>
+                              <span className="text-[12px] text-slate-500 font-bold">EGP</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto -mx-6 px-6 -mb-6 pb-6 bg-slate-50/30 dark:bg-slate-800/20">
@@ -460,272 +476,345 @@ const AdPackages: React.FC = () => {
 
       {/* Tab: Active subscriptions (approved, non-pending) */}
       {activeTab === 'subscriptions' && (
-        <>
-          {loadingApproved && approvedSubscriptions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 animate-in fade-in duration-500">
-              <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
-            </div>
-          ) : approvedSubscriptions.length === 0 ? (
-            <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
-          ) : (
-            <>
-              <div className="overflow-x-auto animate-in fade-in duration-500 table-thead-primary">
-                <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
-                  <thead className="sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">store</span>
-                          <span>{lang === 'ar' ? 'المورد' : 'Supplier'}</span>
-                        </div>
-                      </th>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">loyalty</span>
-                          <span>{lang === 'ar' ? 'الباقة' : 'Package'}</span>
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">ads_click</span>
-                          {lang === 'ar' ? 'متبقي / إجمالي' : 'Remaining / Total'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">payments</span>
-                          {lang === 'ar' ? 'الإجمالي' : 'Total'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">play_circle</span>
-                          {lang === 'ar' ? 'تاريخ الموافقة' : 'Approved'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">schedule</span>
-                          {lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}
-                        </div>
-                      </th>
-                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        {lang === 'ar' ? 'المزيد' : 'More'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {approvedSubscriptions.map((sub, idx) => {
-                      const isExpanded = expandedSubscriptionId === sub.id;
-                      const formatDate = (dateStr?: string) => {
-                        if (!dateStr) return '—';
-                        return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                      };
-                      return (
-                        <tr 
-                          key={sub.id} 
-                          className="group hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-300 animate-in slide-in-from-right-2"
-                          style={{ animationDelay: `${idx * 30}ms` }}
-                        >
-                          <td className="px-4 md:px-6 py-4">
-                            <div className="flex items-center gap-2 md:gap-3">
-                              <div className="size-8 md:size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
-                                <span className="material-symbols-outlined text-lg md:text-xl">store</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'المورد' : 'Supplier'}</p>
-                                <div className="font-black text-slate-900 dark:text-white text-xs md:text-sm truncate">
-                                  {sub.supplierOrganizationName || sub.supplierName || '—'}
-                                </div>
-                                {(sub.supplierOrganizationName && sub.supplierName) && (
-                                  <div className="text-[9px] md:text-[10px] text-slate-400 font-bold mt-0.5">
-                                    {sub.supplierName}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 md:px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'الباقة' : 'Package'}</p>
-                                <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
-                                  {lang === 'ar' ? sub.packageNameAr || sub.packageNameEn : sub.packageNameEn || sub.packageNameAr}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-black text-slate-900 dark:text-white text-base tabular-nums">
-                                {(sub.remainingAds ?? 0)} / {(sub.numberOfAds ?? 0)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-baseline gap-1">
-                              <span className="font-black text-primary text-lg tabular-nums">
-                                {sub.totalPrice != null ? Number(sub.totalPrice).toLocaleString() : '—'}
-                              </span>
-                              {sub.totalPrice != null && (
-                                <span className="text-xs text-slate-400 font-bold">EGP</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-slate-400 text-base">event</span>
-                              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                                {formatDate(sub.approvedAt)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-slate-400 text-base">schedule</span>
-                              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                                {sub.numberOfDays != null ? (lang === 'ar' ? `${sub.numberOfDays} يوم` : `${sub.numberOfDays} days`) : '—'}
-                              </span>
-                            </div>
-                          </td>
-                          {/* Mobile: More button with tooltip */}
-                          <td className="md:hidden px-4 py-4 relative">
-                            <button
-                              onClick={() => setExpandedSubscriptionId(isExpanded ? null : sub.id)}
-                              className="size-8 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center border border-primary/20 hover:bg-primary/20 transition-all active:scale-90"
-                            >
-                              <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                expand_more
-                              </span>
-                            </button>
-                            {isExpanded && (
-                              <>
-                                {/* Backdrop */}
-                                <div 
-                                  className="fixed inset-0 z-[290] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-                                  onClick={() => setExpandedSubscriptionId(null)}
-                                ></div>
-                                {/* Popup */}
-                                <div className={`fixed inset-0 z-[300] flex items-center justify-center pointer-events-none`}>
-                                  <div 
-                                    className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/20 p-6 pointer-events-auto animate-in zoom-in-95 fade-in duration-200"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                                      <h3 className="text-base font-black text-slate-900 dark:text-white">
-                                        {lang === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription Details'}
-                                      </h3>
-                                      <button
-                                        onClick={() => setExpandedSubscriptionId(null)}
-                                        className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-xl">close</span>
-                                      </button>
-                                    </div>
-                                    <div className="space-y-4">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'إعلانات متبقية' : 'Remaining ads'}</span>
-                                        <span className="font-black text-slate-900 dark:text-white text-lg tabular-nums">
-                                          {(sub.remainingAds ?? 0)} / {(sub.numberOfAds ?? 0)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                                        <div className="flex items-baseline gap-1">
-                                          <span className="font-black text-primary text-xl tabular-nums">
-                                            {sub.totalPrice != null ? Number(sub.totalPrice).toLocaleString() : '—'}
-                                          </span>
-                                          {sub.totalPrice != null && (
-                                            <span className="text-sm text-slate-400 font-bold">EGP</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ الموافقة' : 'Approved'}</span>
-                                        <span className="text-base font-bold text-slate-600 dark:text-slate-400">
-                                          {formatDate(sub.approvedAt)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}</span>
-                                        <span className="text-base font-bold text-slate-600 dark:text-slate-400">
-                                          {sub.numberOfDays != null ? (lang === 'ar' ? `${sub.numberOfDays} يوم` : `${sub.numberOfDays} days`) : '—'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </td>
+        <div className="overflow-hidden animate-in fade-in duration-500">
+          {/* Desktop Table View - Fixed Size with Scroll */}
+          <div className="hidden md:block mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
+              <div className="h-[90vh] flex flex-col">
+                {/* Scrollable Table Container */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {loadingApproved && approvedSubscriptions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-40">
+                      <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                      <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
+                    </div>
+                  ) : approvedSubscriptions.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
+                    </div>
+                  ) : (
+                    <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
+                      <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
+                        <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                          <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'الباقة' : 'Package'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'متبقي / إجمالي' : 'Remaining / Total'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'تاريخ الموافقة' : 'Approved'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-primary/5 dark:divide-slate-700">
+                        {approvedSubscriptions.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-20 text-center">
+                              <div className="flex flex-col items-center gap-3">
+                                <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">subscriptions</span>
+                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">{lang === 'ar' ? 'لا توجد بيانات' : 'No data available'}</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          approvedSubscriptions.map((sub, idx) => {
+                            const formatDate = (dateStr?: string) => {
+                              if (!dateStr) return '—';
+                              return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                            };
+                            return (
+                              <tr 
+                                key={sub.id} 
+                                className="group hover:bg-primary/5 dark:hover:bg-slate-700/20 transition-all"
+                              >
+                                <td className="px-6 py-4">
+                                  <div className={`flex items-center gap-3 ${lang === 'ar' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className="size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+                                      <span className="material-symbols-outlined text-xl">store</span>
+                                    </div>
+                                    <div className="min-w-0 text-right rtl:text-right">
+                                      <div className="font-black text-sm text-slate-900 dark:text-white truncate">
+                                        {sub.supplierOrganizationName || sub.supplierName || '—'}
+                                      </div>
+                                      {(sub.supplierOrganizationName && sub.supplierName) && (
+                                        <div className="text-[11px] text-slate-400 font-bold mt-1.5">
+                                          {sub.supplierName}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="px-3 py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-xs font-black border border-primary/20">
+                                    {lang === 'ar' ? sub.packageNameAr || sub.packageNameEn : sub.packageNameEn || sub.packageNameAr}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="font-black text-slate-900 dark:text-white text-base tabular-nums">
+                                    {(sub.remainingAds ?? 0)} / {(sub.numberOfAds ?? 0)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="font-black text-primary text-lg tabular-nums">
+                                      {sub.totalPrice != null ? Number(sub.totalPrice).toLocaleString() : '—'}
+                                    </span>
+                                    {sub.totalPrice != null && (
+                                      <span className="text-xs text-slate-400 font-bold">EGP</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-slate-400 text-base">event</span>
+                                    <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                                      {formatDate(sub.approvedAt)}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-slate-400 text-base">schedule</span>
+                                    <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                                      {sub.numberOfDays != null ? (lang === 'ar' ? `${sub.numberOfDays} يوم` : `${sub.numberOfDays} days`) : '—'}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                {/* Pagination Footer - Fixed at Bottom */}
+                {totalPages > 0 && (
+                  <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
+                        <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                          {currentPage + 1} / {totalPages}
+                        </span>
+                      </div>
+                      <div className="h-6 w-px bg-primary/20 mx-1"></div>
+                      <div className="flex items-center gap-1.5">
+                        <button 
+                          onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} 
+                          disabled={currentPage === 0}
+                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                        </button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i;
+                            } else if (currentPage < 3) {
+                              pageNum = i;
+                            } else if (currentPage > totalPages - 4) {
+                              pageNum = totalPages - 5 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`size-9 rounded-full font-black text-xs transition-all ${
+                                  currentPage === pageNum
+                                  ? 'bg-primary text-white shadow-md'
+                                  : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
+                                }`}
+                              >
+                                {pageNum + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button 
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} 
+                          disabled={currentPage >= totalPages - 1}
+                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-full shadow-sm mt-8 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto">
-                  <div className="px-3 py-1.5 bg-white dark:bg-slate-900 rounded-full shrink-0">
-                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                      {approvedSubscriptions.length} / {totalElements}
+            </div>
+          </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden">
+            {loadingApproved && approvedSubscriptions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 animate-in fade-in duration-500">
+                <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
+              </div>
+            ) : approvedSubscriptions.length === 0 ? (
+              <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
+            ) : (
+              <div className="space-y-4 mb-6">
+                {approvedSubscriptions.map((sub, idx) => {
+                  const isExpanded = expandedSubscriptionId === sub.id;
+                  const formatDate = (dateStr?: string) => {
+                    if (!dateStr) return '—';
+                    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                  };
+                  return (
+                    <div 
+                      key={sub.id} 
+                      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    >
+                      <div className="p-4 flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+                          <span className="material-symbols-outlined text-xl">store</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-black text-sm text-slate-900 dark:text-white truncate">
+                            {sub.supplierOrganizationName || sub.supplierName || '—'}
+                          </div>
+                          {(sub.supplierOrganizationName && sub.supplierName) && (
+                            <div className="text-[10px] text-slate-400 font-bold mt-0.5 truncate">
+                              {sub.supplierName}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setExpandedSubscriptionId(isExpanded ? null : sub.id)}
+                          className="size-8 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center border border-primary/20 hover:bg-primary/20 transition-all active:scale-90"
+                        >
+                          <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                            expand_more
+                          </span>
+                        </button>
+                      </div>
+                      {isExpanded && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-[290] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+                            onClick={() => setExpandedSubscriptionId(null)}
+                          ></div>
+                          <div className={`fixed inset-0 z-[300] flex items-end md:items-center justify-center pointer-events-none`}>
+                            <div 
+                              className="w-full md:max-w-sm bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 p-6 pointer-events-auto animate-in slide-in-from-bottom-5 md:zoom-in-95 fade-in duration-300 max-h-[90vh] flex flex-col"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                                  {lang === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription Details'}
+                                </h3>
+                                <button
+                                  onClick={() => setExpandedSubscriptionId(null)}
+                                  className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-xl">close</span>
+                                </button>
+                              </div>
+                              <div className="space-y-0 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الباقة' : 'Package'}</span>
+                                  <span className="px-3 py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-xs font-black border border-primary/20">
+                                    {lang === 'ar' ? sub.packageNameAr || sub.packageNameEn : sub.packageNameEn || sub.packageNameAr}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'إعلانات متبقية' : 'Remaining ads'}</span>
+                                  <span className="font-black text-slate-900 dark:text-white text-lg tabular-nums">
+                                    {(sub.remainingAds ?? 0)} / {(sub.numberOfAds ?? 0)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="font-black text-primary text-xl tabular-nums">
+                                      {sub.totalPrice != null ? Number(sub.totalPrice).toLocaleString() : '—'}
+                                    </span>
+                                    {sub.totalPrice != null && (
+                                      <span className="text-sm text-slate-400 font-bold">EGP</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ الموافقة' : 'Approved'}</span>
+                                  <span className="text-base font-bold text-slate-600 dark:text-slate-400">
+                                    {formatDate(sub.approvedAt)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'مدة كل إعلان' : 'Per-ad duration'}</span>
+                                  <span className="text-base font-bold text-slate-600 dark:text-slate-400">
+                                    {sub.numberOfDays != null ? (lang === 'ar' ? `${sub.numberOfDays} يوم` : `${sub.numberOfDays} days`) : '—'}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Close Button at Bottom - Mobile Only */}
+                              <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
+                                <button
+                                  onClick={() => setExpandedSubscriptionId(null)}
+                                  className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                                >
+                                  <span className="material-symbols-outlined text-lg">close</span>
+                                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Mobile Pagination */}
+            {totalPages > 0 && (
+              <div className="mb-24 px-4">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-slate-900 rounded-xl shadow-md border border-slate-200 dark:border-slate-800 max-w-md mx-auto">
+                  <div className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg shrink-0 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                      {currentPage + 1} / {totalPages}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                  <div className="flex items-center gap-1.5">
                     <button 
                       onClick={() => setCurrentPage((p) => Math.max(0, p - 1))} 
-                      disabled={currentPage === 0} 
-                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                      disabled={currentPage === 0}
+                      className="size-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                     >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                      <span className="material-symbols-outlined text-sm rtl-flip">chevron_left</span>
                     </button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i;
-                        } else if (currentPage < 3) {
-                          pageNum = i;
-                        } else if (currentPage > totalPages - 4) {
-                          pageNum = totalPages - 5 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`size-8 md:size-9 rounded-full font-black text-[11px] transition-all active:scale-90 ${
-                              currentPage === pageNum
-                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary'
-                            }`}
-                          >
-                            {pageNum + 1}
-                          </button>
-                        );
-                      })}
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => setCurrentPage(currentPage)}
+                        className="size-7 rounded-lg font-black text-[10px] bg-primary text-white shadow-sm active:scale-95 transition-all"
+                      >
+                        {currentPage + 1}
+                      </button>
                     </div>
                     <button 
                       onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))} 
-                      disabled={currentPage >= totalPages - 1} 
-                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                      disabled={currentPage >= totalPages - 1}
+                      className="size-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                     >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                      <span className="material-symbols-outlined text-sm rtl-flip">chevron_right</span>
                     </button>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Add/Edit package modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setModalOpen(false)}>
-          <div className="w-[90%] md:w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setModalOpen(false)}>
+          <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -778,6 +867,17 @@ const AdPackages: React.FC = () => {
                 {saving ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'حفظ' : 'Save'}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>
+            
+            {/* Close Button at Bottom - Mobile Only */}
+            <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -785,12 +885,23 @@ const AdPackages: React.FC = () => {
 
       {/* Delete confirm */}
       {deleteId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md" onClick={() => setDeleteId(null)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[90%] md:w-full max-w-sm p-6 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setDeleteId(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl w-full md:w-[90%] md:max-w-sm p-6 animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
             <p className="text-slate-700 dark:text-slate-300 font-bold mb-4">{lang === 'ar' ? 'حذف هذه الباقة؟' : 'Delete this package?'}</p>
             <div className="flex gap-3">
               <button onClick={() => handleDelete(deleteId)} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-black">{(lang === 'ar' ? 'حذف' : 'Delete')}</button>
               <button onClick={() => setDeleteId(null)} className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</button>
+            </div>
+            
+            {/* Close Button at Bottom - Mobile Only */}
+            <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 shrink-0">
+              <button
+                onClick={() => setDeleteId(null)}
+                className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
             </div>
           </div>
         </div>
@@ -798,8 +909,41 @@ const AdPackages: React.FC = () => {
 
       {/* User Info Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[220] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             <div className="p-8 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
@@ -867,8 +1011,8 @@ const AdPackages: React.FC = () => {
 
       {/* Receipt Lightbox */}
       {selectedReceipt && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedReceipt(null)}>
-          <div className="relative max-w-4xl w-[90%] md:w-full flex flex-col items-center animate-in zoom-in-95 duration-500" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedReceipt(null)}>
+          <div className="relative max-w-4xl w-full md:w-[90%] md:w-full flex flex-col items-center animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
             <img src={selectedReceipt} alt="Receipt" className="max-h-[80vh] rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain" />
             <div className="mt-6 flex gap-4">
               <a href={selectedReceipt} target="_blank" rel="noopener noreferrer" className="px-8 py-3 bg-white text-slate-700 rounded-xl font-black text-sm flex items-center gap-2 shadow-xl hover:scale-105 transition-transform">
@@ -883,6 +1027,12 @@ const AdPackages: React.FC = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 154, 167, 0.2); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };

@@ -215,99 +215,251 @@ const SupplierOrders: React.FC = () => {
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
       
-      {/* Top Filter Bar - Web only */}
-      <div className="hidden md:flex flex-wrap items-center gap-2 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-        <span className="text-sm font-black text-slate-400 mr-2">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
-        {filterOptions.map((opt) => (
-          <button
-            key={opt.id as any}
-            onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
-            className={`px-4 py-2.5 rounded-xl text-base font-black transition-all ${
-              statusFilter === opt.id
-                ? 'bg-primary text-white shadow-md shadow-primary/20'
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-        {statusFilter && (
-          <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-sm font-black text-red-500 hover:underline ml-2">
-            {lang === 'ar' ? 'مسح' : 'Clear'}
-          </button>
-        )}
-      </div>
-
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
            {toast.message}
         </div>
       )}
 
-      {/* List Area */}
-      <div className="min-h-[400px]">
-        {isLoading && offers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-40">
-             <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-slate-400 font-black text-xs opacity-50">{t.common.accessingSupplyLedger}</p>
-          </div>
-        ) : offers.length === 0 ? (
-          <EmptyState title={lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'} subtitle={lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'} />
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {offers.map((offer, idx) => {
-              const status = getStatusConfig(offer.status);
-              return (
-                <div key={offer.id} className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row items-center gap-3 group animate-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 30}ms` }}>
-                  
-                  <div className="flex items-center gap-3.5 flex-1 w-full">
-                    <div className="size-14 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                       {offer.productImage ? (
-                         <img src={offer.productImage} className="size-full object-cover" />
-                       ) : (
-                         <span className="material-symbols-outlined text-2xl text-slate-300">inventory_2</span>
-                       )}
+      {/* Desktop View - Fixed Size Container */}
+      <div className="hidden md:block mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
+          <div className="h-[90vh] flex flex-col">
+            {/* Filter Section */}
+            <div className="flex-shrink-0 bg-primary/10 dark:bg-primary/5 border-b-2 border-primary/20 px-6 py-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="material-symbols-outlined text-lg text-primary">filter_list</span>
+                <span className="text-xs font-black text-slate-400">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+                {filterOptions.map((opt) => (
+                  <button
+                    key={opt.id as any}
+                    onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
+                      statusFilter === opt.id
+                        ? 'bg-primary text-white shadow-md shadow-primary/20'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary border border-primary/20'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                {statusFilter && (
+                  <button onClick={() => { setStatusFilter(null); setCurrentPage(0); }} className="text-xs font-black text-red-500 hover:underline">
+                    {lang === 'ar' ? 'مسح' : 'Clear'}
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Scrollable Content Container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-900/30">
+              {isLoading && offers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40">
+                  <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-400 font-black text-xs opacity-50">{t.common.accessingSupplyLedger}</p>
+                </div>
+              ) : offers.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <EmptyState title={lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'} subtitle={lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'} />
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  {offers.map((offer, idx) => {
+                    const status = getStatusConfig(offer.status);
+                    return (
+                      <div key={offer.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-4 group">
+                        <div className="size-14 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                          {offer.productImage ? (
+                            <img src={offer.productImage} className="size-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined text-2xl text-slate-300">inventory_2</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                            <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${status.bg}`}>
+                              {status.label}
+                            </span>
+                            {offer.specialOfferId && (
+                              <span className="px-2 py-1 rounded-lg text-xs font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">local_offer</span>
+                                {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">corporate_fare</span> {offer.customerOrganizationName}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                            <span className="flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {offer.status !== 'PENDING' && (
+                            <button 
+                              onClick={() => setChatOffer(offer)}
+                              className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-blue-800 transition-all active:scale-90 flex items-center justify-center"
+                              title={lang === 'ar' ? 'دردشة' : 'Chat'}
+                            >
+                              <span className="material-symbols-outlined text-xl">forum</span>
+                            </button>
+                          )}
+                          {offer.status === 'APPROVED' ? (
+                            <button 
+                              disabled={completingId === offer.id}
+                              onClick={() => handleCompleteOffer(offer.id)}
+                              className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
+                            >
+                              {completingId === offer.id ? (
+                                <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined text-lg">task_alt</span>
+                                  {lang === 'ar' ? 'إتمام الطلب' : 'Complete'}
+                                </>
+                              )}
+                            </button>
+                          ) : offer.status === 'COMPLETED' ? (
+                            <div className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap">
+                              <span className="material-symbols-outlined text-lg">check_circle</span>
+                              {lang === 'ar' ? 'مكتمل' : 'Finalized'}
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => handleOpenResponse(offer)}
+                              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
+                                offer.status === 'RESPONDED' 
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
+                                : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
+                              {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {/* Pagination Footer - Fixed at Bottom */}
+            {totalPages > 1 && (
+              <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
+                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                      {currentPage + 1} / {totalPages}
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-primary/20 mx-1"></div>
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={() => handlePageChange(currentPage - 1)} 
+                      disabled={currentPage === 0}
+                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                        let pageNum = i;
+                        if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
+                        return (
+                          <button
+                            key={pageNum} 
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`size-9 rounded-full font-black text-xs transition-all ${
+                              currentPage === pageNum 
+                              ? 'bg-primary text-white shadow-md' 
+                              : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
+                            }`}
+                          >
+                            {pageNum + 1}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2.5 mb-1 flex-wrap">
-                        <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${status.bg}`}>
-                          {status.label}
-                        </span>
-                        {offer.specialOfferId && (
-                          <span className="px-2 py-1 rounded-lg text-[9px] md:text-[10px] font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[10px]">local_offer</span>
-                            {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
-                          </span>
+                    <button 
+                      onClick={() => handlePageChange(currentPage + 1)} 
+                      disabled={currentPage >= totalPages - 1}
+                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="md:hidden">
+        {/* List Area */}
+        <div className="min-h-[400px] mb-6">
+          {isLoading && offers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-40">
+              <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-400 font-black text-xs opacity-50">{t.common.accessingSupplyLedger}</p>
+            </div>
+          ) : offers.length === 0 ? (
+            <EmptyState title={lang === 'ar' ? 'لا توجد طلبات' : 'No RFQs Found'} subtitle={lang === 'ar' ? 'لم تصلك أي طلبات عروض أسعار جديدة حالياً.' : 'No new supply requests received yet.'} />
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {offers.map((offer, idx) => {
+                const status = getStatusConfig(offer.status);
+                return (
+                  <div key={offer.id} className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row items-center gap-3 group animate-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 30}ms` }}>
+                    <div className="flex items-center gap-3.5 flex-1 w-full">
+                      <div className="size-14 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                        {offer.productImage ? (
+                          <img src={offer.productImage} className="size-full object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined text-2xl text-slate-300">inventory_2</span>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
-                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>
-                         <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
-                         <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                         <span className="hidden sm:inline flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                          <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
+                          <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${status.bg}`}>
+                            {status.label}
+                          </span>
+                          {offer.specialOfferId && (
+                            <span className="px-2 py-1 rounded-lg text-[9px] md:text-[10px] font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[10px]">local_offer</span>
+                              {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                          <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                          <span className="hidden sm:inline flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    {offer.status !== 'PENDING' && (
-                       <button 
-                         onClick={() => setChatOffer(offer)}
-                         className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-blue-800 transition-all active:scale-90 flex items-center justify-center"
-                         title={lang === 'ar' ? 'دردشة' : 'Chat'}
-                       >
-                         <span className="material-symbols-outlined text-xl">forum</span>
-                       </button>
-                    )}
-
-                    {offer.status === 'APPROVED' ? (
-                       <button 
-                         disabled={completingId === offer.id}
-                         onClick={() => handleCompleteOffer(offer.id)}
-                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
-                       >
+                    <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                      {offer.status !== 'PENDING' && (
+                        <button 
+                          onClick={() => setChatOffer(offer)}
+                          className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-blue-800 transition-all active:scale-90 flex items-center justify-center"
+                          title={lang === 'ar' ? 'دردشة' : 'Chat'}
+                        >
+                          <span className="material-symbols-outlined text-xl">forum</span>
+                        </button>
+                      )}
+                      {offer.status === 'APPROVED' ? (
+                        <button 
+                          disabled={completingId === offer.id}
+                          onClick={() => handleCompleteOffer(offer.id)}
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
+                        >
                           {completingId === offer.id ? (
                             <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                           ) : (
@@ -316,126 +468,155 @@ const SupplierOrders: React.FC = () => {
                               {lang === 'ar' ? 'إتمام الطلب' : 'Complete'}
                             </>
                           )}
-                       </button>
-                    ) : offer.status === 'COMPLETED' ? (
-                       <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap">
+                        </button>
+                      ) : offer.status === 'COMPLETED' ? (
+                        <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 rounded-xl font-black text-xs cursor-default whitespace-nowrap">
                           <span className="material-symbols-outlined text-lg">check_circle</span>
                           {lang === 'ar' ? 'مكتمل' : 'Finalized'}
-                       </div>
-                    ) : (
-                      <button 
-                        onClick={() => handleOpenResponse(offer)}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
-                          offer.status === 'RESPONDED' 
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
-                          : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
-                        {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
-                      </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleOpenResponse(offer)}
+                          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
+                            offer.status === 'RESPONDED' 
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
+                            : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
+                          {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Floating Filter FAB - Mobile only */}
+        <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+          <div className="w-full flex flex-col items-end pointer-events-auto">
+            <div className="relative" ref={filterRef}>
+              <button 
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                className="size-14 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 border-white/20"
+              >
+                <span className="material-symbols-outlined text-2xl">tune</span>
+                {statusFilter && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">
+                    1
+                  </span>
+                )}
+              </button>
+
+              {showFilterMenu && (
+                <div className={`absolute bottom-full mb-4 z-[250] w-60 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+                  <div className="flex justify-between items-center mb-4 px-2">
+                    <h3 className="text-xs font-black tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
+                    {statusFilter && (
+                      <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
                     )}
                   </div>
+                  <div className="space-y-1">
+                    {filterOptions.map((opt) => (
+                      <button
+                        key={opt.id as any}
+                        onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); setShowFilterMenu(false); }}
+                        className={`w-full text-start px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between ${
+                          statusFilter === opt.id 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {opt.label}
+                        {statusFilter === opt.id && <span className="material-symbols-outlined text-base">check</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={`absolute -bottom-2 w-4 h-4 bg-white dark:bg-slate-900 border-r border-b border-slate-200 dark:border-slate-800 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
                 </div>
-              );
-            })}
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Pagination */}
+        {totalPages > 1 && (
+          <div className="mb-24 px-4">
+            <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-slate-200 dark:border-slate-800 max-w-md mx-auto">
+              <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl shrink-0 border border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                  {currentPage + 1} / {totalPages}
+                </span>
+              </div>
+              <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => handlePageChange(currentPage - 1)} 
+                  disabled={currentPage === 0}
+                  className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span>
+                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage)}
+                    className="size-10 rounded-xl font-black text-sm bg-primary text-white shadow-md active:scale-95 transition-all"
+                  >
+                    {currentPage + 1}
+                  </button>
+                </div>
+                <button 
+                  onClick={() => handlePageChange(currentPage + 1)} 
+                  disabled={currentPage >= totalPages - 1}
+                  className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Floating Filter FAB - Mobile only */}
-      <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-        <div className="w-full flex flex-col items-end pointer-events-auto">
-          <div className="relative" ref={filterRef}>
-            <button 
-              onClick={() => setShowFilterMenu(!showFilterMenu)}
-              className="size-14 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 border-white/20"
-            >
-              <span className="material-symbols-outlined text-2xl">tune</span>
-              {statusFilter && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">
-                  1
-                </span>
-              )}
-            </button>
-
-            {showFilterMenu && (
-              <div className={`absolute bottom-full mb-4 z-[250] w-60 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
-                <div className="flex justify-between items-center mb-4 px-2">
-                  <h3 className="text-xs font-black tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
-                  {statusFilter && (
-                    <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {filterOptions.map((opt) => (
-                    <button
-                      key={opt.id as any}
-                      onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); setShowFilterMenu(false); }}
-                      className={`w-full text-start px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between ${
-                        statusFilter === opt.id 
-                        ? 'bg-primary/10 text-primary' 
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      {opt.label}
-                      {statusFilter === opt.id && <span className="material-symbols-outlined text-base">check</span>}
-                    </button>
-                  ))}
-                </div>
-                <div className={`absolute -bottom-2 w-4 h-4 bg-white dark:bg-slate-900 border-r border-b border-slate-200 dark:border-slate-800 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Pagination Footer */}
-      {(totalPages > 1 || offers.length > 0) && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-full shadow-sm animate-in fade-in duration-500 mt-8 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto">
-          <div className="px-3 py-1.5 bg-white dark:bg-slate-900 rounded-full shrink-0">
-            <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-              {offers.length} / {totalElements}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}
-              className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
-            >
-              <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-            </button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                let pageNum = i;
-                if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
-                return (
-                  <button
-                    key={pageNum} onClick={() => handlePageChange(pageNum)}
-                    className={`size-8 md:size-9 rounded-full font-black text-[11px] md:text-xs transition-all ${
-                      currentPage === pageNum 
-                      ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                      : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'
-                    }`}
-                  >
-                    {pageNum + 1}
-                  </button>
-                );
-              })}
-            </div>
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}
-              className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
-            >
-              <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {respondingOffer && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setRespondingOffer(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             
             <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
                <div className="flex items-center gap-5">
@@ -544,6 +725,7 @@ const SupplierOrders: React.FC = () => {
                 </div>
               </form>
             </div>
+            
           </div>
         </div>
       )}

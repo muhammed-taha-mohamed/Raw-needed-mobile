@@ -100,13 +100,13 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
     const items = [
       { name: lang === 'ar' ? 'لوحة القيادة' : 'Dashboard', icon: 'grid_view', path: '/' },
-      { name: lang === 'ar' ? 'السوق' : 'Marketplace', icon: 'explore', path: '/product-search' },
-      { name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'storefront', path: '/vendors' },
+      { name: lang === 'ar' ? 'السوق' : 'Marketplace', icon: 'storefront', path: '/product-search' },
+      { name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'explore', path: '/vendors' },
       { name: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', icon: 'local_offer', path: '/special-offers' },
       { name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', path: '/cart' },
       { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
       { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Requests', icon: 'campaign', path: '/market-requests' },
-      { name: lang === 'ar' ? 'منتجاتي' : 'My Products', icon: 'inventory_2', path: '/products' },
+      { name: lang === 'ar' ? 'المخزون' : 'My Products', icon: 'inventory_2', path: '/products' },
       { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
       { name: lang === 'ar' ? 'إعلاناتي' : 'My Ads', icon: 'campaign', path: '/advertisements' },
       { name: lang === 'ar' ? 'فريقي' : 'My Team', icon: 'group', path: '/my-team' },
@@ -143,14 +143,15 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     if (isAdmin) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
-        { name: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', icon: 'loyalty', path: '/plans' },
-        { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
+        { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
+        { name: lang === 'ar' ? 'الإعلانات' : 'Ads', icon: 'campaign', path: '/ad-packages' },
+        { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else if (isSupplier) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
-        { name: lang === 'ar' ? 'منتجاتي' : 'Products', icon: 'inventory_2', path: '/products' },
+        { name: lang === 'ar' ? 'المخزون' : 'Products', icon: 'inventory_2', path: '/products' },
         { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
         { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Req', icon: 'campaign', path: '/market-requests' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
@@ -158,9 +159,9 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     } else if (isCustomer) {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
-        { name: lang === 'ar' ? 'السوق' : 'Market', icon: 'explore', path: '/product-search' },
+        { name: lang === 'ar' ? 'السوق' : 'Market', icon: 'storefront', path: '/product-search' },
         { name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', path: '/cart' },
-        { name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'storefront', path: '/vendors' },
+        { name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'explore', path: '/vendors' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else {
@@ -234,7 +235,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         fixed inset-y-0 ${lang === 'ar' ? 'right-0' : 'left-0'} z-[200] flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 ease-in-out border-primary/60 shadow-xl ${lang === 'ar' ? 'border-l' : 'border-r'}
         ${isSidebarOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}
         lg:translate-x-0
-        ${isSidebarCollapsed ? 'lg:w-20 lg:overflow-visible' : 'w-[50%] sm:w-[50%] lg:w-64'}
+        ${isSidebarCollapsed ? 'lg:w-20 lg:overflow-visible' : 'w-[80%] sm:w-[80%] lg:w-64'}
         overflow-visible
       `}>
 
@@ -451,8 +452,41 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
         {/* Logout confirmation modal */}
         {showLogoutModal && (
-          <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
-            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-[250] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 p-0 md:p-4">
+            <div className="w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-slate-200 dark:border-slate-700 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+              
+              {/* Drag Handle - Mobile Only */}
+              <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+                const startY = e.touches[0].clientY;
+                const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+                if (!modal) return;
+                
+                const handleMove = (moveEvent: TouchEvent) => {
+                  const currentY = moveEvent.touches[0].clientY;
+                  const diff = currentY - startY;
+                  if (diff > 0) {
+                    modal.style.transform = `translateY(${diff}px)`;
+                    modal.style.transition = 'none';
+                  }
+                };
+                
+                const handleEnd = () => {
+                  const finalY = modal.getBoundingClientRect().top;
+                  if (finalY > window.innerHeight * 0.3) {
+                    setIsLogoutModalOpen(false);
+                  } else {
+                    modal.style.transform = '';
+                    modal.style.transition = '';
+                  }
+                  document.removeEventListener('touchmove', handleMove);
+                  document.removeEventListener('touchend', handleEnd);
+                };
+                
+                document.addEventListener('touchmove', handleMove);
+                document.addEventListener('touchend', handleEnd);
+              }}>
+                <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+              </div>
               <div className="p-6 text-center">
                 <div className="size-14 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
                   <span className="material-symbols-outlined text-3xl text-red-500">logout</span>

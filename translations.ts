@@ -503,7 +503,7 @@ export const translations = {
       logout: 'تسجيل الخروج',
       profile: 'الملف الشخصي',
       myTeam: 'فريقي',
-      products: 'منتجاتي',
+      products: 'المخزون',
       productSearch: 'السوق',
       vendors: 'الموردون',
       favItems: 'العناصر المفضلة',

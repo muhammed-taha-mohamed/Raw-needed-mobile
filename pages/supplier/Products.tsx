@@ -261,31 +261,85 @@ const Products: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Accept-Language': langHeader,
-        },
-      });
+      
+      // Check if mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // For mobile: use direct API call with window.location to trigger download
+        // This works better on mobile browsers
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        // Create a form and submit it to trigger download
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = `${BASE_URL}/api/v1/product/export-stock`;
+        form.style.display = 'none';
+        
+        // Add token as hidden input (if backend supports it) or use fetch with blob
+        // Since backend uses Authorization header, we'll use fetch but with better mobile handling
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create link and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        // Use setTimeout to ensure the link is ready
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+        }, 50);
+      } else {
+        // For desktop: use standard fetch and download
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const now = new Date();
-      const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
       
       // Show success message
       showToast(t.products.exportSuccess, 'success');
@@ -839,8 +893,42 @@ const Products: React.FC = () => {
 
       {/* ... (Add/Edit Product Modal remains the same) ... */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">inventory_2</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingProduct ? t.products.editProduct : t.products.addProduct}</h3><p className="text-[10px] font-black text-slate-400 mt-2">{t.products.updateCatalog}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
@@ -909,21 +997,93 @@ const Products: React.FC = () => {
                 </form>
               </div>
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0"><button form="productForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">{isProcessing ? (<div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>) : (<>{editingProduct ? t.profile.saveChanges : t.products.addProduct}<span className="material-symbols-outlined">verified</span></>)}</button></div>
+              
            </div>
         </div>
       )}
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 p-8 text-center animate-in zoom-in-95"><div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div></div>
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-100 dark:border-slate-800 p-8 text-center animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDeleteConfirmId(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
+            <div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div>
+          </div>
         </div>
       )}
 
       {/* Upload Results Modal */}
       {showUploadModal && uploadResult && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:max-w-3xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-100 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setShowUploadModal(false);
+                  setUploadResult(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`size-12 rounded-xl flex items-center justify-center shadow-lg ${uploadResult.failedCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'} text-white`}>
@@ -1021,6 +1181,7 @@ const Products: React.FC = () => {
                 <span className="material-symbols-outlined">check</span>
               </button>
             </div>
+            
           </div>
         </div>
       )}

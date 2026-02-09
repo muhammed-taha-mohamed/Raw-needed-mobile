@@ -512,9 +512,37 @@ const ProductSearch: React.FC = () => {
 
       {/* Add Searches popup: current subscription + partial renewal */}
       {addSearchesModalOpen && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setAddSearchesModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl max-w-lg w-full md:max-w-lg max-h-[90vh] overflow-y-auto border-t border-x md:border border-slate-200 dark:border-slate-700 animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.parentElement as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setAddSearchesModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+            </div>
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'اشتراكك الحالي — شراء عمليات بحث' : 'Your subscription — Buy more searches'}</h2>
               <button type="button" onClick={() => setAddSearchesModalOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
                 <span className="material-symbols-outlined">close</span>
@@ -872,8 +900,42 @@ const ProductSearch: React.FC = () => {
 
       {/* Manual Order Modal */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsManualModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div>
@@ -958,6 +1020,7 @@ const ProductSearch: React.FC = () => {
                     )}
                  </button>
               </div>
+              
            </div>
         </div>
       )}

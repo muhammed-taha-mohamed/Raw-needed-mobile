@@ -379,180 +379,230 @@ const Vendors: React.FC = () => {
         </div>
       )}
 
-      <div className="flex justify-end mb-4">
-        <div className="w-full md:w-64">
-          <Dropdown options={categories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))} value={selectedCategoryId} onChange={(v) => { setSelectedCategoryId(v); setCurrentPage(0); }} placeholder={lang === 'ar' ? 'جميع الفئات' : 'All Categories'} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 py-3.5 rounded-2xl border-2 border-primary/10 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm cursor-pointer text-start pl-4 pr-10 rtl:pl-10 rtl:pr-4" />
-        </div>
-      </div>
-
       {/* Mobile Cards View */}
       <div className="md:hidden space-y-4 mb-6">
         {suppliers.map((vendor, idx) => (
           <div 
             key={vendor.id} 
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-lg transition-shadow animate-in fade-in slide-in-from-bottom-2"
+            className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
-            {/* Header: avatar + info + details btn */}
-            <div className="p-4 pb-3 flex items-center gap-3">
-              <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-base shrink-0 overflow-hidden border border-primary/20">
+            {/* Header: avatar + info */}
+            <div className="p-5 pb-4 flex items-start gap-4 bg-gradient-to-r from-primary/5 to-transparent dark:from-primary/10 dark:to-transparent">
+              <div className="size-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-lg shrink-0 overflow-hidden border-2 border-primary/20 shadow-md">
                 {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" alt="" /> : (vendor.organizationName || vendor.name).charAt(0)}
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-black text-slate-900 dark:text-white text-sm leading-tight truncate">
+              <div className="flex-1 min-w-0 pt-0.5">
+                <h3 className="font-black text-slate-900 dark:text-white text-base leading-tight mb-2">
                   {vendor.organizationName || vendor.name}
                 </h3>
-                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate mt-0.5">{vendor.email}</p>
-                {vendor.category && (
-                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-black">
-                    {lang === 'ar' ? vendor.category.arabicName : vendor.category.name}
-                  </span>
-                )}
-              </div>
-              <div className="shrink-0">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDetailsModalVendor(vendor);
-                  }}
-                  className="size-9 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-primary hover:text-white"
-                  aria-label={lang === 'ar' ? 'عرض التفاصيل' : 'View details'}
-                >
-                  <span className="material-symbols-outlined text-[20px]">visibility</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{vendor.name}</p>
+                  {vendor.category && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-primary/10 text-primary text-[11px] font-black border border-primary/20">
+                      <span className="material-symbols-outlined text-xs">category</span>
+                      {lang === 'ar' ? vendor.category.arabicName : vendor.category.name}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            {/* Contact row: compact */}
-            <div className="px-4 pb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
-              {vendor.organizationCRN && (
-                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <span className="material-symbols-outlined text-slate-400 text-sm">badge</span>
-                  <span className="font-bold tabular-nums">{vendor.organizationCRN}</span>
-                </span>
-              )}
-              {vendor.phoneNumber && (
-                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <span className="material-symbols-outlined text-slate-400 text-sm">call</span>
-                  <span className="font-bold tabular-nums">{vendor.phoneNumber}</span>
-                </span>
-              )}
-            </div>
-            {/* Single CTA: full-width Catalog */}
-            <div className="px-4 pb-4">
+            {/* CTAs: Catalog + Details buttons */}
+            <div className="px-5 pb-5 flex gap-3">
               <button 
                 onClick={() => openProducts(vendor)} 
-                className="w-full py-3 rounded-xl bg-primary text-white hover:bg-primary/90 font-black text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                className="flex-1 py-3 rounded-xl bg-primary/10 dark:bg-primary/5 text-primary border-2 border-primary/20 hover:bg-primary/15 dark:hover:bg-primary/10 font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">inventory_2</span>
                 {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDetailsModalVendor(vendor);
+                }}
+                className="px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/5 text-primary border-2 border-primary/20 hover:bg-primary/15 dark:hover:bg-primary/10 font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center"
+                aria-label={lang === 'ar' ? 'عرض التفاصيل' : 'View details'}
+              >
+                <span className="material-symbols-outlined text-lg">visibility</span>
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block mb-6 relative overflow-visible table-thead-primary">
-         <div className="overflow-visible">
-           <table className="w-full text-left rtl:text-right border-collapse">
-             <thead className="sticky top-0 z-10">
-               <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
-                 <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
-                 <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
-                 <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
-                 <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'التواصل' : 'Contact'}</th>
-                 <th className="px-6 py-4"></th>
-               </tr>
-             </thead>
-             <tbody className="divide-y divide-primary/5 dark:divide-slate-800">
-               {suppliers.map((vendor) => (
-                 <tr key={vendor.id} className="group hover:bg-primary/5 dark:hover:bg-slate-800/20 transition-all">
-                   <td className="px-6 py-4">
-                     <div className="flex items-center gap-3">
-                       <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center font-black text-sm shrink-0 overflow-hidden border border-primary/10 shadow-sm">
-                         {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" /> : vendor.name.charAt(0)}
-                       </div>
-                       <div className="min-w-0">
-                          <p className="font-black text-slate-800 dark:text-white text-sm truncate leading-none">{vendor.organizationName || vendor.name}</p>
-                          <p className="text-[11px] font-bold text-slate-400 mt-1.5 truncate max-w-[120px]">{vendor.email}</p> 
-                       </div>
-                     </div>
-                   </td>
-                   <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{vendor.organizationName || '---'}</span>
-                        <span className="text-[9px] font-bold text-emerald-500 mt-1">{vendor.organizationCRN}</span>
-                      </div>
-                   </td>
-                   <td className="px-6 py-4 hidden lg:table-cell">
-                      <span className="px-3 py-1 rounded bg-primary/5 text-primary text-[11px] font-black border border-primary/10">
-                        {vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}
-                      </span>
-                   </td>
-                   <td className="px-6 py-4 hidden lg:table-cell">
-                      <span className="text-sm font-bold text-slate-500 tabular-nums">{vendor.phoneNumber || '---'}</span>
-                   </td>
-                   <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-3">
-                         <button 
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             setDetailsModalVendor(vendor);
-                           }}
-                           className="size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:text-primary hover:border-primary/40"
-                           title={lang === 'ar' ? 'التفاصيل' : 'Details'}
-                         >
-                           <span className="material-symbols-outlined text-[22px]">visibility</span>
-                         </button>
-                         <button onClick={() => openProducts(vendor)} className="text-primary text-[11px] font-black hover:underline flex items-center gap-1.5   whitespace-nowrap active:scale-95 transition-all"><span className="material-symbols-outlined text-[20px]">inventory_2</span>{lang === 'ar' ? 'الكتالوج' : 'Catalog'}</button>
-                      </div>
-                   </td>
-                 </tr>
-               ))}
-             </tbody>
-           </table>
-         </div>
-      </div>
-
-      {/* Pagination Footer - Pill Style */}
+      {/* Mobile Pagination - Visible Above Bottom Nav */}
       {totalElements > 0 && (
-        <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 animate-in fade-in duration-500 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto mb-10">
-           <div className="px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-full shrink-0">
-              <span className="text-[11px] font-black text-slate-500 tabular-nums ">
+        <div className="md:hidden mb-24 px-4">
+          <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-slate-200 dark:border-slate-800 max-w-md mx-auto">
+            <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl shrink-0 border border-slate-200 dark:border-slate-700">
+              <span className="text-xs font-black text-slate-600 dark:text-slate-400 tabular-nums">
                 {currentPage + 1} / {totalPages}
               </span>
-           </div>
-
-           <div className="h-6 w-px bg-slate-100 dark:bg-slate-800 mx-1"></div>
-
-           <div className="flex items-center gap-1.5">
+            </div>
+            <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => handlePageChange(currentPage - 1)} 
                 disabled={currentPage === 0 || isLoading}
-                className="size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
               >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                <span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span>
               </button>
-              
               <div className="flex items-center gap-1">
-                 <button
-                    onClick={() => handlePageChange(currentPage)}
-                    className="size-9 rounded-full font-black text-[12px] bg-primary text-white shadow-md active:scale-95 transition-all"
-                  >
-                    {currentPage + 1}
-                  </button>
+                <button
+                  onClick={() => handlePageChange(currentPage)}
+                  className="size-10 rounded-xl font-black text-sm bg-primary text-white shadow-md active:scale-95 transition-all"
+                >
+                  {currentPage + 1}
+                </button>
               </div>
-
               <button 
                 onClick={() => handlePageChange(currentPage + 1)} 
                 disabled={currentPage >= totalPages - 1 || isLoading}
-                className="size-9 rounded-full border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
               >
-                <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                <span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span>
               </button>
-           </div>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Desktop Table View - Fixed Size with Scroll */}
+      <div className="hidden md:block mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
+          <div className="h-[90vh] flex flex-col">
+            {/* Filter Section */}
+            <div className="flex-shrink-0 bg-primary/10 dark:bg-primary/5 border-b-2 border-primary/20 px-6 py-3">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-lg text-primary">filter_list</span>
+                <div className="flex-1 max-w-xs">
+                  <Dropdown 
+                    options={categories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))} 
+                    value={selectedCategoryId} 
+                    onChange={(v) => { setSelectedCategoryId(v); setCurrentPage(0); }} 
+                    placeholder={lang === 'ar' ? 'جميع الفئات' : 'All Categories'} 
+                    isRtl={lang === 'ar'} 
+                    triggerClassName="w-full min-h-[40px] flex items-center justify-between gap-2 py-2 rounded-xl border-2 border-primary/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm cursor-pointer text-start pl-3 pr-9 rtl:pl-9 rtl:pr-3" 
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Scrollable Table Container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
+                <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
+                  <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                    <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
+                    <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
+                    <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'التواصل' : 'Contact'}</th>
+                    <th className="px-6 py-4"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-primary/5 dark:divide-slate-700">
+                  {suppliers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">inventory_2</span>
+                          <p className="text-sm font-bold text-slate-400 dark:text-slate-500">{lang === 'ar' ? 'لا توجد بيانات' : 'No data available'}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    suppliers.map((vendor) => (
+                      <tr key={vendor.id} className="group hover:bg-primary/5 dark:hover:bg-slate-700/20 transition-all">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center font-black text-sm shrink-0 overflow-hidden border border-primary/10 shadow-sm">
+                              {vendor.profileImage ? <img src={vendor.profileImage} className="size-full object-cover" /> : vendor.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-black text-slate-800 dark:text-white text-sm truncate leading-none">{vendor.organizationName || vendor.name}</p>
+                              <p className="text-[11px] font-bold text-slate-400 mt-1.5 truncate max-w-[120px]">{vendor.email}</p> 
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-slate-700 dark:text-slate-200">{vendor.organizationName || '---'}</span>
+                            <span className="text-[9px] font-bold text-emerald-500 mt-1">{vendor.organizationCRN}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 hidden lg:table-cell">
+                          <span className="px-3 py-1 rounded bg-primary/5 text-primary text-[11px] font-black border border-primary/10 inline-block">
+                            {vendor.category ? (lang === 'ar' ? vendor.category.arabicName : vendor.category.name) : '---'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 hidden lg:table-cell">
+                          <span className="text-sm font-bold text-slate-500 tabular-nums">{vendor.phoneNumber || '---'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`flex items-center gap-3 ${lang === 'ar' ? 'justify-start' : 'justify-end'}`}>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDetailsModalVendor(vendor);
+                              }}
+                              className="size-10 rounded-xl flex items-center justify-center transition-all active:scale-90 border shadow-sm bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:text-primary hover:border-primary/40"
+                              title={lang === 'ar' ? 'التفاصيل' : 'Details'}
+                            >
+                              <span className="material-symbols-outlined text-[22px]">visibility</span>
+                            </button>
+                            <button onClick={() => openProducts(vendor)} className="text-primary text-[11px] font-black hover:underline flex items-center gap-1.5 whitespace-nowrap active:scale-95 transition-all">
+                              <span className="material-symbols-outlined text-[20px]">inventory_2</span>
+                              {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination Footer - Fixed at Bottom */}
+            {totalElements > 0 && (
+              <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
+                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                      {currentPage + 1} / {totalPages}
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-primary/20 mx-1"></div>
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={() => handlePageChange(currentPage - 1)} 
+                      disabled={currentPage === 0 || isLoading}
+                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handlePageChange(currentPage)}
+                        className="size-9 rounded-full font-black text-[12px] bg-primary text-white shadow-md active:scale-95 transition-all"
+                      >
+                        {currentPage + 1}
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => handlePageChange(currentPage + 1)} 
+                      disabled={currentPage >= totalPages - 1 || isLoading}
+                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Vendor Details Modal - opens from details button so content is fully visible */}
       {detailsModalVendor && (
@@ -564,6 +614,35 @@ const Vendors: React.FC = () => {
             className="w-full max-h-[85vh] sm:max-w-md sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Drag handle - mobile: swipe down to close */}
+            <div className="sm:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.parentElement as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDetailsModalVendor(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+            </div>
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h3 className="text-base font-black text-slate-900 dark:text-white truncate flex-1 pr-2">
                 {detailsModalVendor.organizationName || detailsModalVendor.name}
@@ -634,11 +713,11 @@ const Vendors: React.FC = () => {
       {/* Catalog Modal */}
       {isProductsModalOpen && viewingSupplier && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => closeProductsModal()}
         >
            <div
-             className="w-[90%] md:w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col h-[90vh] relative"
+             className="w-full md:w-[90%] md:max-w-5xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[90vh] md:h-[90vh] relative"
              onClick={(e) => e.stopPropagation()}
            >
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
@@ -762,14 +841,33 @@ const Vendors: React.FC = () => {
                    <div className="flex items-center gap-1.5"><button onClick={() => productsPage > 0 && setProductsPage(productsPage - 1)} disabled={productsPage === 0} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span></button><div className="flex items-center gap-1">{Array.from({ length: Math.min(productsTotalPages, 5) }).map((_, i) => <button key={i} onClick={() => setProductsPage(i)} className={`size-9 rounded-xl font-black text-[11px] transition-all shadow-sm ${productsPage === i ? 'bg-primary text-white' : 'bg-white dark:bg-slate-900 text-slate-400 border border-primary/5 hover:border-primary'}`}>{i + 1}</button>)}</div><button onClick={() => productsPage < productsTotalPages - 1 && setProductsPage(productsPage + 1)} disabled={productsPage >= productsTotalPages - 1} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span></button></div>
                 </div>
               )}
+              
+              {/* Bottom: Create Order + Close - side by side */}
+              <div className="px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(true)}
+                  className="flex-1 min-w-[140px] py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">edit_document</span>
+                  {lang === 'ar' ? 'إنشاء الطلب' : 'Create Order'}
+                </button>
+                <button
+                  onClick={() => closeProductsModal()}
+                  className="flex-1 min-w-[140px] py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                </button>
+              </div>
            </div>
         </div>
       )}
 
       {/* Manual Order Modal */}
       {isManualModalOpen && viewingSupplier && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.manualOrder.title}</h3><p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? `طلب خاص من ${viewingSupplier.organizationName || viewingSupplier.name}` : `Special Request to ${viewingSupplier.organizationName || viewingSupplier.name}`}</p></div></div>
                  <button onClick={() => setIsManualModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
@@ -783,7 +881,19 @@ const Vendors: React.FC = () => {
                  </form>
               </div>
 
-              <div className="p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0"><button form="manualForm" type="submit" disabled={isSubmittingManual} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm     shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">{isSubmittingManual ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.manualOrder.submit}<span className="material-symbols-outlined">send</span></>}</button></div>
+              <div className="p-6 md:p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex flex-wrap gap-3">
+                <button form="manualForm" type="submit" disabled={isSubmittingManual} className="flex-1 min-w-[140px] py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                  {isSubmittingManual ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined">send</span>{t.manualOrder.submit}</>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(false)}
+                  className="flex-1 min-w-[140px] py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                </button>
+              </div>
            </div>
         </div>
       )}

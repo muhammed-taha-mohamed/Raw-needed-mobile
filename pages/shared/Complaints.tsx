@@ -271,8 +271,42 @@ const Complaints: React.FC = () => {
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsCreateModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>

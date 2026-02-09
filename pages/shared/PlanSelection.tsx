@@ -587,9 +587,38 @@ const PlanSelection: React.FC = () => {
 
       {/* Popup for purchasing search operations */}
       {addSearchesModalOpen && subscription && subscription.remainingSearches != null && subscription.status === 'APPROVED' && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setAddSearchesModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border-t border-x md:border border-slate-200 dark:border-slate-700 animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Drag handle - mobile only: swipe down to close */}
+            <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.parentElement as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setAddSearchesModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+            </div>
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'شراء عمليات بحث إضافية' : 'Buy more searches'}</h2>
               <button type="button" onClick={() => setAddSearchesModalOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
                 <span className="material-symbols-outlined">close</span>
@@ -743,7 +772,7 @@ const PlanSelection: React.FC = () => {
                     {activeFeatureId === plan.id && (
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        className={`absolute bottom-full mb-3 z-[80] w-[min(18rem,calc(100vw-2rem))] sm:w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                        className={`absolute bottom-full mb-3 z-[80] w-[min(22rem,calc(100vw-2rem))] sm:w-80 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
                       >
                         <div className="space-y-3">
                           <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5">{lang === 'ar' ? 'مميزات الباقة' : 'Features'}</p>
@@ -801,19 +830,18 @@ const PlanSelection: React.FC = () => {
                     {activeOfferId === plan.id && (
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        className={`absolute bottom-full mb-3 z-[80] w-[min(18rem,calc(100vw-2rem))] sm:w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                        className={`absolute bottom-full mb-3 z-[80] w-[min(22rem,calc(100vw-2rem))] sm:w-80 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/20 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
                       >
                         <div className="space-y-3">
-                          <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/5">{lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}</p>
+                          <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/10">{lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}</p>
                           <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
                             {validOffers.length > 0 ? (
                               validOffers.map((offer, oidx) => (
                                 <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[9px] font-black text-orange-600">{lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Seats:'} {offer.minUserCount}+</span>
-                                    <span className="text-[10px] font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
-                                  </div>
-                                  <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
+                                  <p className="text-[10px] font-black text-emerald-600">
+                                    {lang === 'ar' ? `خصم ${offer.discountPercentage}% ل +${offer.minUserCount} مستخدم` : `${offer.discountPercentage}% off for +${offer.minUserCount} users`}
+                                  </p>
+                                  {offer.description ? <p className="text-[9px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-tight">{offer.description}</p> : null}
                                 </div>
                               ))
                             ) : (
@@ -821,7 +849,7 @@ const PlanSelection: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
+                        <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/20 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`} />
                       </div>
                     )}
                   </div>
@@ -843,8 +871,41 @@ const PlanSelection: React.FC = () => {
       </div>
 
       {isModalOpen && selectedPlan && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-white/10 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-white/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setIsModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             
             <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-3">
@@ -1108,6 +1169,7 @@ const PlanSelection: React.FC = () => {
                   </button>
                )}
             </div>
+            
           </div>
         </div>
       )}

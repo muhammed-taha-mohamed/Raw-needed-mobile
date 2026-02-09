@@ -176,8 +176,41 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-[90%] md:w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+        
+        {/* Drag Handle - Mobile Only */}
+        <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+          const startY = e.touches[0].clientY;
+          const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+          if (!modal) return;
+          
+          const handleMove = (moveEvent: TouchEvent) => {
+            const currentY = moveEvent.touches[0].clientY;
+            const diff = currentY - startY;
+            if (diff > 0) {
+              modal.style.transform = `translateY(${diff}px)`;
+              modal.style.transition = 'none';
+            }
+          };
+          
+          const handleEnd = () => {
+            const finalY = modal.getBoundingClientRect().top;
+            if (finalY > window.innerHeight * 0.3) {
+              onClose();
+            } else {
+              modal.style.transform = '';
+              modal.style.transition = '';
+            }
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleEnd);
+          };
+          
+          document.addEventListener('touchmove', handleMove);
+          document.addEventListener('touchend', handleEnd);
+        }}>
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+        </div>
         
         <div className="p-5 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center shrink-0">
           <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{planId ? (lang === 'ar' ? 'تعديل الخطة' : 'Edit Plan') : t.plans.addNew}</h2>
@@ -356,6 +389,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
           <button type="button" onClick={onClose} className="flex-1 py-3.5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all       border border-primary/10" disabled={isSubmitting}>{t.categories.cancel}</button>
           <button type="submit" form="planForm" disabled={isSubmitting || isLoading} className="flex-[2] py-3.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3   text-xs disabled:opacity-50">{isSubmitting ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined text-[18px]">verified</span>{planId ? (lang === 'ar' ? 'تحديث الخطة' : 'Update Plan') : t.plans.savePlan}</>}</button>
         </div>
+        
       </div>
     </div>
   );

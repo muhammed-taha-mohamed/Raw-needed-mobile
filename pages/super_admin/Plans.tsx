@@ -95,7 +95,7 @@ const Plans: React.FC = () => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
     try {
-      return new Date(dateString).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return new Date(dateString).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     } catch {
       return dateString;
     }
@@ -324,7 +324,7 @@ const Plans: React.FC = () => {
                               {activeFeatureId === plan.id && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                                  className={`absolute bottom-full mb-3 z-[60] w-[min(22rem,calc(100vw-2rem))] sm:w-80 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
                                 >
                                   <div className="space-y-3">
                                     <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5  ">
@@ -375,23 +375,20 @@ const Plans: React.FC = () => {
                               {activeOfferId === plan.id && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                                  className={`absolute bottom-full mb-3 z-[60] w-[min(22rem,calc(100vw-2rem))] sm:w-80 p-5 bg-white dark:bg-slate-800 rounded-[1.5rem] shadow-2xl border border-amber-500/20 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
                                 >
                                   <div className="space-y-3">
-                                    <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/5  ">
+                                    <p className="text-[10px] font-black text-amber-500 pb-2 border-b border-amber-500/10">
                                       {lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}
                                     </p>
                                     <div className="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar">
                                       {validOffers.length > 0 ? (
                                         validOffers.map((offer, oidx) => (
                                           <div key={oidx} className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-emerald-50 dark:from-orange-950/10 dark:to-emerald-950/10 border border-orange-100 dark:border-orange-900/20">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <span className="text-[9px] font-black text-orange-600">
-                                                {lang === 'ar' ? 'أقل عدد مستخدمين:' : 'Seats:'} {offer.minUserCount}+
-                                              </span>
-                                              <span className="text-[10px] font-black text-emerald-600">%{offer.discountPercentage} OFF</span>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight">{offer.description}</p>
+                                            <p className="text-[10px] font-black text-emerald-600">
+                                              {lang === 'ar' ? `خصم ${offer.discountPercentage}% ل +${offer.minUserCount} مستخدم` : `${offer.discountPercentage}% off for +${offer.minUserCount} users`}
+                                            </p>
+                                            {offer.description ? <p className="text-[9px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-tight">{offer.description}</p> : null}
                                           </div>
                                         ))
                                       ) : (
@@ -399,7 +396,7 @@ const Plans: React.FC = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
+                                  <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/20 rotate-45 ${lang === 'ar' ? 'right-6' : 'left-6'}`}></div>
                                 </div>
                               )}
                             </div>
@@ -464,283 +461,383 @@ const Plans: React.FC = () => {
       {/* Tab: Active subscriptions (approved, non-pending) */}
       {activeTab === 'subscriptions' && (
         <div className="overflow-hidden animate-in fade-in duration-500">
-          {loadingApproved && approvedSubscriptions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40">
-              <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
-            </div>
-          ) : approvedSubscriptions.length === 0 ? (
-            <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
-          ) : (
-            <>
-              <div className="overflow-x-auto table-thead-primary">
-                <table className={`w-full ${lang === 'ar' ? 'text-right' : 'text-left'} border-collapse`}>
-                  <thead className="sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">person</span>
-                          <span>{lang === 'ar' ? 'المستخدم' : 'User'}</span>
-                        </div>
-                      </th>
-                      <th className="px-4 md:px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">loyalty</span>
-                          <span>{lang === 'ar' ? 'الخطة' : 'Plan'}</span>
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">groups</span>
-                          {lang === 'ar' ? 'المقاعد' : 'Seats'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">payments</span>
-                          {lang === 'ar' ? 'الإجمالي' : 'Total'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">play_circle</span>
-                          {lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}
-                        </div>
-                      </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base">event</span>
-                          {lang === 'ar' ? 'صلاحية حتى' : 'Expires'}
-                        </div>
-                      </th>
-                      <th className="md:hidden px-4 py-4 text-xs font-black text-slate-600 dark:text-slate-400">
-                        {lang === 'ar' ? 'المزيد' : 'More'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {approvedSubscriptions.map((sub, idx) => {
-                      const isExpiringSoon = sub.expiryDate && new Date(sub.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                      const isExpanded = expandedSubscriptionId === sub.id;
-                      return (
-                        <tr 
-                          key={sub.id} 
-                          className="group hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-300 animate-in slide-in-from-right-2"
-                          style={{ animationDelay: `${idx * 30}ms` }}
-                        >
-                          <td className="px-4 md:px-6 py-4">
-                            <div className="flex items-center gap-2 md:gap-3">
-                              <div className="size-8 md:size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
-                                <span className="material-symbols-outlined text-lg md:text-xl">person</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'المستخدم' : 'User'}</p>
-                                <div className="font-black text-slate-900 dark:text-white text-xs md:text-sm truncate">
-                                  {sub.userOrganizationName || sub.userName || '—'}
-                                </div>
-                                {(sub.userOrganizationName && sub.userName) && (
-                                  <div className="text-[9px] md:text-[10px] text-slate-400 font-bold mt-0.5">
-                                    {sub.userName}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 md:px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 md:hidden mb-0.5">{lang === 'ar' ? 'الخطة' : 'Plan'}</p>
-                                <span className="px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-[10px] md:text-xs font-black border border-primary/20">
-                                  {sub.planName || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-black text-slate-900 dark:text-white text-base tabular-nums">
-                                {sub.numberOfUsers ?? '—'}
-                              </span>
-                              <span className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'مقعد' : 'seat'}</span>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-baseline gap-1">
-                              <span className="font-black text-primary text-lg tabular-nums">
-                                {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
-                              </span>
-                              {sub.finalPrice != null && (
-                                <span className="text-xs text-slate-400 font-bold">{t.plans.currency}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-slate-400 text-base">schedule</span>
-                              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                                {formatDate(sub.subscriptionDate || sub.submissionDate)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="hidden md:table-cell px-6 py-5">
-                            <div className={`flex items-center gap-2 ${isExpiringSoon ? 'text-orange-500' : ''}`}>
-                              <span className={`material-symbols-outlined text-base ${isExpiringSoon ? 'text-orange-500' : 'text-slate-400'}`}>
-                                {isExpiringSoon ? 'warning' : 'event'}
-                              </span>
-                              <span className={`text-sm font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
-                                {formatDate(sub.expiryDate)}
-                              </span>
-                              {isExpiringSoon && (
-                                <span className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-black border border-orange-200 dark:border-orange-800">
-                                  {lang === 'ar' ? 'قريب' : 'Soon'}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          {/* Mobile: More button with tooltip */}
-                          <td className="md:hidden px-4 py-4 relative">
-                            <button
-                              onClick={() => setExpandedSubscriptionId(isExpanded ? null : sub.id)}
-                              className="size-8 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center border border-primary/20 hover:bg-primary/20 transition-all active:scale-90"
-                            >
-                              <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                expand_more
-                              </span>
-                            </button>
-                            {isExpanded && (
-                              <>
-                                {/* Backdrop */}
-                                <div 
-                                  className="fixed inset-0 z-[290] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
-                                  onClick={() => setExpandedSubscriptionId(null)}
-                                ></div>
-                                {/* Popup */}
-                                <div className={`fixed inset-0 z-[300] flex items-center justify-center pointer-events-none`}>
-                                  <div 
-                                    className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-primary/20 p-6 pointer-events-auto animate-in zoom-in-95 fade-in duration-200"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                                      <h3 className="text-base font-black text-slate-900 dark:text-white">
-                                        {lang === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription Details'}
-                                      </h3>
-                                      <button
-                                        onClick={() => setExpandedSubscriptionId(null)}
-                                        className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-xl">close</span>
-                                      </button>
-                                    </div>
-                                    <div className="space-y-4">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'المقاعد' : 'Seats'}</span>
-                                        <span className="font-black text-slate-900 dark:text-white text-lg tabular-nums">
-                                          {sub.numberOfUsers ?? '—'}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                                        <div className="flex items-baseline gap-1">
-                                          <span className="font-black text-primary text-xl tabular-nums">
-                                            {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
-                                          </span>
-                                          {sub.finalPrice != null && (
-                                            <span className="text-sm text-slate-400 font-bold">{t.plans.currency}</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</span>
-                                        <span className="text-base font-bold text-slate-600 dark:text-slate-400">
-                                          {formatDate(sub.subscriptionDate || sub.submissionDate)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</span>
-                                        <div className="flex items-center gap-2">
-                                          <span className={`text-base font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
-                                            {formatDate(sub.expiryDate)}
-                                          </span>
-                                          {isExpiringSoon && (
-                                            <span className="px-2 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-200 dark:border-orange-800">
-                                              {lang === 'ar' ? 'قريب' : 'Soon'}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </td>
+          {/* Desktop Table View - Fixed Size with Scroll */}
+          <div className="hidden md:block mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
+              <div className="h-[90vh] flex flex-col">
+                {/* Scrollable Table Container */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {loadingApproved && approvedSubscriptions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-40">
+                      <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                      <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
+                    </div>
+                  ) : approvedSubscriptions.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
+                    </div>
+                  ) : (
+                    <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
+                      <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
+                        <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                          <th className="px-6 py-4">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'الخطة' : 'Plan'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'المقاعد' : 'Seats'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</th>
+                          <th className="px-6 py-4">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-primary/5 dark:divide-slate-700">
+                        {approvedSubscriptions.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-20 text-center">
+                              <div className="flex flex-col items-center gap-3">
+                                <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">subscriptions</span>
+                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">{lang === 'ar' ? 'لا توجد بيانات' : 'No data available'}</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          approvedSubscriptions.map((sub, idx) => {
+                            const isExpiringSoon = sub.expiryDate && new Date(sub.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                            return (
+                              <tr 
+                                key={sub.id} 
+                                className="group hover:bg-primary/5 dark:hover:bg-slate-700/20 transition-all"
+                              >
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+                                      <span className="material-symbols-outlined text-xl">person</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="font-black text-sm text-slate-900 dark:text-white truncate">
+                                        {sub.userOrganizationName || sub.userName || '—'}
+                                      </div>
+                                      {(sub.userOrganizationName && sub.userName) && (
+                                        <div className="text-[11px] text-slate-400 font-bold mt-1.5">
+                                          {sub.userName}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="px-3 py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-xs font-black border border-primary/20">
+                                    {sub.planName || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-black text-slate-900 dark:text-white text-base tabular-nums">
+                                      {sub.numberOfUsers ?? '—'}
+                                    </span>
+                                    <span className="text-xs text-slate-400 font-bold">{lang === 'ar' ? 'مقعد' : 'seat'}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="font-black text-primary text-lg tabular-nums">
+                                      {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
+                                    </span>
+                                    {sub.finalPrice != null && (
+                                      <span className="text-xs text-slate-400 font-bold">{t.plans.currency}</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                                    {formatDate(sub.subscriptionDate || sub.submissionDate)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className={`flex items-center gap-2 ${isExpiringSoon ? 'text-orange-500' : ''}`}>
+                                    <span className={`text-sm font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                                      {formatDate(sub.expiryDate)}
+                                    </span>
+                                    {isExpiringSoon && (
+                                      <span className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-black border border-orange-200 dark:border-orange-800">
+                                        {lang === 'ar' ? 'قريب' : 'Soon'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                {/* Pagination Footer - Fixed at Bottom */}
+                {approvedTotalPages > 0 && (
+                  <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
+                        <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                          {approvedPage + 1} / {approvedTotalPages}
+                        </span>
+                      </div>
+                      <div className="h-6 w-px bg-primary/20 mx-1"></div>
+                      <div className="flex items-center gap-1.5">
+                        <button 
+                          onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} 
+                          disabled={approvedPage === 0}
+                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                        </button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(approvedTotalPages, 5) }, (_, i) => {
+                            let pageNum;
+                            if (approvedTotalPages <= 5) {
+                              pageNum = i;
+                            } else if (approvedPage < 3) {
+                              pageNum = i;
+                            } else if (approvedPage > approvedTotalPages - 4) {
+                              pageNum = approvedTotalPages - 5 + i;
+                            } else {
+                              pageNum = approvedPage - 2 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setApprovedPage(pageNum)}
+                                className={`size-9 rounded-full font-black text-xs transition-all ${
+                                  approvedPage === pageNum 
+                                  ? 'bg-primary text-white shadow-md' 
+                                  : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
+                                }`}
+                              >
+                                {pageNum + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button 
+                          onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} 
+                          disabled={approvedPage >= approvedTotalPages - 1}
+                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {approvedTotalElements > 0 && (
-                <div className="sticky bottom-0 left-0 right-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl shadow-sm mt-6 max-w-fit mx-auto sm:mx-0 sm:ml-auto rtl:sm:mr-auto border border-slate-200 dark:border-slate-700">
-                  <div className="px-3 py-1.5 bg-white dark:bg-slate-900 rounded-lg shrink-0">
-                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                      {approvedPage * approvedPageSize + 1}-{Math.min((approvedPage + 1) * approvedPageSize, approvedTotalElements)} {lang === 'ar' ? 'من' : 'of'} {approvedTotalElements}
+            </div>
+          </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden">
+            {loadingApproved && approvedSubscriptions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40">
+                <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-500 font-bold text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading subscriptions...'}</p>
+              </div>
+            ) : approvedSubscriptions.length === 0 ? (
+              <EmptyState title={lang === 'ar' ? 'لا توجد اشتراكات نشطة' : 'No Active Subscriptions'} subtitle={lang === 'ar' ? 'لا توجد اشتراكات معتمدة حالياً.' : 'No approved subscriptions at the moment.'} />
+            ) : (
+              <div className="space-y-4 mb-6">
+                {approvedSubscriptions.map((sub, idx) => {
+                  const isExpiringSoon = sub.expiryDate && new Date(sub.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                  const isExpanded = expandedSubscriptionId === sub.id;
+                  return (
+                    <div 
+                      key={sub.id} 
+                      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    >
+                      <div className="p-4 flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+                          <span className="material-symbols-outlined text-xl">person</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-black text-sm text-slate-900 dark:text-white truncate">
+                            {sub.userOrganizationName || sub.userName || '—'}
+                          </div>
+                          {(sub.userOrganizationName && sub.userName) && (
+                            <div className="text-[10px] text-slate-400 font-bold mt-0.5 truncate">
+                              {sub.userName}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setExpandedSubscriptionId(isExpanded ? null : sub.id)}
+                          className="size-8 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center border border-primary/20 hover:bg-primary/20 transition-all active:scale-90"
+                        >
+                          <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                            expand_more
+                          </span>
+                        </button>
+                      </div>
+                      {isExpanded && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-[290] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+                            onClick={() => setExpandedSubscriptionId(null)}
+                          ></div>
+                          <div className={`fixed inset-0 z-[300] flex items-end md:items-center justify-center pointer-events-none`}>
+                            <div 
+                              className="w-full md:max-w-sm bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 p-6 pointer-events-auto animate-in slide-in-from-bottom-5 md:zoom-in-95 fade-in duration-300 max-h-[90vh] flex flex-col"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                                  {lang === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription Details'}
+                                </h3>
+                                <button
+                                  onClick={() => setExpandedSubscriptionId(null)}
+                                  className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-xl">close</span>
+                                </button>
+                              </div>
+                              <div className="space-y-0 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الخطة' : 'Plan'}</span>
+                                  <span className="px-3 py-1.5 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-xs font-black border border-primary/20">
+                                    {sub.planName || '—'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'المقاعد' : 'Seats'}</span>
+                                  <span className="font-black text-slate-900 dark:text-white text-lg tabular-nums">
+                                    {sub.numberOfUsers ?? '—'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="font-black text-primary text-xl tabular-nums">
+                                      {sub.finalPrice != null ? Number(sub.finalPrice).toLocaleString() : '—'}
+                                    </span>
+                                    {sub.finalPrice != null && (
+                                      <span className="text-sm text-slate-400 font-bold">{t.plans.currency}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</span>
+                                  <span className="text-base font-bold text-slate-600 dark:text-slate-400">
+                                    {formatDate(sub.subscriptionDate || sub.submissionDate)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3">
+                                  <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'صلاحية حتى' : 'Expires'}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-base font-bold ${isExpiringSoon ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                                      {formatDate(sub.expiryDate)}
+                                    </span>
+                                    {isExpiringSoon && (
+                                      <span className="px-2 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-200 dark:border-orange-800">
+                                        {lang === 'ar' ? 'قريب' : 'Soon'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Close Button at Bottom - Mobile Only */}
+                              <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
+                                <button
+                                  onClick={() => setExpandedSubscriptionId(null)}
+                                  className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                                >
+                                  <span className="material-symbols-outlined text-lg">close</span>
+                                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Mobile Pagination */}
+            {approvedTotalPages > 0 && (
+              <div className="mb-24 px-4">
+                <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-slate-200 dark:border-slate-800 max-w-md mx-auto">
+                  <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl shrink-0 border border-slate-200 dark:border-slate-700">
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 tabular-nums">
+                      {approvedPage + 1} / {approvedTotalPages}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                  <div className="flex items-center gap-2">
                     <button 
                       onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} 
-                      disabled={approvedPage === 0} 
-                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                      disabled={approvedPage === 0}
+                      className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                     >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
+                      <span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span>
                     </button>
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(approvedTotalPages, 5) }, (_, i) => {
-                        let pageNum;
-                        if (approvedTotalPages <= 5) {
-                          pageNum = i;
-                        } else if (approvedPage < 3) {
-                          pageNum = i;
-                        } else if (approvedPage > approvedTotalPages - 4) {
-                          pageNum = approvedTotalPages - 5 + i;
-                        } else {
-                          pageNum = approvedPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setApprovedPage(pageNum)}
-                            className={`size-8 md:size-9 rounded-full font-black text-[11px] md:text-xs transition-all ${
-                              approvedPage === pageNum 
-                              ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                              : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'
-                            }`}
-                          >
-                            {pageNum + 1}
-                          </button>
-                        );
-                      })}
+                      <button
+                        onClick={() => setApprovedPage(approvedPage)}
+                        className="size-10 rounded-xl font-black text-sm bg-primary text-white shadow-md active:scale-95 transition-all"
+                      >
+                        {approvedPage + 1}
+                      </button>
                     </div>
                     <button 
                       onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} 
-                      disabled={approvedPage >= approvedTotalPages - 1} 
-                      className="size-8 md:size-9 rounded-full bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90"
+                      disabled={approvedPage >= approvedTotalPages - 1}
+                      className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                     >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
+                      <span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span>
                     </button>
                   </div>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Delete Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDeleteConfirmId(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
             <div className="p-10 text-center">
               <div className="mx-auto size-16 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mb-6">
                 <span className="material-symbols-outlined text-4xl">warning</span>
@@ -755,12 +852,29 @@ const Plans: React.FC = () => {
                   {isDeleting ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}
                 </button>
               </div>
+              
+              {/* Close Button at Bottom - Mobile Only */}
+              <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 shrink-0">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       <PlanModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} planId={editingPlanId} onSuccess={fetchPlans} />
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 154, 167, 0.2); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };

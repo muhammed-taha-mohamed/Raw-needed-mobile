@@ -397,8 +397,8 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
 
       {/* Popup for add-search requests */}
       {showAddSearchesSection && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowAddSearchesSection(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 animate-in fade-in duration-300" onClick={() => setShowAddSearchesSection(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl max-w-4xl w-full md:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border-t border-x md:border border-slate-200 dark:border-slate-700 animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-2xl">search</span>
@@ -451,8 +451,42 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
 
       {/* User Info Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[220] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setShowUserModal(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
             <div className="p-8 border-b border-primary/10 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-4">
                   <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
@@ -563,14 +597,50 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                  {lang === 'ar' ? 'إغلاق النافذة' : 'Dismiss Profile'}
                </button>
             </div>
+            
           </div>
         </div>
       )}
 
       {/* Rejection Modal */}
       {rejectingRequest && (
-        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-[230] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setRejectingRequest(null);
+                  setRejectionReason('');
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
              <div className="p-8">
                 <div className="size-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 mb-6">
                    <span className="material-symbols-outlined text-2xl">cancel</span>
@@ -600,6 +670,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                      {processingId === rejectingRequest.id ? '...' : (lang === 'ar' ? 'تأكيد الرفض' : 'Reject')}
                    </button>
                 </div>
+                
              </div>
           </div>
         </div>
@@ -608,10 +679,10 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
       {/* Lightbox for Receipt */}
       {selectedReceipt && (
         <div 
-          className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300"
+          className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-300"
           onClick={() => setSelectedReceipt(null)}
         >
-          <div className="relative max-w-4xl w-[90%] md:w-full flex flex-col items-center animate-in zoom-in-95 duration-500">
+          <div className="relative max-w-4xl w-full md:w-[90%] md:w-full flex flex-col items-center animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
              <img src={selectedReceipt} alt="Document View" className="max-h-[80vh] rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain" />
              <div className="mt-6 flex gap-4">
                 <a 
