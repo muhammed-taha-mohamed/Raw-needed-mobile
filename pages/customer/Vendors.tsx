@@ -720,6 +720,35 @@ const Vendors: React.FC = () => {
              className="w-full md:w-[90%] md:max-w-5xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[90vh] md:h-[90vh] relative"
              onClick={(e) => e.stopPropagation()}
            >
+              {/* Drag handle - mobile: swipe down to close */}
+              <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+                const startY = e.touches[0].clientY;
+                const modal = e.currentTarget.parentElement as HTMLElement;
+                if (!modal) return;
+                const handleMove = (moveEvent: TouchEvent) => {
+                  const currentY = moveEvent.touches[0].clientY;
+                  const diff = currentY - startY;
+                  if (diff > 0) {
+                    modal.style.transform = `translateY(${diff}px)`;
+                    modal.style.transition = 'none';
+                  }
+                };
+                const handleEnd = () => {
+                  const finalY = modal.getBoundingClientRect().top;
+                  if (finalY > window.innerHeight * 0.3) {
+                    closeProductsModal();
+                  } else {
+                    modal.style.transform = '';
+                    modal.style.transition = '';
+                  }
+                  document.removeEventListener('touchmove', handleMove);
+                  document.removeEventListener('touchend', handleEnd);
+                };
+                document.addEventListener('touchmove', handleMove);
+                document.addEventListener('touchend', handleEnd);
+              }}>
+                <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+              </div>
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">storefront</span></div>
@@ -842,7 +871,7 @@ const Vendors: React.FC = () => {
                 </div>
               )}
               
-              {/* Bottom: Create Order + Close - side by side */}
+              {/* Bottom: Manual Order + Close - side by side */}
               <div className="px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0 flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -850,7 +879,7 @@ const Vendors: React.FC = () => {
                   className="flex-1 min-w-[140px] py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-lg">edit_document</span>
-                  {lang === 'ar' ? 'إنشاء الطلب' : 'Create Order'}
+                  {lang === 'ar' ? 'طلب يدوي' : 'Manual Order'}
                 </button>
                 <button
                   onClick={() => closeProductsModal()}
