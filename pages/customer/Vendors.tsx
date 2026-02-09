@@ -757,13 +757,46 @@ const Vendors: React.FC = () => {
                        <p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? 'كتالوج المواد الخام' : 'Vendor Product Catalog'}</p>
                     </div>
                  </div>
-                 <button
-                   type="button"
-                   onClick={(e) => { e.stopPropagation(); closeProductsModal(); }}
-                   className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90 shrink-0"
-                 >
-                   <span className="material-symbols-outlined">close</span>
-                 </button>
+                 <div className="flex items-center gap-2">
+                   <div className="relative" ref={catalogFilterRef}>
+                     <button type="button" onClick={(e) => { e.stopPropagation(); setShowCatalogFilters(!showCatalogFilters); }} className={`size-10 rounded-xl flex items-center justify-center transition-all border active:scale-90 shrink-0 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-primary/40'}`} aria-label={lang === 'ar' ? 'تصفية' : 'Filter'}>
+                       <span className="material-symbols-outlined text-xl">tune</span>
+                       {activeCatalogFiltersCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white size-4 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900">{activeCatalogFiltersCount}</span>}
+                     </button>
+                     {showCatalogFilters && (
+                       <div className={`absolute top-full mt-3 z-[260] w-[320px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-primary/10 p-6 animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}>
+                         <div className="flex justify-between items-center mb-6">
+                           <h3 className="text-xs font-black text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
+                           <button type="button" onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
+                         </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="sm:col-span-2 space-y-1.5">
+                             <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</label>
+                             <input type="text" value={prodSearchName} onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
+                           </div>
+                           <div className="space-y-1.5">
+                             <Dropdown label={t.products.category} options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+                           </div>
+                           <div className="space-y-1.5">
+                             <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
+                           </div>
+                           <div className="sm:col-span-2 space-y-1.5">
+                             <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
+                             <input type="text" value={prodSearchOrigin} onChange={(e) => { setProdSearchOrigin(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
+                           </div>
+                         </div>
+                         <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'right-8' : 'left-8'}`} />
+                       </div>
+                     )}
+                   </div>
+                   <button
+                     type="button"
+                     onClick={(e) => { e.stopPropagation(); closeProductsModal(); }}
+                     className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90 shrink-0"
+                   >
+                     <span className="material-symbols-outlined">close</span>
+                   </button>
+                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-slate-50/20 relative">
@@ -822,46 +855,6 @@ const Vendors: React.FC = () => {
                        })}
                     </div>
                  )}
-              </div>
-
-              {/* Floating Buttons in Modal */}
-              <div className="absolute bottom-24 left-0 right-0 z-[250] pointer-events-none px-6">
-                <div className="w-full flex flex-col items-end gap-3 pointer-events-auto">
-                  <button onClick={() => setIsManualModalOpen(true)} className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"><span className="material-symbols-outlined text-2xl">edit_document</span></button>
-                  <div className="relative" ref={catalogFilterRef}>
-                    <button onClick={() => setShowCatalogFilters(!showCatalogFilters)} className={`size-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-white/20' : 'bg-slate-900 text-white border-white/10'}`}><span className="material-symbols-outlined text-2xl">tune</span>{activeCatalogFiltersCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">{activeCatalogFiltersCount}</span>}</button>
-                    {showCatalogFilters && (
-                      <div className={`absolute bottom-full mb-4 z-[260] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-primary/10 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
-                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xs font-black     text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
-                            <button onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
-                         </div>
-                         
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="sm:col-span-2 space-y-1.5">
-                               <label className="text-[10px] font-black text-slate-500   px-1">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</label>
-                               <input type="text" value={prodSearchName} onChange={(e) => {setProdSearchName(e.target.value); setProductsPage(0);}} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
-                            </div>
-                            
-                            <div className="space-y-1.5">
-                                <Dropdown label={t.products.category} options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
-                            </div>
-
-                            <div className="sm:col-span-2 space-y-1.5">
-                               <label className="text-[10px] font-black text-slate-500   px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
-                               <input type="text" value={prodSearchOrigin} onChange={(e) => {setProdSearchOrigin(e.target.value); setProductsPage(0);}} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
-                            </div>
-                         </div>
-                         
-                         <div className={`absolute -bottom-2 w-4 h-4 bg-white dark:bg-slate-900 border-r border-b border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
 
               {productsTotalPages > 1 && (
