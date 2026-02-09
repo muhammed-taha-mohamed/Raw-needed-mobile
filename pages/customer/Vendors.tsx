@@ -764,7 +764,7 @@ const Vendors: React.FC = () => {
                        {activeCatalogFiltersCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white size-4 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900">{activeCatalogFiltersCount}</span>}
                      </button>
                      {showCatalogFilters && (
-                       <div className={`absolute top-full mt-3 z-[260] w-[320px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-primary/10 p-6 animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}>
+                       <div className={`absolute top-full mt-3 z-[260] w-[320px] sm:w-[380px] max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-primary/10 p-6 animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                          <div className="flex justify-between items-center mb-6">
                            <h3 className="text-xs font-black text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
                            <button type="button" onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
@@ -785,7 +785,7 @@ const Vendors: React.FC = () => {
                              <input type="text" value={prodSearchOrigin} onChange={(e) => { setProdSearchOrigin(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
                            </div>
                          </div>
-                         <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'right-8' : 'left-8'}`} />
+                         <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`} />
                        </div>
                      )}
                    </div>
