@@ -721,19 +721,19 @@ const AdvancedReports: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <button
             onClick={() => onSelectReport('product-card')}
-            className={`p-4 rounded-2xl border text-center transition-all ${
+            className={`p-4 rounded-2xl border text-start transition-all ${
               selectedReport === 'product-card'
                 ? 'border-primary bg-primary/5 shadow-sm'
                 : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'
             }`}
           >
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'product-card' ? 'bg-primary text-white' : 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'product-card' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                 <span className="material-symbols-outlined text-[21px]">inventory_2</span>
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'كارت صنف' : 'Product Card'}</p>
-                <p className="text-[11px] font-bold text-slate-500 line-clamp-2">
+                <p className="text-[11px] font-bold text-slate-500 truncate">
                   {lang === 'ar' ? 'تفاصيل الصنف والطلبات المرتبطة به' : 'Detailed product request activity'}
                 </p>
               </div>
@@ -742,73 +742,48 @@ const AdvancedReports: React.FC = () => {
 
           <button
             onClick={() => onSelectReport('sales-report')}
-            className={`p-4 rounded-2xl border text-center transition-all ${
+            className={`p-4 rounded-2xl border text-start transition-all ${
               selectedReport === 'sales-report'
                 ? 'border-primary bg-primary/5 shadow-sm'
                 : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'
             }`}
           >
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'sales-report' ? 'bg-primary text-white' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'sales-report' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                 <span className="material-symbols-outlined text-[21px]">payments</span>
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'تقرير المبيعات' : 'Sales Report'}</p>
-                <p className="text-[11px] font-bold text-slate-500 line-clamp-2">
+                <p className="text-[11px] font-bold text-slate-500 truncate">
                   {lang === 'ar' ? 'تحليل تفصيلي للمبيعات وحالات الطلبات' : 'Detailed sales and status analysis'}
                 </p>
               </div>
             </div>
           </button>
 
-          <button onClick={() => onSelectReport('monthly-trend')} className={`p-4 rounded-2xl border text-center transition-all ${selectedReport === 'monthly-trend' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'monthly-trend' ? 'bg-primary text-white' : 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300'}`}>
-                <span className="material-symbols-outlined text-[21px]">query_stats</span>
-              </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'اتجاه شهري' : 'Monthly Trend'}</p>
-              <p className="text-[11px] font-bold text-slate-500 line-clamp-2">{lang === 'ar' ? 'اتجاه الطلبات والمبيعات عبر الشهور' : 'Requests and sales trend across months'}</p>
-            </div>
+          <button onClick={() => onSelectReport('monthly-trend')} className={`p-4 rounded-2xl border text-start transition-all ${selectedReport === 'monthly-trend' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'اتجاه شهري' : 'Monthly Trend'}</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">{lang === 'ar' ? 'اتجاه الطلبات والمبيعات عبر الشهور' : 'Requests and sales trend across months'}</p>
           </button>
 
-          <button onClick={() => onSelectReport('tops-overview')} className={`p-4 rounded-2xl border text-center transition-all ${selectedReport === 'tops-overview' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'tops-overview' ? 'bg-primary text-white' : 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-900/20 dark:text-fuchsia-300'}`}>
-                <span className="material-symbols-outlined text-[21px]">trophy</span>
-              </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'أفضل المنتجات والعملاء' : 'Top Products & Customers'}</p>
-              <p className="text-[11px] font-bold text-slate-500 line-clamp-2">{lang === 'ar' ? 'دمج أفضل 5 منتجات + أفضل 5 عملاء' : 'Merged top 5 products + top 5 customers'}</p>
-            </div>
+          <button onClick={() => onSelectReport('tops-overview')} className={`p-4 rounded-2xl border text-start transition-all ${selectedReport === 'tops-overview' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'أفضل المنتجات والعملاء' : 'Top Products & Customers'}</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">{lang === 'ar' ? 'دمج أفضل 5 منتجات + أفضل 5 عملاء' : 'Merged top 5 products + top 5 customers'}</p>
           </button>
 
-          <button onClick={() => onSelectReport('deep-insights')} className={`p-4 rounded-2xl border text-center transition-all ${selectedReport === 'deep-insights' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'deep-insights' ? 'bg-primary text-white' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300'}`}>
-                <span className="material-symbols-outlined text-[21px]">insights</span>
-              </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'تقرير شامل مفصل' : 'Deep Insights Report'}</p>
-              <p className="text-[11px] font-bold text-slate-500 line-clamp-2">{lang === 'ar' ? 'اتجاه + أفضل أداء + حالات + شرائح القيم' : 'Trend + tops + statuses + value buckets'}</p>
-            </div>
+          <button onClick={() => onSelectReport('deep-insights')} className={`p-4 rounded-2xl border text-start transition-all ${selectedReport === 'deep-insights' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'تقرير شامل مفصل' : 'Deep Insights Report'}</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">{lang === 'ar' ? 'اتجاه + أفضل أداء + حالات + شرائح القيم' : 'Trend + tops + statuses + value buckets'}</p>
           </button>
 
-          <button onClick={() => onSelectReport('status-distribution')} className={`p-4 rounded-2xl border text-center transition-all ${selectedReport === 'status-distribution' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'status-distribution' ? 'bg-primary text-white' : 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-300'}`}>
-                <span className="material-symbols-outlined text-[21px]">pie_chart</span>
-              </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'توزيع الحالات' : 'Status Distribution'}</p>
-              <p className="text-[11px] font-bold text-slate-500 line-clamp-2">{lang === 'ar' ? 'نِسب كل حالات الطلبات' : 'Percentages of all request statuses'}</p>
-            </div>
+          <button onClick={() => onSelectReport('status-distribution')} className={`p-4 rounded-2xl border text-start transition-all ${selectedReport === 'status-distribution' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'توزيع الحالات' : 'Status Distribution'}</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">{lang === 'ar' ? 'نِسب كل حالات الطلبات' : 'Percentages of all request statuses'}</p>
           </button>
 
-          <button onClick={() => onSelectReport('value-buckets')} className={`p-4 rounded-2xl border text-center transition-all ${selectedReport === 'value-buckets' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <div className={`size-11 rounded-xl flex items-center justify-center ${selectedReport === 'value-buckets' ? 'bg-primary text-white' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300'}`}>
-                <span className="material-symbols-outlined text-[21px]">stacked_bar_chart</span>
-              </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'شرائح القيم' : 'Value Buckets'}</p>
-              <p className="text-[11px] font-bold text-slate-500 line-clamp-2">{lang === 'ar' ? 'تحليل الطلبات المكتملة حسب القيمة' : 'Completed orders by value ranges'}</p>
-            </div>
+          <button onClick={() => onSelectReport('value-buckets')} className={`p-4 rounded-2xl border text-start transition-all ${selectedReport === 'value-buckets' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary/40'}`}>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{lang === 'ar' ? 'شرائح القيم' : 'Value Buckets'}</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">{lang === 'ar' ? 'تحليل الطلبات المكتملة حسب القيمة' : 'Completed orders by value ranges'}</p>
           </button>
         </div>
       </div>
