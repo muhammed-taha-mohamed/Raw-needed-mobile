@@ -107,31 +107,76 @@ const SupplierDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Accept-Language': langHeader,
-        },
-      });
+      
+      // Check if mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // For mobile: use direct API call with better mobile handling
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create link and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        // Use setTimeout to ensure the link is ready
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+        }, 50);
+      } else {
+        // For desktop: use standard fetch and download
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const now = new Date();
-      const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
       
       showToast(t.products.exportSuccess, 'success');
     } catch (err: any) {
@@ -143,7 +188,7 @@ const SupplierDashboard: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
+    <div className="w-full py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -173,42 +218,42 @@ const SupplierDashboard: React.FC = () => {
                   )}
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.totalOrderLines}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'إجمالي العروض' : 'Total RFQs'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'إجمالي العروض' : 'Total RFQs'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-amber-500 text-2xl">pending_actions</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.pendingOrderLines}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'بانتظار الرد' : 'Awaiting'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-blue-500 text-2xl">rate_review</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.respondedOrderLines}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'تم الرد' : 'Quoted'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'تم الرد' : 'Quoted'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer" onClick={() => navigate('/orders')}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-emerald-500 text-2xl">task_alt</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{stats.completedOrders}</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'مكتملة' : 'Completed'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20">
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-purple-500 text-2xl">percent</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{responseRate}%</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'معدل الاستجابة' : 'Response Rate'}</p>
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-lg hover:border-primary/20">
                 <div className="flex items-center justify-between mb-2">
                   <span className="material-symbols-outlined text-indigo-500 text-2xl">check_circle</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{completionRate}%</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{lang === 'ar' ? 'معدل الإتمام' : 'Completion'}</p>
+                <p className="text-[11px] font-black text-slate-400 mt-1">{lang === 'ar' ? 'معدل الإتمام' : 'Completion'}</p>
               </div>
             </div>
           )}
@@ -250,7 +295,7 @@ const SupplierDashboard: React.FC = () => {
                        </ResponsiveContainer>
                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                           <span className="text-4xl font-black text-slate-800 dark:text-white tabular-nums leading-none">{totalActions}</span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{lang === 'ar' ? 'إجمالي الحركة' : 'Total Items'}</span>
+                          <span className="text-[10px] font-black text-slate-400 tracking-[0.3em] mt-2">{lang === 'ar' ? 'إجمالي الحركة' : 'Total Items'}</span>
                        </div>
                     </div>
                   </div>
@@ -261,7 +306,7 @@ const SupplierDashboard: React.FC = () => {
                         <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
                            {lang === 'ar' ? 'تحليل العروض والطلبات' : 'Supply Performance Analytics'}
                         </h3>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        <p className="text-xs font-bold text-slate-400">
                            {lang === 'ar' ? 'مؤشرات حركة التوريد الحالية' : 'Real-time supply chain overview'}
                         </p>
                      </div>
@@ -298,7 +343,7 @@ const SupplierDashboard: React.FC = () => {
                         </div>
                         <button 
                           onClick={() => navigate('/orders')}
-                          className="text-[11px] font-black text-primary hover:underline uppercase tracking-widest flex items-center gap-1.5"
+                          className="text-[11px] font-black text-primary hover:underline flex items-center gap-1.5"
                         >
                            {lang === 'ar' ? 'عرض السجل' : 'Full History'}
                            <span className="material-symbols-outlined text-sm rtl-flip">arrow_forward</span>
@@ -471,7 +516,7 @@ const SupplierDashboard: React.FC = () => {
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                  <span className="material-symbols-outlined text-5xl text-primary">auto_awesome</span>
               </div>
-              <p className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">{lang === 'ar' ? 'رؤى سريعة' : 'Vendor Insight'}</p>
+              <p className="text-[11px] font-black text-primary tracking-[0.2em] mb-4">{lang === 'ar' ? 'رؤى سريعة' : 'Vendor Insight'}</p>
               <p className="text-sm font-bold leading-relaxed text-slate-600 dark:text-slate-300 italic">
                 {lang === 'ar' 
                   ? `أداء التوريد لديك مستقر بنسبة ٩٤٪ هذا الشهر. التركيز على سرعة الرد يزيد من فرص التعاقد.` 

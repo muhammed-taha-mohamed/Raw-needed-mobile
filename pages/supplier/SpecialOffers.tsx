@@ -5,6 +5,7 @@ import { PlanFeaturesEnum } from '../../types';
 import { hasFeature } from '../../utils/subscription';
 import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
+import EmptyState from '../../components/EmptyState';
 
 interface SpecialOffer {
   id: string;
@@ -151,7 +152,7 @@ const SpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === null) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
         <div className="flex flex-col items-center justify-center py-40">
           <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
           <p className="text-slate-400 font-black text-[10px] md:text-xs opacity-50">Loading...</p>
@@ -162,7 +163,7 @@ const SpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === false) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
         <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-xl border border-red-100 dark:border-red-900/20 shadow-xl">
           <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
             <span className="material-symbols-outlined text-5xl">lock</span>
@@ -181,7 +182,7 @@ const SpecialOffers: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display">
+    <div className="w-full py-6 animate-in fade-in duration-700 font-display">
       <div className="flex items-center justify-end mb-6">
         <button
           onClick={() => {
@@ -206,9 +207,8 @@ const SpecialOffers: React.FC = () => {
           ))}
         </div>
       ) : offers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-12 text-center">
-          <span className="material-symbols-outlined text-5xl text-slate-300 mb-4">local_offer</span>
-          <p className="text-slate-500 font-bold">{lang === 'ar' ? 'لا توجد عروض خاصة' : 'No special offers yet'}</p>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <EmptyState title={lang === 'ar' ? 'لا توجد عروض خاصة' : 'No special offers yet'} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -264,8 +264,8 @@ const SpecialOffers: React.FC = () => {
 
       {/* Add/Edit Offer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -275,7 +275,7 @@ const SpecialOffers: React.FC = () => {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
                     {editingOffer ? (lang === 'ar' ? 'تعديل العرض' : 'Edit Offer') : (lang === 'ar' ? 'إضافة عرض' : 'Add Offer')}
                   </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">
+                  <p className="text-[10px] font-black text-slate-400 mt-2">
                     {lang === 'ar' ? 'الخصم والتواريخ' : 'Discount & dates'}
                   </p>
                 </div>
@@ -287,7 +287,7 @@ const SpecialOffers: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="offerForm" onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'المنتج' : 'Product'}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنتج' : 'Product'}</label>
                   <select
                     value={formData.productId}
                     onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
@@ -302,7 +302,7 @@ const SpecialOffers: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}</label>
                   <input
                     type="number"
                     min="1"
@@ -315,7 +315,7 @@ const SpecialOffers: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</label>
                   <input
                     type="datetime-local"
                     value={formData.startDate}
@@ -325,7 +325,7 @@ const SpecialOffers: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
                   <input
                     type="datetime-local"
                     value={formData.endDate}
@@ -340,9 +340,20 @@ const SpecialOffers: React.FC = () => {
               <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
               </button>
-              <button form="offerForm" type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3">
+              <button form="offerForm" type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3">
                 {editingOffer ? (lang === 'ar' ? 'تحديث' : 'Update') : (lang === 'ar' ? 'إنشاء' : 'Create')}
                 <span className="material-symbols-outlined">verified</span>
+              </button>
+            </div>
+            
+            {/* Close Button at Bottom - Mobile Only */}
+            <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
               </button>
             </div>
           </div>
@@ -351,7 +362,7 @@ const SpecialOffers: React.FC = () => {
 
       {/* Floating Action Button - Mobile only */}
       <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
-        <div className="max-w-[1200px] mx-auto flex flex-col items-start gap-3 pointer-events-auto">
+        <div className="w-full flex flex-col items-start gap-3 pointer-events-auto">
           <button 
             onClick={() => {
               setEditingOffer(null);

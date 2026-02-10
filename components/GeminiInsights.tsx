@@ -45,7 +45,7 @@ const GeminiInsights: React.FC = () => {
         <button 
           onClick={generateInsight}
           disabled={loading}
-          className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+          className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black text-xs shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
           {loading ? (
             <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

@@ -37,6 +37,14 @@
         }
     </script>
     <style>
+        /* Full viewport height so auth/landing pages fill the screen */
+        html, body {
+            height: 100%;
+            min-height: 100%;
+        }
+        #root {
+            min-height: 100%;
+        }
         /* Base font: 14px mobile, slightly larger on web only */
         html {
             font-size: 14px;
@@ -47,10 +55,13 @@
             }
         }
         
-        /* Zoom for desktop/laptop screens */
+        /* Zoom for desktop/laptop screens (disabled on auth/landing so they fill full height) */
         @media screen and (min-width: 1024px) {
             html {
                 zoom: 0.9;
+            }
+            html:has(body.auth-page) {
+                zoom: 1;
             }
             @supports not (zoom: 0.9) {
                 body {
@@ -58,6 +69,11 @@
                     transform-origin: top left;
                     width: 111.11%; /* 100% / 0.9 */
                     height: 111.11%;
+                }
+                body.auth-page {
+                    transform: none;
+                    width: 100%;
+                    height: 100%;
                 }
             }
         }
@@ -90,18 +106,29 @@
         
         [dir="rtl"] .material-symbols-outlined.rtl-flip { transform: scaleX(-1); }
 
+        /* Table header: light primary (logo color) only */
+        .table-thead-primary thead tr { background: rgba(0, 154, 167, 0.1); border-bottom: 1px solid rgba(0, 154, 167, 0.2); }
+        .dark .table-thead-primary thead tr { background: rgba(0, 154, 167, 0.15); }
+
         /* Mobile safe areas handling */
         .safe-pt {
             padding-top: env(safe-area-inset-top, 20px);
         }
         
         @media screen and (max-width: 768px) {
+            :root {
+                /* Single source of truth for mobile header; main content uses same value so WebView and browser match */
+                --mobile-header-height: 64px;
+            }
             .mobile-top-offset {
                 top: calc(env(safe-area-inset-top, 0px) + 25px) !important;
             }
             .mobile-header-safe-height {
-                height: calc(env(safe-area-inset-top, 0px) + 85px) !important;
+                height: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height, 64px)) !important;
                 padding-top: env(safe-area-inset-top, 0px) !important;
+            }
+            .mobile-main-pt {
+                padding-top: calc(env(safe-area-inset-top, 0px) + var(--mobile-header-height, 64px)) !important;
             }
         }
 

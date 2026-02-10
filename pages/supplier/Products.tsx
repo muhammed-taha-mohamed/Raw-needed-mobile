@@ -5,6 +5,7 @@ import { api, BASE_URL } from '../../api';
 import { Category, SubCategory, Product } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import PaginationFooter from '../../components/PaginationFooter';
+import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
 
 const Products: React.FC = () => {
@@ -260,31 +261,85 @@ const Products: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const langHeader = localStorage.getItem('lang') || 'ar';
-      const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Accept-Language': langHeader,
-        },
-      });
+      
+      // Check if mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // For mobile: use direct API call with window.location to trigger download
+        // This works better on mobile browsers
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        // Create a form and submit it to trigger download
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = `${BASE_URL}/api/v1/product/export-stock`;
+        form.style.display = 'none';
+        
+        // Add token as hidden input (if backend supports it) or use fetch with blob
+        // Since backend uses Authorization header, we'll use fetch but with better mobile handling
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create link and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        // Use setTimeout to ensure the link is ready
+        setTimeout(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+        }, 50);
+      } else {
+        // For desktop: use standard fetch and download
+        const response = await fetch(`${BASE_URL}/api/v1/product/export-stock`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Accept-Language': langHeader,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.errorMessage || t.products.exportError);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const now = new Date();
+        const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const now = new Date();
-      const fileName = `stock-report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.xlsx`;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
       
       // Show success message
       showToast(t.products.exportSuccess, 'success');
@@ -414,7 +469,7 @@ const Products: React.FC = () => {
   const activeFiltersCount = [filterCategoryId, filterSubCategoryId, searchName, searchOrigin].filter(Boolean).length;
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
+    <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
       
       {/* Search Header — mobile only; on web search is inside filters */}
       <div className="flex items-center gap-4 md:hidden">
@@ -434,11 +489,11 @@ const Products: React.FC = () => {
       <div className="hidden md:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
           <div className="min-w-[180px] flex-1 max-w-[240px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{lang === 'ar' ? 'بحث بالاسم' : 'Search by name'}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'بحث بالاسم' : 'Search by name'}</label>
             <input type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder={t.products.searchPlaceholder} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
           </div>
           <div className="min-w-[160px] space-y-1" ref={categoryDropRef}>
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.category}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.category}</label>
             <div className="relative">
               <button type="button" onClick={() => { setCategoryDropdownOpen((o) => !o); setSubCategoryDropdownOpen(false); }} className="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start">
                 <span className="truncate pr-6 rtl:pl-6 rtl:pr-0">{filterCategoryId ? (lang === 'ar' ? categories.find(c => c.id === filterCategoryId)?.arabicName : categories.find(c => c.id === filterCategoryId)?.name) : t.products.selectCategory}</span>
@@ -459,7 +514,7 @@ const Products: React.FC = () => {
             </div>
           </div>
           <div className="min-w-[160px] space-y-1" ref={subCategoryDropRef}>
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.subCategory}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.subCategory}</label>
             <div className="relative">
               <button type="button" onClick={() => { setSubCategoryDropdownOpen((o) => !o); setCategoryDropdownOpen(false); }} disabled={!filterCategoryId} className="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed">
                 <span className="truncate pr-6 rtl:pl-6 rtl:pr-0">{filterSubCategoryId ? (lang === 'ar' ? filterSubCategories.find(s => s.id === filterSubCategoryId)?.arabicName : filterSubCategories.find(s => s.id === filterSubCategoryId)?.name) : t.products.selectSubCategory}</span>
@@ -480,10 +535,10 @@ const Products: React.FC = () => {
             </div>
           </div>
           <div className="min-w-[180px] flex-1 space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.origin}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.origin}</label>
             <input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
           </div>
-          <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
+          <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
           <button 
             type="button" 
             onClick={handleDownloadTemplate} 
@@ -575,15 +630,15 @@ const Products: React.FC = () => {
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{lang === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</p>
+              <p className="text-[10px] font-black text-slate-400 mb-1">{lang === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</p>
               <p className="text-2xl font-black text-slate-800 dark:text-white tabular-nums">{uploadResult.totalRows || 0}</p>
             </div>
             <div className="p-4 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700">
-              <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase mb-1">{lang === 'ar' ? 'نجح' : 'Success'}</p>
+              <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mb-1">{lang === 'ar' ? 'نجح' : 'Success'}</p>
               <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{uploadResult.successCount || 0}</p>
             </div>
             <div className="p-4 rounded-xl bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700">
-              <p className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase mb-1">{lang === 'ar' ? 'فشل' : 'Failed'}</p>
+              <p className="text-[10px] font-black text-red-700 dark:text-red-400 mb-1">{lang === 'ar' ? 'فشل' : 'Failed'}</p>
               <p className="text-2xl font-black text-red-700 dark:text-red-400 tabular-nums">{uploadResult.failedCount || 0}</p>
             </div>
           </div>
@@ -600,9 +655,9 @@ const Products: React.FC = () => {
                   <table className="w-full text-left rtl:text-right">
                     <thead className="bg-red-50 dark:bg-red-900/20 border-b-2 border-red-200 dark:border-red-800 sticky top-0">
                       <tr>
-                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400 uppercase">{lang === 'ar' ? 'رقم الصف' : 'Row #'}</th>
-                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400 uppercase">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</th>
-                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400 uppercase">{lang === 'ar' ? 'رسالة الخطأ' : 'Error Message'}</th>
+                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400">{lang === 'ar' ? 'رقم الصف' : 'Row #'}</th>
+                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</th>
+                        <th className="px-4 py-3 text-[11px] font-black text-red-700 dark:text-red-400">{lang === 'ar' ? 'رسالة الخطأ' : 'Error Message'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-red-100 dark:divide-red-900/20">
@@ -645,18 +700,12 @@ const Products: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-40">
              <div className="size-12 border-4 border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-[13px] font-black text-slate-500 animate-pulse uppercase tracking-[0.2em]">Synchronizing...</p>
+             <p className="text-[13px] font-black text-slate-500 animate-pulse">{t.common.synchronizing}</p>
           </div>
         ) : (
           <>
             {products.length === 0 ? (
-              <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700">
-                 <span className="material-symbols-outlined text-7xl">inventory_2</span>
-                 <div className="space-y-1">
-                   <h3 className="text-xl font-black">{t.products.empty}</h3>
-                   <p className="text-sm font-bold">{lang === 'ar' ? 'ابدأ بإضافة منتجاتك الأولى للكتالوج.' : 'Start by adding your first products to the catalog.'}</p>
-                 </div>
-              </div>
+              <EmptyState title={t.products.empty} subtitle={lang === 'ar' ? 'ابدأ بإضافة منتجاتك الأولى للكتالوج.' : 'Start by adding your first products to the catalog.'} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {products.map((product, idx) => (
@@ -684,7 +733,7 @@ const Products: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                            <div className="flex items-center gap-1.5 text-slate-400">
                               <span className="material-symbols-outlined text-[18px] text-primary/60">category</span>
-                              <span className="text-[11px] font-bold uppercase truncate max-w-[180px]">
+                              <span className="text-[11px] font-bold truncate max-w-[180px]">
                                 {lang === 'ar' 
                                   ? `${product.category?.arabicName || ''} > ${product.subCategory?.arabicName || ''}`
                                   : `${product.category?.name || ''} > ${product.subCategory?.name || ''}`}
@@ -692,12 +741,12 @@ const Products: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1.5 text-slate-400">
                                <span className="material-symbols-outlined text-[18px] text-primary/60">public</span>
-                               <span className="text-[11px] font-bold uppercase tabular-nums">{product.origin}</span>
+                               <span className="text-[11px] font-bold tabular-nums">{product.origin}</span>
                             </div>
                             {product.unit && (
                               <div className="flex items-center gap-1.5 text-slate-400">
                                 <span className="material-symbols-outlined text-[18px] text-primary/60">straighten</span>
-                                <span className="text-[11px] font-bold uppercase">{product.unit}</span>
+                                <span className="text-[11px] font-bold">{product.unit}</span>
                               </div>
                             )}
                         </div>
@@ -718,10 +767,10 @@ const Products: React.FC = () => {
                             <span className="text-[11px] font-black">{lang === 'ar' ? 'المخزون :' : 'Stock :'}</span>
                             <span className="text-lg font-black tabular-nums">{product.stockQuantity}</span>
                             {product.unit && (
-                              <span className="text-[11px] font-black uppercase">{product.unit}</span>
+                              <span className="text-[11px] font-black">{product.unit}</span>
                             )}
                             {!product.unit && (
-                              <span className="text-[11px] font-black uppercase">{lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                              <span className="text-[11px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>
                             )}
                          </div>
                          <div className="flex items-center gap-2">
@@ -740,7 +789,7 @@ const Products: React.FC = () => {
 
       {/* Floating Action Buttons Area — mobile only */}
       <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
-        <div className="max-w-[1200px] mx-auto flex flex-col items-end gap-3 pointer-events-auto">
+        <div className="w-full flex flex-col items-end gap-3 pointer-events-auto">
           <button onClick={openAddModal} className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"><span className="material-symbols-outlined text-2xl">add</span></button>
           {/* Actions FAB: Template / Upload / Export */}
           <div className="relative" ref={mobileActionsRef}>
@@ -753,7 +802,7 @@ const Products: React.FC = () => {
             {showMobileActions && (
               <div className="absolute bottom-full mb-3 z-[250] w-[260px] left-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{lang === 'ar' ? 'خيارات' : 'Actions'}</p>
+                  <p className="text-[11px] font-black text-slate-500">{lang === 'ar' ? 'خيارات' : 'Actions'}</p>
                 </div>
                 <div className="py-2">
                 <button 
@@ -788,11 +837,11 @@ const Products: React.FC = () => {
             {showFilters && (
               <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-end items-center mb-6">
-                  <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{t.products.clearAll}</button>
+                  <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline">{t.products.clearAll}</button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5" ref={categoryDropRefMob}>
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">{t.products.category}</label>
+                    <label className="text-[10px] font-black text-slate-500 px-1">{t.products.category}</label>
                     <div className="relative">
                       <button type="button" onClick={() => { setCategoryDropdownOpenMob((o) => !o); setSubCategoryDropdownOpenMob(false); }} className="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start">
                         <span className="truncate pr-6 rtl:pl-6 rtl:pr-0">{filterCategoryId ? (lang === 'ar' ? categories.find(c => c.id === filterCategoryId)?.arabicName : categories.find(c => c.id === filterCategoryId)?.name) : t.products.selectCategory}</span>
@@ -809,7 +858,7 @@ const Products: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-1.5" ref={subCategoryDropRefMob}>
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">{t.products.subCategory}</label>
+                    <label className="text-[10px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
                     <div className="relative">
                       <button type="button" onClick={() => { setSubCategoryDropdownOpenMob((o) => !o); setCategoryDropdownOpenMob(false); }} disabled={!filterCategoryId} className="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed">
                         <span className="truncate pr-6 rtl:pl-6 rtl:pr-0">{filterSubCategoryId ? (lang === 'ar' ? filterSubCategories.find(s => s.id === filterSubCategoryId)?.arabicName : filterSubCategories.find(s => s.id === filterSubCategoryId)?.name) : t.products.selectSubCategory}</span>
@@ -825,7 +874,7 @@ const Products: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="sm:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase px-1">{t.products.origin}</label><input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" /></div>
+                  <div className="sm:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 px-1">{t.products.origin}</label><input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" /></div>
                 </div>
               </div>
             )}
@@ -844,10 +893,44 @@ const Products: React.FC = () => {
 
       {/* ... (Add/Edit Product Modal remains the same) ... */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">inventory_2</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingProduct ? t.products.editProduct : t.products.addProduct}</h3><p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">{t.products.updateCatalog}</p></div></div>
+                 <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">inventory_2</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{editingProduct ? t.products.editProduct : t.products.addProduct}</h3><p className="text-[10px] font-black text-slate-400 mt-2">{t.products.updateCatalog}</p></div></div>
                  <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
               </div>
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
@@ -858,50 +941,50 @@ const Products: React.FC = () => {
                 )}
                 <form onSubmit={handleSubmit} id="productForm" className="space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.name}</label>
+                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.name}</label>
                     <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={t.products.namePlaceholder} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.origin}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.origin}</label>
                       <input required type="text" value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={t.products.originPlaceholder} />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'الكمية' : 'Stock Quantity'}</label>
-                      <input required type="number" min="0" value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الكمية' : 'Stock Quantity'}</label>
+                      <input required type="number" min="0" value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.unit}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.unit}</label>
                       <input type="text" value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold placeholder:text-xs placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.productionDate}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.productionDate}</label>
                       <input type="date" value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.expirationDate}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.expirationDate}</label>
                       <input type="date" value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.category}</label>
+                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
                     <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={(catId) => { setFormData({...formData, categoryId: catId, subCategoryId: ''}); if (catId) api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`).then(setSubCategories); }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.subCategory}</label>
+                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
                     <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={formData.subCategoryId} onChange={(v) => setFormData({...formData, subCategoryId: v})} placeholder={t.products.selectSubCategory} disabled={!formData.categoryId} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-30 disabled:cursor-not-allowed" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.products.image}</label>
+                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.image}</label>
                     <div onClick={() => fileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${imagePreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>
                       {imagePreview ? (
                         <img src={imagePreview} className="size-full object-cover" alt="Preview" />
                       ) : (
                         <>
                           <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase">{t.products.clickToUpload}</span>
+                          <span className="text-[9px] font-black text-slate-400">{t.products.clickToUpload}</span>
                         </>
                       )}
                     </div>
@@ -913,22 +996,94 @@ const Products: React.FC = () => {
                   </div>
                 </form>
               </div>
-              <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0"><button form="productForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">{isProcessing ? (<div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>) : (<>{editingProduct ? t.profile.saveChanges : t.products.addProduct}<span className="material-symbols-outlined">verified</span></>)}</button></div>
+              <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0"><button form="productForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">{isProcessing ? (<div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>) : (<>{editingProduct ? t.profile.saveChanges : t.products.addProduct}<span className="material-symbols-outlined">verified</span></>)}</button></div>
+              
            </div>
         </div>
       )}
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 p-8 text-center animate-in zoom-in-95"><div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div></div>
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-100 dark:border-slate-800 p-8 text-center animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDeleteConfirmId(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
+            <div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'حذف المنتج؟' : 'Delete Product?'}</h3><p className="text-sm text-slate-500 font-bold mb-8">{t.products.deleteConfirm}</p><div className="flex gap-3"><button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-black text-slate-500 hover:bg-slate-200 transition-all">{t.categories.cancel}</button><button onClick={handleDelete} disabled={isProcessing} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center justify-center">{isProcessing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}</button></div>
+          </div>
         </div>
       )}
 
       {/* Upload Results Modal */}
       {showUploadModal && uploadResult && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:max-w-3xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-slate-100 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setShowUploadModal(false);
+                  setUploadResult(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`size-12 rounded-xl flex items-center justify-center shadow-lg ${uploadResult.failedCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'} text-white`}>
@@ -940,7 +1095,7 @@ const Products: React.FC = () => {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
                     {lang === 'ar' ? 'نتائج رفع المنتجات' : 'Upload Results'}
                   </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">
+                  <p className="text-[10px] font-black text-slate-400 mt-2">
                     {lang === 'ar' ? 'ملخص العملية' : 'Operation Summary'}
                   </p>
                 </div>
@@ -957,15 +1112,15 @@ const Products: React.FC = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-2">{lang === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</p>
+                  <p className="text-[10px] font-black text-slate-400 mb-2">{lang === 'ar' ? 'إجمالي الصفوف' : 'Total Rows'}</p>
                   <p className="text-2xl font-black text-slate-800 dark:text-white tabular-nums">{uploadResult.totalRows || 0}</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase mb-2">{lang === 'ar' ? 'نجح' : 'Success'}</p>
+                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-2">{lang === 'ar' ? 'نجح' : 'Success'}</p>
                   <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{uploadResult.successCount || 0}</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                  <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase mb-2">{lang === 'ar' ? 'فشل' : 'Failed'}</p>
+                  <p className="text-[10px] font-black text-red-600 dark:text-red-400 mb-2">{lang === 'ar' ? 'فشل' : 'Failed'}</p>
                   <p className="text-2xl font-black text-red-600 dark:text-red-400 tabular-nums">{uploadResult.failedCount || 0}</p>
                 </div>
               </div>
@@ -976,14 +1131,14 @@ const Products: React.FC = () => {
                   <h4 className="text-sm font-black text-slate-800 dark:text-white">
                     {lang === 'ar' ? 'الأخطاء' : 'Errors'} ({uploadResult.errors.length})
                   </h4>
-                  <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                  <div className="rounded-xl overflow-hidden table-thead-primary">
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                       <table className="w-full text-left rtl:text-right">
-                        <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
+                        <thead className="sticky top-0 z-10">
                           <tr>
-                            <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">{lang === 'ar' ? 'الصف' : 'Row'}</th>
-                            <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</th>
-                            <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase">{lang === 'ar' ? 'الخطأ' : 'Error'}</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-500">{lang === 'ar' ? 'الصف' : 'Row'}</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-500">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-500">{lang === 'ar' ? 'الخطأ' : 'Error'}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1020,12 +1175,13 @@ const Products: React.FC = () => {
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <button 
                 onClick={() => { setShowUploadModal(false); setUploadResult(null); }} 
-                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3"
               >
                 {lang === 'ar' ? 'إغلاق' : 'Close'}
                 <span className="material-symbols-outlined">check</span>
               </button>
             </div>
+            
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { AdPackage, AdSubscription } from '../../types';
 import type { PaymentInfo } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import EmptyState from '../../components/EmptyState';
 
 const SupplierAdPackages: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -131,14 +132,14 @@ const SupplierAdPackages: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex items-center justify-center min-h-[300px]">
+      <div className="w-full py-6 flex items-center justify-center min-h-[300px]">
         <div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Current ad subscription summary - same style as PlanSelection */}
       {activeSubscription && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -325,7 +326,7 @@ const SupplierAdPackages: React.FC = () => {
           const pricePerAd = Number((p as any).pricePerAd ?? (p as any).price ?? 0);
           const displayName = lang === 'ar' ? p.nameAr || p.nameEn || `${p.numberOfDays} ${lang === 'ar' ? 'أيام' : 'days'}` : p.nameEn || p.nameAr || `${p.numberOfDays} days`;
           const durationLabel = p.numberOfDays >= 365 ? (lang === 'ar' ? 'سنوي' : 'Yearly') : p.numberOfDays >= 90 ? (lang === 'ar' ? 'ربع سنوي' : 'Quarterly') : `${p.numberOfDays} ${lang === 'ar' ? 'يوم' : 'days'}`;
-          const featureCount = 1; // مدة الظهور
+          const featureCount = 1; // Display duration
           const isExclusive = (p as any).exclusive ?? false;
           return (
             <div
@@ -423,12 +424,7 @@ const SupplierAdPackages: React.FC = () => {
       </div>
 
       {packages.length === 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center">
-          <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="material-symbols-outlined text-4xl text-slate-400">campaign</span>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">{lang === 'ar' ? 'لا توجد باقات متاحة حالياً.' : 'No packages available.'}</p>
-        </div>
+        <EmptyState title={lang === 'ar' ? 'لا توجد باقات متاحة حالياً.' : 'No packages available.'} />
       )}
 
       {/* Subscription request modal - keep existing */}
@@ -444,7 +440,7 @@ const SupplierAdPackages: React.FC = () => {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
                     {lang === 'ar' ? 'طلب اشتراك' : 'Subscription request'}
                   </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">
+                  <p className="text-[10px] font-black text-slate-400 mt-2">
                     {lang === 'ar' ? selectedPackage.nameAr || selectedPackage.nameEn : selectedPackage.nameEn || selectedPackage.nameAr} • {pricePerAd} EGP / {lang === 'ar' ? 'إعلان' : 'ad'}
                   </p>
                 </div>
@@ -456,7 +452,7 @@ const SupplierAdPackages: React.FC = () => {
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <div className="space-y-5">
                 <div className="flex justify-between items-end">
-                  <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'عدد الإعلانات' : 'Number of ads'}</label>
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الإعلانات' : 'Number of ads'}</label>
                   <span className="text-2xl font-black text-primary tabular-nums">{numberOfAds}</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800">
@@ -491,13 +487,13 @@ const SupplierAdPackages: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-500 uppercase px-1">{lang === 'ar' ? 'إثبات الدفع (اختياري)' : 'Payment proof (optional)'}</label>
+                <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'إثبات الدفع (اختياري)' : 'Payment proof (optional)'}</label>
                 <div onClick={() => fileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50 overflow-hidden">
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
                   {preview ? <img src={preview} alt="Preview" className="size-full object-cover" /> : (
                     <>
                       <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'اضغط لرفع صورة' : 'Click to upload'}</span>
+                      <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
                     </>
                   )}
                 </div>
@@ -506,7 +502,7 @@ const SupplierAdPackages: React.FC = () => {
                 <button type="button" onClick={() => { setModalOpen(false); setSelectedPackage(null); }} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                   {lang === 'ar' ? 'إلغاء' : 'Cancel'}
                 </button>
-                <button type="submit" disabled={submitting} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                   {submitting ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{lang === 'ar' ? 'إرسال الطلب' : 'Submit request'}<span className="material-symbols-outlined">verified</span></>}
                 </button>
               </div>

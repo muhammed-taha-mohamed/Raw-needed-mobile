@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { useNavigate } from 'react-router-dom';
+import EmptyState from '../../components/EmptyState';
 
 interface CartItem {
   id: string;
@@ -165,7 +166,7 @@ const Cart: React.FC = () => {
 
   if (checkoutSuccess) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
+      <div className="w-full py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
         <div className="size-40 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center text-emerald-500 mb-10 shadow-inner ring-8 ring-emerald-50/50">
            <span className="material-symbols-outlined text-8xl">verified</span>
         </div>
@@ -186,21 +187,20 @@ const Cart: React.FC = () => {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-32 flex flex-col items-center text-center animate-in fade-in zoom-in duration-700">
-        <div className="size-32 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-200 dark:text-slate-700 mb-10">
-           <span className="material-symbols-outlined text-7xl">shopping_cart</span>
+      <div className="w-full">
+        <EmptyState title={lang === 'ar' ? 'العربة فارغة' : 'Your cart is empty'} subtitle={lang === 'ar' ? 'لم تضف أي منتجات بعد.' : 'You haven\'t added any products yet.'} />
+        <div className="flex justify-center pb-16">
+          <button onClick={() => navigate('/product-search')} className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs shadow-2xl active:scale-95 flex items-center gap-3">
+            <span className="material-symbols-outlined">explore</span>
+            {lang === 'ar' ? 'تصفح السوق' : 'Explore Market'}
+          </button>
         </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-8">{lang === 'ar' ? 'العربة فارغة' : 'Your cart is empty'}</h2>
-        <button onClick={() => navigate('/product-search')} className="px-10 py-4 bg-primary text-white rounded-2xl font-black text-xs shadow-2xl active:scale-95 flex items-center gap-3 ">
-          <span className="material-symbols-outlined">explore</span>
-          {lang === 'ar' ? 'تصفح السوق' : 'Explore Market'}
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
+    <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display">
       
       {/* Top Header Controls */}
       <div className="flex justify-between items-center mb-8 bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] shadow-sm border border-primary/5">
@@ -373,8 +373,42 @@ const Cart: React.FC = () => {
 
       {/* Clear Cart Confirmation - Equal buttons size */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-sm bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 text-center animate-in zoom-in-95">
+        <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl p-8 text-center animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setShowClearConfirm(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="size-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6"><span className="material-symbols-outlined text-4xl">warning</span></div>
               <h3 className="text-xl font-black mb-2">{lang === 'ar' ? 'تفريغ العربة؟' : 'Clear Cart?'}</h3>
               <p className="text-sm text-slate-500 font-bold mb-8">{lang === 'ar' ? 'سيتم حذف جميع المواد من العربة بشكل نهائي.' : 'All items will be permanently removed from your cart.'}</p>
@@ -384,6 +418,7 @@ const Cart: React.FC = () => {
                    {isClearing ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Clear')}
                  </button>
               </div>
+              
            </div>
         </div>
       )}

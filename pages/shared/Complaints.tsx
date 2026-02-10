@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
+import EmptyState from '../../components/EmptyState';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -131,7 +132,7 @@ const Complaints: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 animate-in fade-in duration-700 font-display min-h-screen relative pb-32 md:pb-8">
+    <div className="w-full py-6 animate-in fade-in duration-700 font-display min-h-screen relative pb-32 md:pb-8">
       
       {/* Top Add Button - Web only */}
       {!isAdmin && (
@@ -150,7 +151,7 @@ const Complaints: React.FC = () => {
       {/* Floating Action Button for New Ticket - Mobile only */}
       {!isAdmin && (
         <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-          <div className="max-w-[1200px] mx-auto flex flex-col items-end pointer-events-auto">
+          <div className="w-full flex flex-col items-end pointer-events-auto">
             <button 
               onClick={() => setIsCreateModalOpen(true)}
               className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20 group overflow-hidden"
@@ -170,12 +171,8 @@ const Complaints: React.FC = () => {
                <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
              </div>
            ) : complaints.length === 0 ? (
-             <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-               <span className="material-symbols-outlined text-7xl">support_agent</span>
-               <div className="space-y-1">
-                 <h3 className="text-xl font-black">{t.complaints.empty}</h3>
-                 {!isAdmin && <p className="text-sm font-bold">{lang === 'ar' ? 'يمكنك البدء بفتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.'}</p>}
-               </div>
+             <div className="bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+               <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'يمكنك البدء بفتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
              </div>
            ) : (
              <div className="space-y-4">
@@ -274,14 +271,48 @@ const Complaints: React.FC = () => {
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsCreateModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>
                     <div>
                        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.complaints.addNew}</h3>
-                       <p className="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Subject, description & attachment</p>
+                       <p className="text-[10px] font-black text-slate-400 mt-2">{t.complaints.subjectDescriptionAttachment}</p>
                     </div>
                  </div>
                  <button onClick={() => setIsCreateModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
@@ -290,7 +321,7 @@ const Complaints: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-5">
                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.subject}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.subject}</label>
                       <input
                         required
                         type="text"
@@ -301,7 +332,7 @@ const Complaints: React.FC = () => {
                       />
                    </div>
                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.description}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.description}</label>
                       <textarea
                         required
                         value={newTicket.description}
@@ -311,11 +342,11 @@ const Complaints: React.FC = () => {
                       />
                    </div>
                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 uppercase px-1">{t.complaints.image}</label>
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.image}</label>
                       {!preview ? (
                         <div onClick={() => fileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
                           <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach screenshot'}</span>
+                          <span className="text-[9px] font-black text-slate-400">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach screenshot'}</span>
                         </div>
                       ) : (
                         <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
@@ -331,7 +362,7 @@ const Complaints: React.FC = () => {
               </div>
 
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <button form="ticketForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                 <button form="ticketForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                    {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'إرسال التذكرة' : 'Dispatch Ticket'}<span className="material-symbols-outlined">verified</span></>}
                  </button>
               </div>

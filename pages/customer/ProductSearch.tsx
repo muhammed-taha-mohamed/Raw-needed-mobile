@@ -5,6 +5,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, SubCategory, UserSubscription } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import EmptyState from '../../components/EmptyState';
 import { clearSubscriptionCache } from '../../utils/subscription';
 
 interface Product {
@@ -453,32 +454,32 @@ const ProductSearch: React.FC = () => {
   }, [subscription]);
 
   return (
-    <div className="mx-auto max-w-[1200px] md:max-w-[1600px] px-4 md:px-10 py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
+    <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40 md:pb-8 relative">
       
       {/* Web: Inline filters + Manual Order at top — hidden on mobile */}
       <div className="hidden md:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
           <div className="min-w-[180px] flex-1 max-w-[240px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{lang === 'ar' ? 'بحث بالاسم' : 'Search by name'}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'بحث بالاسم' : 'Search by name'}</label>
             <input type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder={t.productSearch.searchLabel} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
           </div>
           <div className="min-w-[160px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.category}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.category}</label>
             <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={selectedCat} onChange={setSelectedCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
           </div>
           <div className="min-w-[160px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.subCategory}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.subCategory}</label>
             <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={selectedSub} onChange={setSelectedSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!selectedCat} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
           </div>
           <div className="min-w-[160px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
             <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
           </div>
           <div className="min-w-[180px] flex-1 space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase px-1 block">{t.products.origin}</label>
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.origin}</label>
             <input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
           </div>
-          <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
+          <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
           <button type="button" onClick={() => setIsManualModalOpen(true)} className="shrink-0 self-end pb-2.5 min-h-[42px] px-5 rounded-xl bg-primary text-white font-black text-[12px] shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2">
             <span className="material-symbols-outlined text-lg">edit_document</span>
             {t.manualOrder.btn}
@@ -511,9 +512,37 @@ const ProductSearch: React.FC = () => {
 
       {/* Add Searches popup: current subscription + partial renewal */}
       {addSearchesModalOpen && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50" onClick={() => setAddSearchesModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setAddSearchesModalOpen(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl max-w-lg w-full md:max-w-lg max-h-[90vh] overflow-y-auto border-t border-x md:border border-slate-200 dark:border-slate-700 animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.parentElement as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setAddSearchesModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+            </div>
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-5 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'اشتراكك الحالي — شراء عمليات بحث' : 'Your subscription — Buy more searches'}</h2>
               <button type="button" onClick={() => setAddSearchesModalOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
                 <span className="material-symbols-outlined">close</span>
@@ -635,18 +664,12 @@ const ProductSearch: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-40">
              <div className="size-12 border-4 border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
-             <p className="text-[13px] font-black text-slate-500 animate-pulse ">Synchronizing...</p>
+             <p className="text-[13px] font-black text-slate-500 animate-pulse">{t.common.synchronizing}</p>
           </div>
         ) : (
           <>
             {results.length === 0 ? (
-              <div className="py-32 text-center flex flex-col items-center gap-6 opacity-30 animate-in fade-in duration-700">
-                 <span className="material-symbols-outlined text-7xl">search_off</span>
-                 <div className="space-y-1">
-                   <h3 className="text-xl font-black">{t.productSearch.empty}</h3>
-                   <p className="text-sm font-bold">{t.productSearch.refine}</p>
-                 </div>
-              </div>
+              <EmptyState title={t.productSearch.empty} subtitle={t.productSearch.refine} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
                 {results.map((product, idx) => {
@@ -700,7 +723,7 @@ const ProductSearch: React.FC = () => {
                                 {product.unit && (
                                   <div className="flex items-center gap-1.5 text-slate-400">
                                     <span className="material-symbols-outlined text-[18px] text-primary/60">straighten</span>
-                                    <span className="text-[11px] font-bold uppercase">{product.unit}</span>
+                                    <span className="text-[11px] font-bold">{product.unit}</span>
                                   </div>
                                 )}
                             </div>
@@ -801,7 +824,7 @@ const ProductSearch: React.FC = () => {
 
       {/* Floating Action Buttons Area — mobile only */}
       <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
-        <div className="max-w-[1200px] mx-auto flex flex-col items-end gap-3 pointer-events-auto">
+        <div className="w-full flex flex-col items-end gap-3 pointer-events-auto">
           <button 
             onClick={() => setIsManualModalOpen(true)}
             className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"
@@ -832,7 +855,7 @@ const ProductSearch: React.FC = () => {
               <div className={`absolute bottom-full mb-4 z-[250] w-[320px] sm:w-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-sm font-black  text-slate-900 dark:text-white">{lang === 'ar' ? 'تصفية السوق' : 'Market Filters'}</h3>
-                  <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline uppercase">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
+                  <button onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -877,8 +900,42 @@ const ProductSearch: React.FC = () => {
 
       {/* Manual Order Modal */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-[90%] md:w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+             
+             {/* Drag Handle - Mobile Only */}
+             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+               const startY = e.touches[0].clientY;
+               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+               if (!modal) return;
+               
+               const handleMove = (moveEvent: TouchEvent) => {
+                 const currentY = moveEvent.touches[0].clientY;
+                 const diff = currentY - startY;
+                 if (diff > 0) {
+                   modal.style.transform = `translateY(${diff}px)`;
+                   modal.style.transition = 'none';
+                 }
+               };
+               
+               const handleEnd = () => {
+                 const finalY = modal.getBoundingClientRect().top;
+                 if (finalY > window.innerHeight * 0.3) {
+                   setIsManualModalOpen(false);
+                 } else {
+                   modal.style.transform = '';
+                   modal.style.transition = '';
+                 }
+                 document.removeEventListener('touchmove', handleMove);
+                 document.removeEventListener('touchend', handleEnd);
+               };
+               
+               document.addEventListener('touchmove', handleMove);
+               document.addEventListener('touchend', handleEnd);
+             }}>
+               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+             </div>
+             
               <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div>
@@ -938,7 +995,7 @@ const ProductSearch: React.FC = () => {
                           ) : (
                              <>
                                 <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                                <span className="text-[9px] font-black text-slate-400 uppercase">Click to upload</span>
+                                <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
                              </>
                           )}
                        </div>
@@ -963,6 +1020,7 @@ const ProductSearch: React.FC = () => {
                     )}
                  </button>
               </div>
+              
            </div>
         </div>
       )}
