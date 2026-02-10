@@ -49,7 +49,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin(response);
       navigate('/');
     } catch (err: any) {
-      setError(t.loginExtra.errorCredentials);
+      //setError(t.loginExtra.errorCredentials);
     } finally {
       setIsLoading(false);
     }
