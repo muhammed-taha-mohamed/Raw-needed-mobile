@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
-import { Category, SubCategory } from '../../types';
+import { Category, CategoryExtraField, SubCategory } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import EmptyState from '../../components/EmptyState';
 
@@ -31,6 +31,7 @@ interface Product {
   unit?: string;
   productionDate?: string;
   expirationDate?: string;
+  extraFieldValues?: Record<string, string>;
 }
 
 interface CartItem {
@@ -117,7 +118,13 @@ const Vendors: React.FC = () => {
     name: '',
     origin: '',
     quantity: 1,
+    unit: '',
+    categoryId: '',
+    subCategoryId: ''
   });
+  const [manualSubCategories, setManualSubCategories] = useState<SubCategory[]>([]);
+  const [manualCategoryExtraFields, setManualCategoryExtraFields] = useState<CategoryExtraField[]>([]);
+  const [manualExtraFieldValues, setManualExtraFieldValues] = useState<Record<string, string>>({});
   const [manualFile, setManualFile] = useState<File | null>(null);
   const [manualPreview, setManualPreview] = useState<string | null>(null);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
@@ -320,6 +327,40 @@ const Vendors: React.FC = () => {
     }
   };
 
+  const openManualModal = () => {
+    setManualFormData({
+      name: '',
+      origin: '',
+      quantity: 1,
+      unit: '',
+      categoryId: '',
+      subCategoryId: ''
+    });
+    setManualSubCategories([]);
+    setManualCategoryExtraFields([]);
+    setManualExtraFieldValues({});
+    setManualFile(null);
+    setManualPreview(null);
+    setIsManualModalOpen(true);
+  };
+
+  const buildManualExtraFieldValues = () => {
+    const values: Record<string, string> = {};
+    if (manualCategoryExtraFields.some(f => f.key === 'dimensions')) {
+      const length = (manualExtraFieldValues.dimensions_length || '').trim();
+      const width = (manualExtraFieldValues.dimensions_width || '').trim();
+      const height = (manualExtraFieldValues.dimensions_height || '').trim();
+      if (length) values.dimensions_length = length;
+      if (width) values.dimensions_width = width;
+      if (height) values.dimensions_height = height;
+    }
+    if (manualCategoryExtraFields.some(f => f.key === 'note')) {
+      const note = (manualExtraFieldValues.note || '').trim();
+      if (note) values.note = note;
+    }
+    return values;
+  };
+
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!viewingSupplier) return;
@@ -345,13 +386,20 @@ const Vendors: React.FC = () => {
           supplierName: viewingSupplier.organizationName || viewingSupplier.name,
           inStock: true,
           quantity: manualFormData.quantity,
-          image: imageUrl || null
+          unit: manualFormData.unit || null,
+          image: imageUrl || null,
+          categoryId: manualFormData.categoryId || null,
+          subCategoryId: manualFormData.subCategoryId || null,
+          extraFieldValues: buildManualExtraFieldValues()
         }]
       };
       await api.post('/api/v1/rfq', payload);
       setToast({ message: t.manualOrder.success, type: 'success' });
       setIsManualModalOpen(false);
-      setManualFormData({ name: '', origin: '', quantity: 1 });
+      setManualFormData({ name: '', origin: '', quantity: 1, unit: '', categoryId: '', subCategoryId: '' });
+      setManualSubCategories([]);
+      setManualCategoryExtraFields([]);
+      setManualExtraFieldValues({});
       setManualPreview(null);
       setManualFile(null);
     } catch (err: any) {
@@ -369,6 +417,23 @@ const Vendors: React.FC = () => {
   };
 
   const activeCatalogFiltersCount = [prodSearchName, prodSearchOrigin, prodSearchCat, prodSearchSub].filter(Boolean).length;
+  const supplierScopedCategories = viewingSupplier?.category?.id
+    ? categories.filter(c => c.id === viewingSupplier.category?.id)
+    : categories;
+
+  useEffect(() => {
+    if (!viewingSupplier?.category?.id) return;
+    if (prodSearchCat && prodSearchCat !== viewingSupplier.category.id) {
+      setProdSearchCat('');
+      setProdSearchSub('');
+    }
+    if (manualFormData.categoryId && manualFormData.categoryId !== viewingSupplier.category.id) {
+      setManualFormData(prev => ({ ...prev, categoryId: '', subCategoryId: '' }));
+      setManualSubCategories([]);
+      setManualCategoryExtraFields([]);
+      setManualExtraFieldValues({});
+    }
+  }, [viewingSupplier, prodSearchCat, manualFormData.categoryId]);
 
   return (
     <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -775,7 +840,7 @@ const Vendors: React.FC = () => {
                              <input type="text" value={prodSearchName} onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
                            </div>
                            <div className="space-y-1.5">
-                             <Dropdown label={t.products.category} options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+                            <Dropdown label={t.products.category} options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                            </div>
                            <div className="space-y-1.5">
                              <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
@@ -868,7 +933,7 @@ const Vendors: React.FC = () => {
               <div className="px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsManualModalOpen(true)}
+                  onClick={openManualModal}
                   className="flex-1 min-w-[140px] py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-lg">edit_document</span>
@@ -898,7 +963,81 @@ const Vendors: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                  <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-5">
                     <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
+                        <Dropdown
+                          options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                          value={manualFormData.categoryId}
+                          onChange={(value) => {
+                            setManualFormData({ ...manualFormData, categoryId: value, subCategoryId: '' });
+                            setManualCategoryExtraFields(value ? (categories.find(c => c.id === value)?.extraFields || []) : []);
+                            setManualExtraFieldValues({});
+                            if (value) {
+                              api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${value}`).then((data) => setManualSubCategories(data || [])).catch(() => setManualSubCategories([]));
+                            } else {
+                              setManualSubCategories([]);
+                            }
+                          }}
+                          placeholder={t.products.selectCategory}
+                          isRtl={lang === 'ar'}
+                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
+                        <Dropdown
+                          options={manualSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
+                          value={manualFormData.subCategoryId}
+                          onChange={(value) => setManualFormData({ ...manualFormData, subCategoryId: value })}
+                          placeholder={t.products.selectSubCategory}
+                          disabled={!manualFormData.categoryId}
+                          isRtl={lang === 'ar'}
+                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                    {manualCategoryExtraFields.length > 0 && (
+                      <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
+                        <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
+                          {lang === 'ar' ? 'بيانات إضافية حسب الفئة' : 'Additional category-specific data'}
+                        </div>
+                        {manualCategoryExtraFields.some(field => field.key === 'dimensions') && (
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input type="text" value={manualExtraFieldValues.dimensions_length || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))} placeholder={lang === 'ar' ? 'طول' : 'Length'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
+                              <input type="text" value={manualExtraFieldValues.dimensions_width || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))} placeholder={lang === 'ar' ? 'عرض' : 'Width'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
+                              <input type="text" value={manualExtraFieldValues.dimensions_height || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))} placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
+                            </div>
+                          </div>
+                        )}
+                        {manualCategoryExtraFields.some(field => field.key === 'note') && (
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
+                            <textarea
+                              value={manualExtraFieldValues.note || ''}
+                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, note: e.target.value }))}
+                              rows={3}
+                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                              placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
+                      <input
+                        required
+                        type="text"
+                        value={manualFormData.unit}
+                        onChange={(e) => setManualFormData({ ...manualFormData, unit: e.target.value })}
+                        placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                      />
+                    </div>
                     <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" alt="" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
                  </form>
               </div>

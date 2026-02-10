@@ -82,7 +82,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const isStaff = role.includes('STAFF');
 
   const allowedScreens = useMemo(() => {
-    return userData?.userInfo?.allowedScreens || userData?.allowedScreens || [];
+    const raw = userData?.userInfo?.allowedScreens || userData?.allowedScreens || [];
+    return (raw as string[]).map((s) => String(s || '').trim().toLowerCase());
   }, [userData]);
 
   const sidebarNavItems = useMemo(() => {
@@ -107,6 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
       { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Requests', icon: 'campaign', path: '/market-requests' },
       { name: lang === 'ar' ? 'المخزون' : 'My Products', icon: 'inventory_2', path: '/products' },
+      { name: lang === 'ar' ? 'التقارير المتقدمة' : 'Advanced Reports', icon: 'analytics', path: '/advanced-reports' },
       { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
       { name: lang === 'ar' ? 'إعلاناتي' : 'My Ads', icon: 'campaign', path: '/advertisements' },
       { name: lang === 'ar' ? 'فريقي' : 'My Team', icon: 'group', path: '/my-team' },
@@ -118,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     let filtered = items;
 
     if (isCustomer) {
-      filtered = items.filter(i => !['/products'].includes(i.path));
+      filtered = items.filter(i => !['/products', '/advanced-reports'].includes(i.path));
     } else if (isSupplier) {
       filtered = items.filter(i => !['/product-search', '/vendors', '/cart'].includes(i.path));
     }
@@ -133,7 +135,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
     return filtered.map(item => ({
       ...item,
-      disabled: isStaff && !allowedScreens.includes(item.path)
+      disabled: isStaff && !allowedScreens.includes(item.path.toLowerCase())
     }));
   }, [lang, role, isAdmin, isStaff, isCustomer, isSupplier, allowedScreens]);
 
@@ -176,7 +178,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
     return items.map(item => ({
       ...item,
-      disabled: isStaff && item.path !== 'SIDEBAR_TRIGGER' && !allowedScreens.includes(item.path)
+      disabled: isStaff && item.path !== 'SIDEBAR_TRIGGER' && !allowedScreens.includes(item.path.toLowerCase())
     }));
   }, [lang, isAdmin, isCustomer, isSupplier, isStaff, allowedScreens]);
 
@@ -192,6 +194,10 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/vendors') info = { title: lang === 'ar' ? 'دليل الموردين' : 'Vendor Directory', subtitle: lang === 'ar' ? 'استكشف الموردين المعتمدين.' : 'Explore verified suppliers.' };
     else if (path === '/product-search') info = { title: t.productSearch.title, subtitle: t.productSearch.subtitle };
     else if (path === '/products') info = { title: t.products.title, subtitle: t.products.subtitle };
+    else if (path === '/advanced-reports') info = {
+      title: lang === 'ar' ? 'التقارير المتقدمة' : 'Advanced Reports',
+      subtitle: lang === 'ar' ? 'تحليلات وتقارير أداء المنتجات' : 'Product performance analytics and reports'
+    };
     else if (path === '/orders') info = { title: lang === 'ar' ? 'سجل الطلبات' : 'Order History', subtitle: lang === 'ar' ? 'تتبع وإدارة جميع طلباتك.' : 'Track and manage all your requests.' };
     else if (path === '/market-requests') info = { title: t.marketRequests.title, subtitle: t.marketRequests.subtitle };
     else if (path === '/my-team') info = { title: t.team.title, subtitle: t.team.subtitle };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { PlanFeaturesEnum } from '../../types';
@@ -6,6 +7,7 @@ import { hasFeature } from '../../utils/subscription';
 import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
+import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
 
 interface SpecialOffer {
   id: string;
@@ -27,6 +29,7 @@ interface Product {
 
 const SpecialOffers: React.FC = () => {
   const { lang } = useLanguage();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [offers, setOffers] = useState<SpecialOffer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -163,21 +166,14 @@ const SpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === false) {
     return (
-      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
-        <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-xl border border-red-100 dark:border-red-900/20 shadow-xl">
-          <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
-            <span className="material-symbols-outlined text-5xl">lock</span>
-          </div>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-4">
-            {lang === 'ar' ? 'الميزة غير متوفرة' : 'Feature Not Available'}
-          </h3>
-          <p className="text-base text-slate-600 dark:text-slate-400 mb-8 text-center max-w-md font-bold">
-            {lang === 'ar' 
-              ? 'هذه الميزة غير متوفرة في خطتك الحالية. يرجى ترقية اشتراكك للوصول إلى العروض الخاصة.'
-              : 'This feature is not available in your current plan. Please upgrade your subscription to access special offers.'}
-          </p>
-        </div>
-      </div>
+      <FeatureUpgradePrompt
+        lang={lang}
+        featureLabel={lang === 'ar' ? 'العروض الخاصة' : 'Special Offers'}
+        description={lang === 'ar'
+          ? 'ميزة العروض الخاصة غير مفعّلة في باقتك الحالية. قم بالترقية لبدء إنشاء وإدارة العروض.'
+          : 'Special offers are not enabled in your current plan. Upgrade to create and manage offers.'}
+        onUpgrade={() => navigate('/subscription')}
+      />
     );
   }
 

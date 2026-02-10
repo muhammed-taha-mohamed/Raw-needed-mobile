@@ -24,6 +24,7 @@ import ViewSpecialOffers from './pages/customer/ViewSpecialOffers';
 import MyTeam from './pages/shared/MyTeam';
 import Products from './pages/supplier/Products';
 import SupplierAdPackages from './pages/supplier/AdPackages';
+import AdvancedReports from './pages/supplier/AdvancedReports';
 import Advertisements from './pages/shared/Advertisements';
 import Vendors from './pages/customer/Vendors';
 import ProductSearch from './pages/customer/ProductSearch';
@@ -161,6 +162,10 @@ const AppContent: React.FC = () => {
   const PortalContent = () => {
     if (!user) return <Navigate to="/" replace />;
     const role = (user.role || '').toUpperCase();
+    const allowedScreensRaw = ((user.userInfo?.allowedScreens || user.allowedScreens || []) as string[]);
+    const allowedScreens = allowedScreensRaw.map((s) => String(s || '').trim().toLowerCase());
+    const isStaffRole = role === 'CUSTOMER_STAFF' || role === 'SUPPLIER_STAFF';
+    const canAccess = (path: string) => !isStaffRole || allowedScreens.includes(path.toLowerCase());
     const sub = user.userInfo?.subscription;
     // Active = has subscription, (approved if status present), and not expired (no expiry or expiryDate > now)
     const hasActiveSubscription = sub && (sub.status == null || sub.status === 'APPROVED') && (!sub.expiryDate || new Date(sub.expiryDate) > new Date());
@@ -234,8 +239,50 @@ const AppContent: React.FC = () => {
             <Route path="/orders" element={<SupplierOrders />} />
             <Route path="/ad-packages" element={<SupplierAdPackages />} />
             <Route path="/advertisements" element={<Advertisements />} />
+            <Route path="/advanced-reports" element={<AdvancedReports />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/subscription" element={<PlanSelection />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      );
+    }
+
+    if (role === 'CUSTOMER_STAFF') {
+      return (
+        <Routes>
+          <Route element={<Layout onLogout={handleLogout} />}>
+            <Route path="/" element={canAccess('/') ? <CustomerDashboard /> : <Navigate to="/profile" replace />} />
+            <Route path="/product-search" element={canAccess('/product-search') ? <ProductSearch /> : <Navigate to="/" replace />} />
+            <Route path="/vendors" element={canAccess('/vendors') ? <Vendors /> : <Navigate to="/" replace />} />
+            <Route path="/special-offers" element={canAccess('/special-offers') ? <ViewSpecialOffers /> : <Navigate to="/" replace />} />
+            <Route path="/market-requests" element={canAccess('/market-requests') ? <MarketRequests /> : <Navigate to="/" replace />} />
+            <Route path="/support" element={canAccess('/support') ? <Complaints /> : <Navigate to="/" replace />} />
+            <Route path="/cart" element={canAccess('/cart') ? <Cart /> : <Navigate to="/" replace />} />
+            <Route path="/profile" element={canAccess('/profile') ? <Profile /> : <Navigate to="/" replace />} />
+            <Route path="/orders" element={canAccess('/orders') ? <Orders /> : <Navigate to="/" replace />} />
+            <Route path="/my-team" element={canAccess('/my-team') ? <MyTeam /> : <Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      );
+    }
+
+    if (role === 'SUPPLIER_STAFF') {
+      return (
+        <Routes>
+          <Route element={<Layout onLogout={handleLogout} />}>
+            <Route path="/" element={canAccess('/') ? <SupplierDashboard /> : <Navigate to="/profile" replace />} />
+            <Route path="/products" element={canAccess('/products') ? <Products /> : <Navigate to="/" replace />} />
+            <Route path="/special-offers" element={canAccess('/special-offers') ? <SpecialOffers /> : <Navigate to="/" replace />} />
+            <Route path="/market-requests" element={canAccess('/market-requests') ? <MarketRequests /> : <Navigate to="/" replace />} />
+            <Route path="/support" element={canAccess('/support') ? <Complaints /> : <Navigate to="/" replace />} />
+            <Route path="/orders" element={canAccess('/orders') ? <SupplierOrders /> : <Navigate to="/" replace />} />
+            <Route path="/ad-packages" element={canAccess('/ad-packages') ? <SupplierAdPackages /> : <Navigate to="/" replace />} />
+            <Route path="/advertisements" element={canAccess('/advertisements') ? <Advertisements /> : <Navigate to="/" replace />} />
+            <Route path="/advanced-reports" element={canAccess('/advanced-reports') ? <AdvancedReports /> : <Navigate to="/" replace />} />
+            <Route path="/profile" element={canAccess('/profile') ? <Profile /> : <Navigate to="/" replace />} />
+            <Route path="/my-team" element={canAccess('/my-team') ? <MyTeam /> : <Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

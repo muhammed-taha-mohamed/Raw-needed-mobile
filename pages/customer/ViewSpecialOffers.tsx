@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
+import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
 
 interface SpecialOffer {
   id: string;
@@ -131,21 +132,14 @@ const ViewSpecialOffers: React.FC = () => {
 
   if (hasFeatureAccess === false) {
     return (
-      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
-        <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-red-100 dark:border-red-900/20 shadow-xl">
-          <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
-            <span className="material-symbols-outlined text-5xl">lock</span>
-          </div>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-4">
-            {lang === 'ar' ? 'الميزة غير متوفرة' : 'Feature Not Available'}
-          </h3>
-          <p className="text-base text-slate-600 dark:text-slate-400 mb-8 text-center max-w-md font-bold">
-            {lang === 'ar' 
-              ? 'هذه الميزة غير متوفرة في خطتك الحالية. يرجى ترقية اشتراكك للوصول إلى العروض الخاصة للموردين.'
-              : 'This feature is not available in your current plan. Please upgrade your subscription to view supplier special offers.'}
-          </p>
-        </div>
-      </div>
+      <FeatureUpgradePrompt
+        lang={lang}
+        featureLabel={lang === 'ar' ? 'عروض الموردين الخاصة' : 'Supplier Special Offers'}
+        description={lang === 'ar'
+          ? 'العروض الخاصة للموردين غير متاحة في باقتك الحالية. قم بترقية الباقة لعرض كل العروض والاستفادة منها.'
+          : 'Supplier special offers are not available in your current plan. Upgrade to access and benefit from all offers.'}
+        onUpgrade={() => navigate('/subscription')}
+      />
     );
   }
 

@@ -2,11 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api, BASE_URL } from '../../api';
-import { Category, SubCategory, Product } from '../../types';
+import { Category, CategoryExtraField, SubCategory, Product } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
+
+interface SupplierProfile {
+  id: string;
+  category?: { id: string; name: string; arabicName: string } | null;
+}
 
 const Products: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -68,6 +73,8 @@ const Products: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categoryExtraFields, setCategoryExtraFields] = useState<CategoryExtraField[]>([]);
+  const [extraFieldValues, setExtraFieldValues] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -99,8 +106,17 @@ const Products: React.FC = () => {
 
   const fetchInitialData = async () => {
     try {
-      const data = await api.get<Category[]>('/api/v1/category/all');
-      setCategories(data || []);
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const supplierOwnerId = userData?.userInfo?.ownerId || userData?.ownerId || userData?.userInfo?.id || userData?.id;
+      const [allCategories, supplier] = await Promise.all([
+        api.get<Category[]>('/api/v1/category/all'),
+        supplierOwnerId ? api.get<SupplierProfile>(`/api/v1/user/${supplierOwnerId}`) : Promise.resolve(null as SupplierProfile | null)
+      ]);
+      const scoped = supplier?.category?.id
+        ? (allCategories || []).filter(c => c.id === supplier.category?.id)
+        : (allCategories || []);
+      setCategories(scoped);
     } catch (e) {}
   };
 
@@ -118,6 +134,15 @@ const Products: React.FC = () => {
       setFilterSubCategoryId('');
     }
   }, [filterCategoryId]);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    if (!formData.categoryId) {
+      setCategoryExtraFields([]);
+      return;
+    }
+    setCategoryExtraFields(categories.find(c => c.id === formData.categoryId)?.extraFields || []);
+  }, [isModalOpen, formData.categoryId, categories]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -163,7 +188,10 @@ const Products: React.FC = () => {
   const openAddModal = () => {
     setEditingProduct(null); setSelectedFile(null); setImagePreview(null);
     setFormData({ name: '', origin: '', inStock: true, stockQuantity: '0', categoryId: '', subCategoryId: '', image: '', unit: '', productionDate: '', expirationDate: '' });
-    setSubCategories([]); setIsModalOpen(true);
+    setSubCategories([]);
+    setCategoryExtraFields([]);
+    setExtraFieldValues({});
+    setIsModalOpen(true);
   };
 
   const openEditModal = async (product: Product) => {
@@ -181,6 +209,8 @@ const Products: React.FC = () => {
       productionDate: product.productionDate ? product.productionDate.split('T')[0] : '',
       expirationDate: product.expirationDate ? product.expirationDate.split('T')[0] : ''
     });
+    setExtraFieldValues(product.extraFieldValues || {});
+    setCategoryExtraFields(catId ? (categories.find(c => c.id === catId)?.extraFields || []) : []);
     if (catId) {
       try { 
         const data = await api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`); 
@@ -211,6 +241,19 @@ const Products: React.FC = () => {
         const uploadData = new FormData(); uploadData.append('file', selectedFile);
         finalImageUrl = await api.post<string>('/api/v1/image/upload', uploadData);
       }
+      const normalizedExtraFieldValues: Record<string, string> = {};
+      if (categoryExtraFields.some(f => f.key === 'dimensions')) {
+        const length = (extraFieldValues.dimensions_length || '').trim();
+        const width = (extraFieldValues.dimensions_width || '').trim();
+        const height = (extraFieldValues.dimensions_height || '').trim();
+        if (length) normalizedExtraFieldValues.dimensions_length = length;
+        if (width) normalizedExtraFieldValues.dimensions_width = width;
+        if (height) normalizedExtraFieldValues.dimensions_height = height;
+      }
+      if (categoryExtraFields.some(f => f.key === 'note')) {
+        const note = (extraFieldValues.note || '').trim();
+        if (note) normalizedExtraFieldValues.note = note;
+      }
       const payload: any = { 
         ...formData, 
         stockQuantity: parseInt(formData.stockQuantity) || 0, 
@@ -218,12 +261,14 @@ const Products: React.FC = () => {
         image: finalImageUrl,
         unit: formData.unit || null,
         productionDate: formData.productionDate || null,
-        expirationDate: formData.expirationDate || null
+        expirationDate: formData.expirationDate || null,
+        extraFieldValues: normalizedExtraFieldValues
       };
       // Remove empty optional fields
       if (!payload.unit) delete payload.unit;
       if (!payload.productionDate) delete payload.productionDate;
       if (!payload.expirationDate) delete payload.expirationDate;
+      if (!Object.keys(payload.extraFieldValues || {}).length) delete payload.extraFieldValues;
       
       if (editingProduct) await api.patch(`/api/v1/product/${editingProduct.id}`, payload);
       else await api.post('/api/v1/product', payload);
@@ -970,12 +1015,67 @@ const Products: React.FC = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
-                    <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={(catId) => { setFormData({...formData, categoryId: catId, subCategoryId: ''}); if (catId) api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`).then(setSubCategories); }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
+                    <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={(catId) => {
+                      setFormData({...formData, categoryId: catId, subCategoryId: ''});
+                      setCategoryExtraFields(catId ? (categories.find(c => c.id === catId)?.extraFields || []) : []);
+                      setExtraFieldValues({});
+                      if (catId) api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`).then(setSubCategories);
+                      else setSubCategories([]);
+                    }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
                     <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={formData.subCategoryId} onChange={(v) => setFormData({...formData, subCategoryId: v})} placeholder={t.products.selectSubCategory} disabled={!formData.categoryId} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-30 disabled:cursor-not-allowed" />
                   </div>
+                  {categoryExtraFields.length > 0 && (
+                    <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
+                      <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
+                        {lang === 'ar' ? 'بيانات إضافية (حسب الفئة)' : 'Additional category-based data'}
+                      </div>
+                      {categoryExtraFields.some(field => field.key === 'dimensions') && (
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-black text-slate-500 px-1">
+                            {lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <input
+                              type="text"
+                              value={extraFieldValues.dimensions_length || ''}
+                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))}
+                              placeholder={lang === 'ar' ? 'طول' : 'Length'}
+                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                            <input
+                              type="text"
+                              value={extraFieldValues.dimensions_width || ''}
+                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))}
+                              placeholder={lang === 'ar' ? 'عرض' : 'Width'}
+                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                            <input
+                              type="text"
+                              value={extraFieldValues.dimensions_height || ''}
+                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))}
+                              placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
+                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {categoryExtraFields.some(field => field.key === 'note') && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
+                          <textarea
+                            value={extraFieldValues.note || ''}
+                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, note: e.target.value }))}
+                            rows={3}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.image}</label>
                     <div onClick={() => fileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${imagePreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>

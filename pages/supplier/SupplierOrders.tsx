@@ -24,9 +24,14 @@ interface RFQOffer {
   customerOwnerId: string | null;
   customerOrganizationName: string;
   customerOrganizationCRN: string;
-  productId: string;
+  productId: string | null;
   productName: string;
   productImage: string;
+  unit?: string | null;
+  categoryId?: string | null;
+  subCategoryId?: string | null;
+  extraFieldValues?: Record<string, string>;
+  manualOrder?: boolean;
   quantity: number;
   status: 'PENDING' | 'RESPONDED' | 'REJECTED' | 'APPROVED' | 'COMPLETED';
   supplierResponse: SupplierResponse | null;
@@ -63,6 +68,7 @@ const SupplierOrders: React.FC = () => {
   
   // Chat State
   const [chatOffer, setChatOffer] = useState<RFQOffer | null>(null);
+  const [detailsOffer, setDetailsOffer] = useState<RFQOffer | null>(null);
 
   // Form State
   const [formPrice, setFormPrice] = useState<string>('');
@@ -212,6 +218,32 @@ const SupplierOrders: React.FC = () => {
     { id: 'COMPLETED', label: lang === 'ar' ? 'مكتملة' : 'Completed' }
   ];
 
+  const renderExtraFields = (offer: RFQOffer) => {
+    const extra = offer.extraFieldValues || {};
+    const hasNote = !!extra.note;
+    const hasDims = !!(extra.dimensions_length || extra.dimensions_width || extra.dimensions_height);
+    if (!hasNote && !hasDims) return null;
+    return (
+      <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 dark:bg-primary/10 p-2.5 space-y-1.5">
+        {hasDims && (
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-slate-600 dark:text-slate-300">
+              {lang === 'ar' ? 'الأبعاد (سم):' : 'Dimensions (cm):'}
+            </p>
+            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+              {lang === 'ar' ? 'طول' : 'Length'}: {extra.dimensions_length || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'عرض' : 'Width'}: {extra.dimensions_width || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'ارتفاع' : 'Height'}: {extra.dimensions_height || '-'} {lang === 'ar' ? 'سم' : 'cm'}
+            </p>
+          </div>
+        )}
+        {hasNote && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'ملاحظة:' : 'Note:'} {extra.note}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
       
@@ -277,6 +309,12 @@ const SupplierOrders: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2.5 mb-1 flex-wrap">
                             <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
+                            {offer.manualOrder && (
+                              <span className="px-2 py-1 rounded-lg text-xs font-black border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">edit_document</span>
+                                {lang === 'ar' ? 'طلب يدوي' : 'Manual Request'}
+                              </span>
+                            )}
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-black border ${status.bg}`}>
                               {status.label}
                             </span>
@@ -290,12 +328,19 @@ const SupplierOrders: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
                             <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">corporate_fare</span> {offer.customerOrganizationName}</span>
                             <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">numbers</span> {offer.quantity} {offer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</span>
                             <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                             <span className="flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setDetailsOffer(offer)}
+                            className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-900 hover:text-white border border-slate-200 dark:border-slate-700 transition-all active:scale-90 flex items-center justify-center"
+                            title={lang === 'ar' ? 'تفاصيل الطلب' : 'Order details'}
+                          >
+                            <span className="material-symbols-outlined text-xl">visibility</span>
+                          </button>
                           {offer.status !== 'PENDING' && (
                             <button 
                               onClick={() => setChatOffer(offer)}
@@ -425,6 +470,12 @@ const SupplierOrders: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2.5 mb-1 flex-wrap">
                           <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{offer.productName}</h3>
+                          {offer.manualOrder && (
+                            <span className="px-2 py-1 rounded-lg text-[9px] md:text-[10px] font-black border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[10px]">edit_document</span>
+                              {lang === 'ar' ? 'طلب يدوي' : 'Manual Request'}
+                            </span>
+                          )}
                           <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black border ${status.bg}`}>
                             {status.label}
                           </span>
@@ -438,13 +489,20 @@ const SupplierOrders: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
                           <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>
                           <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {lang === 'ar' ? 'وحدة' : 'Units'}</span>
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {offer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</span>
                           <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                           <span className="hidden sm:inline flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                      <button
+                        onClick={() => setDetailsOffer(offer)}
+                        className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-900 hover:text-white border border-slate-200 dark:border-slate-700 transition-all active:scale-90 flex items-center justify-center"
+                        title={lang === 'ar' ? 'تفاصيل الطلب' : 'Order details'}
+                      >
+                        <span className="material-symbols-outlined text-xl">visibility</span>
+                      </button>
                       {offer.status !== 'PENDING' && (
                         <button 
                           onClick={() => setChatOffer(offer)}
@@ -726,6 +784,96 @@ const SupplierOrders: React.FC = () => {
               </form>
             </div>
             
+          </div>
+        </div>
+      )}
+
+      {detailsOffer && (
+        <div className="fixed inset-0 z-[170] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setDetailsOffer(null);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'تفاصيل الطلب' : 'Order details'}</h3>
+                <p className="text-[11px] font-bold text-slate-400">Ref: {detailsOffer.id.slice(-8).toUpperCase()}</p>
+              </div>
+              <button onClick={() => setDetailsOffer(null)} className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <p className="text-sm font-black text-slate-800 dark:text-white">{detailsOffer.productName}</p>
+                <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'العميل:' : 'Customer:'} {detailsOffer.customerOrganizationName || '-'}</p>
+                <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'الكمية:' : 'Quantity:'} {detailsOffer.quantity} {detailsOffer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</p>
+                <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'رقم الطلب:' : 'Order ID:'} {detailsOffer.orderId}</p>
+                <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'الفئة:' : 'Category ID:'} {detailsOffer.categoryId || '-'}</p>
+                <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'الفئة الفرعية:' : 'Subcategory ID:'} {detailsOffer.subCategoryId || '-'}</p>
+              </div>
+
+              {(detailsOffer.manualOrder || detailsOffer.specialOfferId) && (
+                <div className="flex flex-wrap gap-2">
+                  {detailsOffer.manualOrder && (
+                    <span className="px-2 py-1 rounded-lg text-xs font-black border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                      {lang === 'ar' ? 'طلب يدوي' : 'Manual Request'}
+                    </span>
+                  )}
+                  {detailsOffer.specialOfferId && (
+                    <span className="px-2 py-1 rounded-lg text-xs font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+                      {lang === 'ar' ? 'عرض خاص' : 'Special Offer'}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {renderExtraFields(detailsOffer)}
+
+              {detailsOffer.supplierResponse ? (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 space-y-2">
+                  <p className="text-xs font-black text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'تفاصيل عرض السعر' : 'Quote details'}</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'سعر الوحدة:' : 'Unit price:'} {detailsOffer.supplierResponse.price} EGP</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'تكلفة الشحن:' : 'Shipping cost:'} {detailsOffer.supplierResponse.shippingCost} EGP</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'الكمية المتاحة:' : 'Available quantity:'} {detailsOffer.supplierResponse.availableQuantity}</p>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'موعد التسليم:' : 'Delivery date:'} {detailsOffer.supplierResponse.estimatedDelivery}</p>
+                  {!!detailsOffer.supplierResponse.shippingInfo && (
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 break-words">{lang === 'ar' ? 'معلومات الشحن:' : 'Shipping info:'} {detailsOffer.supplierResponse.shippingInfo}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-4">
+                  <p className="text-xs font-bold text-slate-400">{lang === 'ar' ? 'لم يتم إرسال عرض سعر بعد' : 'No quote submitted yet'}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

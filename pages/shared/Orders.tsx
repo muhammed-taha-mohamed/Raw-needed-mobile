@@ -37,9 +37,14 @@ interface RFQLine {
   supplierName: string;
   supplierOrganizationName: string;
   supplierPhone: string;
-  productId: string;
+  productId: string | null;
   productName: string;
   productImage: string;
+  unit?: string | null;
+  categoryId?: string | null;
+  subCategoryId?: string | null;
+  extraFieldValues?: Record<string, string>;
+  manualOrder?: boolean;
   quantity: number;
   status: string;
   supplierResponse: SupplierResponse | null;
@@ -175,6 +180,32 @@ const Orders: React.FC = () => {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const renderExtraFields = (line: RFQLine) => {
+    const extra = line.extraFieldValues || {};
+    const hasNote = !!extra.note;
+    const hasDims = !!(extra.dimensions_length || extra.dimensions_width || extra.dimensions_height);
+    if (!hasNote && !hasDims) return null;
+    return (
+      <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 dark:bg-primary/10 p-2.5 space-y-1.5">
+        {hasDims && (
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-slate-600 dark:text-slate-300">
+              {lang === 'ar' ? 'الأبعاد (سم):' : 'Dimensions (cm):'}
+            </p>
+            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+              {lang === 'ar' ? 'طول' : 'Length'}: {extra.dimensions_length || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'عرض' : 'Width'}: {extra.dimensions_width || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'ارتفاع' : 'Height'}: {extra.dimensions_height || '-'} {lang === 'ar' ? 'سم' : 'cm'}
+            </p>
+          </div>
+        )}
+        {hasNote && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'ملاحظة:' : 'Note:'} {extra.note}
+          </p>
+        )}
+      </div>
+    );
   };
 
   const handlePageChange = (newPage: number) => {
@@ -569,6 +600,12 @@ const Orders: React.FC = () => {
                               <div className="min-w-0">
                                  <div className="flex items-center gap-2 flex-wrap mb-1">
                                    <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white truncate">{line.productName}</h4>
+                                   {line.manualOrder && (
+                                     <span className="px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                                       <span className="material-symbols-outlined text-[9px]">edit_document</span>
+                                       {lang === 'ar' ? 'طلب يدوي' : 'Manual Request'}
+                                     </span>
+                                   )}
                                    {line.specialOfferId && (
                                      <span className="px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                                        <span className="material-symbols-outlined text-[9px]">local_offer</span>
@@ -577,7 +614,17 @@ const Orders: React.FC = () => {
                                    )}
                                  </div>
                                  <p className="text-[10px] md:text-xs font-bold text-slate-500">{lang === 'ar' ? 'المورد: ' : 'Supplier: '} {line.supplierOrganizationName || line.supplierName}</p>
-                                 <p className="text-[10px] md:text-xs font-black text-primary mt-1">{lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity}</p>
+                                <p className="text-[10px] md:text-xs font-black text-primary mt-1">
+                                  {lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity} {line.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                </p>
+                                {(line.categoryId || line.subCategoryId) && (
+                                  <p className="text-[9px] md:text-[10px] font-bold text-slate-400 mt-1 break-all">
+                                    {line.categoryId ? `${lang === 'ar' ? 'الفئة:' : 'Category:'} ${line.categoryId}` : ''}
+                                    {line.categoryId && line.subCategoryId ? ' • ' : ''}
+                                    {line.subCategoryId ? `${lang === 'ar' ? 'النوع:' : 'Subcategory:'} ${line.subCategoryId}` : ''}
+                                  </p>
+                                )}
+                                 {renderExtraFields(line)}
                               </div>
                            </div>
                            

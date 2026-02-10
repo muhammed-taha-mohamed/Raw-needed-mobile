@@ -15,9 +15,11 @@ const Categories: React.FC = () => {
   const [expandedCats, setExpandedCats] = useState<string[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingSubCategoryId, setEditingSubCategoryId] = useState<string | null>(null);
   
   const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'category' | 'subcategory' } | null>(null);
-  const [newCat, setNewCat] = useState({ name: '', arabicName: '' });
+  const [newCat, setNewCat] = useState({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
   const [newSub, setNewSub] = useState({ name: '', arabicName: '', categoryId: '', parentName: '' });
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -72,16 +74,38 @@ const Categories: React.FC = () => {
     
     setIsProcessing(true);
     try {
-      await api.post('/api/v1/category', {
+      const payload = {
         name: newCat.name,
-        arabicName: newCat.arabicName
-      });
+        arabicName: newCat.arabicName,
+        extraFields: [
+          ...(newCat.includeDimensions ? [{
+            key: 'dimensions',
+            label: 'Dimensions (L/W/H)',
+            labelAr: 'الابعاد (طول/عرض/ارتفاع)',
+            type: 'dimensions',
+            required: false
+          }] : []),
+          ...(newCat.includeNote ? [{
+            key: 'note',
+            label: 'Note',
+            labelAr: 'ملاحظة',
+            type: 'textarea',
+            required: false
+          }] : [])
+        ]
+      };
+      if (editingCategoryId) {
+        await api.patch(`/api/v1/category?categoryId=${editingCategoryId}`, payload);
+      } else {
+        await api.post('/api/v1/category', payload);
+      }
       await fetchCategories();
-      setNewCat({ name: '', arabicName: '' });
+      setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
+      setEditingCategoryId(null);
       setShowCatModal(false);
-      showToast(t.categories.successAdd, 'success');
+      showToast(editingCategoryId ? (lang === 'ar' ? 'تم تحديث الفئة بنجاح' : 'Category updated successfully') : t.categories.successAdd, 'success');
     } catch (err: any) {
-      showToast(err.message || (lang === 'ar' ? 'فشل إضافة الفئة' : 'Failed to add category'), 'error');
+      showToast(err.message || (lang === 'ar' ? 'فشل حفظ الفئة' : 'Failed to save category'), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -95,18 +119,24 @@ const Categories: React.FC = () => {
     
     setIsProcessing(true);
     try {
-      await api.post('/api/v1/category/sub-category', {
+      const payload = {
         name: newSub.name,
         arabicName: newSub.arabicName,
         categoryId: newSub.categoryId
-      });
+      };
+      if (editingSubCategoryId) {
+        await api.patch(`/api/v1/category/sub-category?subCategoryId=${editingSubCategoryId}`, payload);
+      } else {
+        await api.post('/api/v1/category/sub-category', payload);
+      }
       
       await fetchSubCategories(newSub.categoryId);
       setNewSub({ name: '', arabicName: '', categoryId: '', parentName: '' });
+      setEditingSubCategoryId(null);
       setShowSubModal(false);
-      showToast(t.categories.successAddSub, 'success');
+      showToast(editingSubCategoryId ? (lang === 'ar' ? 'تم تحديث الفئة الفرعية بنجاح' : 'Sub-category updated successfully') : t.categories.successAddSub, 'success');
     } catch (err: any) {
-      showToast(err.message || (lang === 'ar' ? 'فشل إضافة التصنيف الفرعي' : 'Failed to add subcategory'), 'error');
+      showToast(err.message || (lang === 'ar' ? 'فشل حفظ الفئة الفرعية' : 'Failed to save subcategory'), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -119,7 +149,39 @@ const Categories: React.FC = () => {
        categoryId: cat.id, 
        parentName: lang === 'ar' ? cat.arabicName : cat.name 
      });
+     setEditingSubCategoryId(null);
      setShowSubModal(true);
+  };
+
+  const openCategoryCreateModal = () => {
+    setEditingCategoryId(null);
+    setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
+    setShowCatModal(true);
+  };
+
+  const openCategoryEditModal = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    const extraFields = cat.extraFields || [];
+    const hasDimensions = extraFields.some(f => f.key === 'dimensions');
+    const hasNote = extraFields.some(f => f.key === 'note');
+    setNewCat({
+      name: cat.name,
+      arabicName: cat.arabicName,
+      includeDimensions: hasDimensions,
+      includeNote: hasNote
+    });
+    setShowCatModal(true);
+  };
+
+  const openSubCategoryEditModal = (cat: Category, sub: SubCategory) => {
+    setEditingSubCategoryId(sub.id);
+    setNewSub({
+      name: sub.name,
+      arabicName: sub.arabicName,
+      categoryId: cat.id,
+      parentName: lang === 'ar' ? cat.arabicName : cat.name
+    });
+    setShowSubModal(true);
   };
 
   const confirmDeleteAction = async () => {
@@ -153,7 +215,7 @@ const Categories: React.FC = () => {
       <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
         <div className={`w-full flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
           <button 
-            onClick={() => setShowCatModal(true)}
+            onClick={openCategoryCreateModal}
             className="size-14 rounded-full bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"
             aria-label={t.categories.addCategory}
           >
@@ -187,7 +249,7 @@ const Categories: React.FC = () => {
               {lang === 'ar' ? 'الفئات والتصنيفات الفرعية' : 'Categories & Subcategories'}
             </h2>
             <button
-              onClick={() => setShowCatModal(true)}
+              onClick={openCategoryCreateModal}
               className="hidden md:flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow-md shadow-primary/20 font-black transition-all active:scale-95 text-xs"
             >
               <span className="material-symbols-outlined text-base">add</span>
@@ -245,6 +307,13 @@ const Categories: React.FC = () => {
                           <span className="material-symbols-outlined text-sm">add</span>
                         </button>
                         <button
+                          onClick={() => openCategoryEditModal(cat)}
+                          className="size-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all active:scale-90"
+                          title={lang === 'ar' ? 'تعديل الفئة' : 'Edit category'}
+                        >
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button
                           onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}
                           className="size-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all active:scale-90"
                           title={lang === 'ar' ? 'حذف الفئة' : 'Delete category'}
@@ -284,6 +353,13 @@ const Categories: React.FC = () => {
                                   </div>
                                 </div>
                               </div>
+                              <button
+                                onClick={() => openSubCategoryEditModal(cat, sub)}
+                                className="size-7 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-all active:scale-90 shrink-0"
+                                title={lang === 'ar' ? 'تعديل الفئة الفرعية' : 'Edit sub-category'}
+                              >
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                              </button>
                               <button
                                 onClick={() => setItemToDelete({ id: sub.id, type: 'subcategory' })}
                                 className="size-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-all active:scale-90 shrink-0"
@@ -382,7 +458,7 @@ const Categories: React.FC = () => {
               const handleEnd = () => {
                 const finalY = modal.getBoundingClientRect().top;
                 if (finalY > window.innerHeight * 0.3) {
-                  setIsSubcategoryModalOpen(false);
+                  setShowCatModal(false);
                 } else {
                   modal.style.transform = '';
                   modal.style.transition = '';
@@ -406,7 +482,7 @@ const Categories: React.FC = () => {
                   <p className="text-[10px] font-black text-slate-400 mt-2">{t.categories.nameEnArLabel}</p>
                 </div>
               </div>
-              <button onClick={() => setShowCatModal(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+              <button onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true }); }} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
@@ -435,22 +511,35 @@ const Categories: React.FC = () => {
                     className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400 text-right"
                   />
                 </div>
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 space-y-3">
+                  <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
+                    {lang === 'ar' ? 'بيانات إضافية للمنتج (حسب الفئة)' : 'Category-specific product extra fields'}
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCat.includeDimensions}
+                      onChange={(e) => setNewCat({ ...newCat, includeDimensions: e.target.checked })}
+                      className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    {lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (length/width/height)'}
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCat.includeNote}
+                      onChange={(e) => setNewCat({ ...newCat, includeNote: e.target.checked })}
+                      className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    {lang === 'ar' ? 'ملاحظة (نص حر)' : 'Note (textarea)'}
+                  </label>
+                </div>
               </form>
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
-              <button type="button" onClick={() => setShowCatModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
+              <button type="button" onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true }); }} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
               <button form="addCatForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
-                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.save}<span className="material-symbols-outlined">verified</span></>}
-              </button>
-            </div>
-            {/* Close Button at Bottom - Mobile Only */}
-            <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-              <button
-                onClick={() => setShowCatModal(false)}
-                className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-                {lang === 'ar' ? 'إغلاق' : 'Close'}
+                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{editingCategoryId ? (lang === 'ar' ? 'حفظ التعديل' : 'Save Changes') : t.categories.save}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>
           </div>
@@ -461,6 +550,38 @@ const Categories: React.FC = () => {
       {showSubModal && (
         <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setShowSubModal(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -471,7 +592,7 @@ const Categories: React.FC = () => {
                   <p className="text-[10px] font-black text-slate-400 mt-2">{t.categories.addingTo}: {newSub.parentName}</p>
                 </div>
               </div>
-              <button onClick={() => setShowSubModal(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+              <button onClick={() => { setShowSubModal(false); setEditingSubCategoryId(null); setNewSub({ name: '', arabicName: '', categoryId: '', parentName: '' }); }} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
@@ -503,19 +624,9 @@ const Categories: React.FC = () => {
               </form>
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
-              <button type="button" onClick={() => setShowSubModal(false)} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
+              <button type="button" onClick={() => { setShowSubModal(false); setEditingSubCategoryId(null); setNewSub({ name: '', arabicName: '', categoryId: '', parentName: '' }); }} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
               <button form="addSubForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
-                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{t.categories.saveSub}<span className="material-symbols-outlined">verified</span></>}
-              </button>
-            </div>
-            {/* Close Button at Bottom - Mobile Only */}
-            <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-              <button
-                onClick={() => setShowSubModal(false)}
-                className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-                {lang === 'ar' ? 'إغلاق' : 'Close'}
+                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{editingSubCategoryId ? (lang === 'ar' ? 'حفظ التعديل' : 'Save Changes') : t.categories.saveSub}<span className="material-symbols-outlined">verified</span></>}
               </button>
             </div>
           </div>

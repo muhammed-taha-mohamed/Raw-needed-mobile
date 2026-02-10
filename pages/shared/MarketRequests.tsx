@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
+import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
 import { PlanFeaturesEnum } from '../../types';
 import { hasFeature } from '../../utils/subscription';
 
@@ -87,26 +88,16 @@ const MarketRequests: React.FC = () => {
 
   // Show feature error if user doesn't have access
   if ((isCustomer || isSupplier) && hasPrivateOrdersFeature === false) {
+    const privateOrdersLabel = lang === 'ar' ? 'الطلبات الخاصة' : 'Private Orders';
     return (
-      <div className="w-full py-6 animate-in fade-in duration-700 font-display">
-        <div className="flex flex-col items-center justify-center py-40 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-red-100 dark:border-red-900/20 shadow-xl">
-          <div className="size-20 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 mb-6">
-            <span className="material-symbols-outlined text-5xl">lock</span>
-          </div>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-4">
-            {t.orders.featureRequiredTitle}
-          </h3>
-          <p className="text-base text-slate-600 dark:text-slate-400 mb-8 text-center max-w-md font-bold">
-            {t.orders.featureRequired}
-          </p>
-          <button 
-            onClick={() => navigate('/subscription')}
-            className="px-8 py-4 bg-primary text-white rounded-xl font-black text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
-          >
-            {lang === 'ar' ? 'ترقية الباقة' : 'Upgrade Plan'}
-          </button>
-        </div>
-      </div>
+      <FeatureUpgradePrompt
+        lang={lang}
+        title={t.orders.featureRequiredTitle}
+        description={t.orders.featureRequired}
+        featureLabel={privateOrdersLabel}
+        actionLabel={lang === 'ar' ? 'ترقية الباقة' : 'Upgrade Plan'}
+        onUpgrade={() => navigate('/subscription')}
+      />
     );
   }
 

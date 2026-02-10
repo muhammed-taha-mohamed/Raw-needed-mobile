@@ -236,10 +236,19 @@ export interface SubCategory {
   arabicName: string;
 }
 
+export interface CategoryExtraField {
+  key: string;
+  label: string;
+  labelAr: string;
+  type: 'dimensions' | 'textarea' | string;
+  required?: boolean;
+}
+
 export interface Category {
   id: string;
   name: string;
   arabicName: string;
+  extraFields?: CategoryExtraField[];
   subCategories?: SubCategory[];
   isLoadingSubs?: boolean;
 }
@@ -260,4 +269,5 @@ export interface Product {
   unit?: string;              // unit of measure
   productionDate?: string;    // ISO date
   expirationDate?: string;   // ISO date
+  extraFieldValues?: Record<string, string>;
 }

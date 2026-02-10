@@ -349,6 +349,40 @@ const Users: React.FC = () => {
                   className="w-full md:max-w-3xl bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 p-6 pointer-events-auto animate-in slide-in-from-bottom-5 md:zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <div
+                    className="md:hidden pt-1 pb-3 flex justify-center shrink-0 cursor-grab active:cursor-grabbing"
+                    onTouchStart={(e) => {
+                      const startY = e.touches[0].clientY;
+                      const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+                      if (!modal) return;
+
+                      const handleMove = (moveEvent: TouchEvent) => {
+                        const currentY = moveEvent.touches[0].clientY;
+                        const diff = currentY - startY;
+                        if (diff > 0) {
+                          modal.style.transform = `translateY(${diff}px)`;
+                          modal.style.transition = 'none';
+                        }
+                      };
+
+                      const handleEnd = () => {
+                        const finalY = modal.getBoundingClientRect().top;
+                        if (finalY > window.innerHeight * 0.3) {
+                          setDesktopDetailsUserId(null);
+                        } else {
+                          modal.style.transform = '';
+                          modal.style.transition = '';
+                        }
+                        document.removeEventListener('touchmove', handleMove);
+                        document.removeEventListener('touchend', handleEnd);
+                      };
+
+                      document.addEventListener('touchmove', handleMove);
+                      document.addEventListener('touchend', handleEnd);
+                    }}
+                  >
+                    <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                  </div>
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-700">
                     <h3 className="text-lg font-black text-slate-900 dark:text-white">
                       {lang === 'ar' ? 'تفاصيل المستخدم' : 'User Details'}
@@ -573,16 +607,6 @@ const Users: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  {/* Close Button at Bottom - Mobile Only */}
-                  <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
-                    <button
-                      onClick={() => setDesktopDetailsUserId(null)}
-                      className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-lg">close</span>
-                      {lang === 'ar' ? 'إغلاق' : 'Close'}
-                    </button>
-                  </div>
                 </div>
               </div>
             </>
@@ -641,6 +665,40 @@ const Users: React.FC = () => {
                         className="w-full md:w-[85%] bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x border-primary/20 p-6 pointer-events-auto animate-in slide-in-from-bottom-5 md:zoom-in-95 fade-in duration-300 max-h-[90vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        <div
+                          className="md:hidden pt-1 pb-3 flex justify-center shrink-0 cursor-grab active:cursor-grabbing"
+                          onTouchStart={(e) => {
+                            const startY = e.touches[0].clientY;
+                            const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+                            if (!modal) return;
+
+                            const handleMove = (moveEvent: TouchEvent) => {
+                              const currentY = moveEvent.touches[0].clientY;
+                              const diff = currentY - startY;
+                              if (diff > 0) {
+                                modal.style.transform = `translateY(${diff}px)`;
+                                modal.style.transition = 'none';
+                              }
+                            };
+
+                            const handleEnd = () => {
+                              const finalY = modal.getBoundingClientRect().top;
+                              if (finalY > window.innerHeight * 0.3) {
+                                setExpandedUserId(null);
+                              } else {
+                                modal.style.transform = '';
+                                modal.style.transition = '';
+                              }
+                              document.removeEventListener('touchmove', handleMove);
+                              document.removeEventListener('touchend', handleEnd);
+                            };
+
+                            document.addEventListener('touchmove', handleMove);
+                            document.addEventListener('touchend', handleEnd);
+                          }}
+                        >
+                          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                        </div>
                         <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
                           <h3 className="text-base font-black text-slate-900 dark:text-white">
                             {lang === 'ar' ? 'تفاصيل المستخدم' : 'User Details'}
@@ -785,16 +843,6 @@ const Users: React.FC = () => {
                               {lang === 'ar' ? 'تفعيل' : 'Activate'}
                             </button>
                           )}
-                        </div>
-                        {/* Close Button at Bottom - Mobile Only */}
-                        <div className="md:hidden px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
-                          <button
-                            onClick={() => setExpandedUserId(null)}
-                            className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-                          >
-                            <span className="material-symbols-outlined text-lg">close</span>
-                            {lang === 'ar' ? 'إغلاق' : 'Close'}
-                          </button>
                         </div>
                       </div>
                     </div>
