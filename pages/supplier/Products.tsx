@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { api, BASE_URL } from '../../api';
 import { Category, CategoryExtraField, SubCategory, Product } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import { getCountryOptions, getCountryName } from '../../utils/countries';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
@@ -253,6 +254,18 @@ const Products: React.FC = () => {
       if (categoryExtraFields.some(f => f.key === 'note')) {
         const note = (extraFieldValues.note || '').trim();
         if (note) normalizedExtraFieldValues.note = note;
+      }
+      if (categoryExtraFields.some(f => f.key === 'serviceName')) {
+        const v = (extraFieldValues.serviceName || '').trim();
+        if (v) normalizedExtraFieldValues.serviceName = v;
+      }
+      if (categoryExtraFields.some(f => f.key === 'colorCount')) {
+        const v = (extraFieldValues.colorCount || '').trim();
+        if (v) normalizedExtraFieldValues.colorCount = v;
+      }
+      if (categoryExtraFields.some(f => f.key === 'paperSize')) {
+        const v = (extraFieldValues.paperSize || '').trim();
+        if (v) normalizedExtraFieldValues.paperSize = v;
       }
       const payload: any = { 
         ...formData, 
@@ -581,7 +594,18 @@ const Products: React.FC = () => {
           </div>
           <div className="min-w-[180px] flex-1 space-y-1">
             <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.origin}</label>
-            <input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
+            <Dropdown
+              options={getCountryOptions(lang)}
+              value={searchOrigin}
+              onChange={(v) => setSearchOrigin(v)}
+              placeholder={t.products.originPlaceholder}
+              isRtl={lang === 'ar'}
+              searchable
+              searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
+              noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
+              showClear
+              triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white"
+            />
           </div>
           <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
           <button 
@@ -786,7 +810,7 @@ const Products: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1.5 text-slate-400">
                                <span className="material-symbols-outlined text-[18px] text-primary/60">public</span>
-                               <span className="text-[11px] font-bold tabular-nums">{product.origin}</span>
+                               <span className="text-[11px] font-bold tabular-nums">{getCountryName(product.origin, lang)}</span>
                             </div>
                             {product.unit && (
                               <div className="flex items-center gap-1.5 text-slate-400">
@@ -919,7 +943,10 @@ const Products: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="sm:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 px-1">{t.products.origin}</label><input type="text" value={searchOrigin} onChange={(e) => setSearchOrigin(e.target.value)} placeholder={t.products.originPlaceholder} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold placeholder:text-[10px] placeholder:font-medium outline-none focus:border-primary transition-all text-slate-900 dark:text-white" /></div>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 px-1">{t.products.origin}</label>
+                    <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
+                  </div>
                 </div>
               </div>
             )}
@@ -992,7 +1019,7 @@ const Products: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.origin}</label>
-                      <input required type="text" value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={t.products.originPlaceholder} />
+                      <Dropdown options={getCountryOptions(lang)} value={formData.origin} onChange={(v) => setFormData({...formData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الكمية' : 'Stock Quantity'}</label>
@@ -1071,6 +1098,42 @@ const Products: React.FC = () => {
                             rows={3}
                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
                             placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                          />
+                        </div>
+                      )}
+                      {categoryExtraFields.some(field => field.key === 'serviceName') && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
+                          <input
+                            type="text"
+                            value={extraFieldValues.serviceName || ''}
+                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, serviceName: e.target.value }))}
+                            placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      )}
+                      {categoryExtraFields.some(field => field.key === 'colorCount') && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
+                          <input
+                            type="text"
+                            value={extraFieldValues.colorCount || ''}
+                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))}
+                            placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      )}
+                      {categoryExtraFields.some(field => field.key === 'paperSize') && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
+                          <input
+                            type="text"
+                            value={extraFieldValues.paperSize || ''}
+                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))}
+                            placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
                           />
                         </div>
                       )}

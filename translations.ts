@@ -134,7 +134,7 @@ export const translations = {
       deleteConfirm: 'Are you sure you want to remove this product?',
       searchPlaceholder: 'Search by name...',
       namePlaceholder: 'Product name...',
-      originPlaceholder: 'e.g. Germany...',
+      originPlaceholder: 'Select country',
       selectCategory: 'Select category',
       selectSubCategory: 'Select specialization',
       clickToUpload: 'Click to upload',
@@ -567,7 +567,7 @@ export const translations = {
       success: 'تم إرسال طلب عرض السعر اليدوي بنجاح',
       selectSupplier: 'اختر المورد',
       prodNamePlaceholder: 'مثال: كاشف كيميائي خاص',
-      originPlaceholder: 'الدولة...'
+      originPlaceholder: 'اختر الدولة'
     },
     marketRequests: {
       title: 'طلبات خاصة',
@@ -620,7 +620,7 @@ export const translations = {
       deleteConfirm: 'هل أنت متأكد من رغبتك في حذف هذا المنتج؟',
       searchPlaceholder: 'ابحث بالاسم...',
       namePlaceholder: 'اسم المنتج...',
-      originPlaceholder: 'مثال: ألمانيا...',
+      originPlaceholder: 'اختر الدولة',
       selectCategory: 'اختر الفئة',
       selectSubCategory: 'اختر التخصص',
       clickToUpload: 'انقر للرفع',

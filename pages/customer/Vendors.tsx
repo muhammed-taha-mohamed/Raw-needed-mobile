@@ -5,6 +5,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Category, CategoryExtraField, SubCategory } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import { getCountryOptions, getCountryName } from '../../utils/countries';
 import EmptyState from '../../components/EmptyState';
 
 interface Supplier {
@@ -358,6 +359,18 @@ const Vendors: React.FC = () => {
       const note = (manualExtraFieldValues.note || '').trim();
       if (note) values.note = note;
     }
+    if (manualCategoryExtraFields.some(f => f.key === 'serviceName')) {
+      const v = (manualExtraFieldValues.serviceName || '').trim();
+      if (v) values.serviceName = v;
+    }
+    if (manualCategoryExtraFields.some(f => f.key === 'colorCount')) {
+      const v = (manualExtraFieldValues.colorCount || '').trim();
+      if (v) values.colorCount = v;
+    }
+    if (manualCategoryExtraFields.some(f => f.key === 'paperSize')) {
+      const v = (manualExtraFieldValues.paperSize || '').trim();
+      if (v) values.paperSize = v;
+    }
     return values;
   };
 
@@ -376,11 +389,14 @@ const Vendors: React.FC = () => {
       const userData = userStr ? JSON.parse(userStr) : null;
       const userId = userData?.userInfo?.id || userData?.id;
 
+      const productName = (manualCategoryExtraFields.some(f => f.key === 'serviceName') && (manualExtraFieldValues.serviceName || '').trim())
+        ? (manualExtraFieldValues.serviceName || '').trim()
+        : manualFormData.name;
       const payload = {
         userId,
         items: [{
           id: null,
-          name: manualFormData.name,
+          name: productName,
           origin: manualFormData.origin,
           supplierId: viewingSupplier.id,
           supplierName: viewingSupplier.organizationName || viewingSupplier.name,
@@ -847,7 +863,7 @@ const Vendors: React.FC = () => {
                            </div>
                            <div className="sm:col-span-2 space-y-1.5">
                              <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
-                             <input type="text" value={prodSearchOrigin} onChange={(e) => { setProdSearchOrigin(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
+                             <Dropdown options={getCountryOptions(lang)} value={prodSearchOrigin} onChange={(v) => { setProdSearchOrigin(v); setProductsPage(0); }} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white cursor-pointer text-start" />
                            </div>
                          </div>
                          <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`} />
@@ -885,7 +901,7 @@ const Vendors: React.FC = () => {
                                     <h4 className="text-sm font-black text-slate-800 dark:text-white line-clamp-1 leading-tight ">{p.name}</h4>
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
                                        <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">category</span><span className="text-[10px] font-bold   truncate max-w-[120px]">{lang === 'ar' ? p.category?.arabicName : p.category?.name}</span></div>
-                                       <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">public</span><span className="text-[10px] font-bold   tabular-nums">{p.origin}</span></div>
+                                       <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">public</span><span className="text-[10px] font-bold   tabular-nums">{getCountryName(p.origin, lang)}</span></div>
                                        {p.unit && (
                                          <div className="flex items-center gap-1.5 text-slate-400">
                                            <span className="material-symbols-outlined text-[16px] text-primary/60">straighten</span>
@@ -999,9 +1015,22 @@ const Vendors: React.FC = () => {
                     </div>
                     {manualCategoryExtraFields.length > 0 && (
                       <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
-                        <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
-                          {lang === 'ar' ? 'بيانات إضافية حسب الفئة' : 'Additional category-specific data'}
-                        </div>
+                        {manualCategoryExtraFields.some(field => field.key === 'serviceName') && (
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
+                            <input
+                              type="text"
+                              value={manualExtraFieldValues.serviceName || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setManualExtraFieldValues(prev => ({ ...prev, serviceName: val }));
+                                setManualFormData(prev => ({ ...prev, name: val }));
+                              }}
+                              placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
+                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
                         {manualCategoryExtraFields.some(field => field.key === 'dimensions') && (
                           <div className="space-y-2">
                             <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}</label>
@@ -1024,9 +1053,33 @@ const Vendors: React.FC = () => {
                             />
                           </div>
                         )}
+                        {manualCategoryExtraFields.some(field => field.key === 'colorCount') && (
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
+                            <input
+                              type="text"
+                              value={manualExtraFieldValues.colorCount || ''}
+                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))}
+                              placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
+                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
+                        {manualCategoryExtraFields.some(field => field.key === 'paperSize') && (
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
+                            <input
+                              type="text"
+                              value={manualExtraFieldValues.paperSize || ''}
+                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))}
+                              placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
+                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label><input required type="text" value={manualFormData.origin} onChange={(e) => setManualFormData({...manualFormData, origin: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
+                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label><Dropdown options={getCountryOptions(lang)} value={manualFormData.origin} onChange={(v) => setManualFormData({...manualFormData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
                       <input

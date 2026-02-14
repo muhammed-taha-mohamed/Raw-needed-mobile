@@ -7,6 +7,16 @@ import EmptyState from '../../components/EmptyState';
 
 const Categories: React.FC = () => {
   const { lang, t } = useLanguage();
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return dateStr;
+    }
+  };
   const { showToast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,11 +27,11 @@ const Categories: React.FC = () => {
   const [showSubModal, setShowSubModal] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingSubCategoryId, setEditingSubCategoryId] = useState<string | null>(null);
-  
+
   const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'category' | 'subcategory' } | null>(null);
-  const [newCat, setNewCat] = useState({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
+  const [newCat, setNewCat] = useState({ name: '', arabicName: '', includeDimensions: true, includeNote: true, includeServiceName: true, includeColorCount: true, includePaperSize: true });
   const [newSub, setNewSub] = useState({ name: '', arabicName: '', categoryId: '', parentName: '' });
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -46,7 +56,7 @@ const Categories: React.FC = () => {
     setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, isLoadingSubs: true } : c));
     try {
       const subs = await api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${categoryId}`);
-      setCategories(prev => prev.map(c => 
+      setCategories(prev => prev.map(c =>
         c.id === categoryId ? { ...c, subCategories: subs, isLoadingSubs: false } : c
       ));
     } catch (err: any) {
@@ -71,13 +81,34 @@ const Categories: React.FC = () => {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCat.name || !newCat.arabicName) return;
-    
+
     setIsProcessing(true);
     try {
       const payload = {
         name: newCat.name,
         arabicName: newCat.arabicName,
         extraFields: [
+          ...(newCat.includeServiceName ? [{
+            key: 'serviceName',
+            label: 'Service Name',
+            labelAr: 'اسم الخدمة',
+            type: 'text',
+            required: false
+          }] : []),
+          ...(newCat.includeColorCount ? [{
+            key: 'colorCount',
+            label: 'Color Count',
+            labelAr: 'عدد الألوان',
+            type: 'text',
+            required: false
+          }] : []),
+          ...(newCat.includePaperSize ? [{
+            key: 'paperSize',
+            label: 'Paper Size',
+            labelAr: 'حجم الورق',
+            type: 'text',
+            required: false
+          }] : []),
           ...(newCat.includeDimensions ? [{
             key: 'dimensions',
             label: 'Dimensions (L/W/H)',
@@ -100,7 +131,7 @@ const Categories: React.FC = () => {
         await api.post('/api/v1/category', payload);
       }
       await fetchCategories();
-      setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
+      setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true, includeServiceName: true, includeColorCount: true, includePaperSize: true });
       setEditingCategoryId(null);
       setShowCatModal(false);
       showToast(editingCategoryId ? (lang === 'ar' ? 'تم تحديث الفئة بنجاح' : 'Category updated successfully') : t.categories.successAdd, 'success');
@@ -116,7 +147,7 @@ const Categories: React.FC = () => {
     if (!newSub.name || !newSub.arabicName || !newSub.categoryId) {
       return;
     }
-    
+
     setIsProcessing(true);
     try {
       const payload = {
@@ -129,7 +160,7 @@ const Categories: React.FC = () => {
       } else {
         await api.post('/api/v1/category/sub-category', payload);
       }
-      
+
       await fetchSubCategories(newSub.categoryId);
       setNewSub({ name: '', arabicName: '', categoryId: '', parentName: '' });
       setEditingSubCategoryId(null);
@@ -143,19 +174,19 @@ const Categories: React.FC = () => {
   };
 
   const openSubModal = (cat: Category) => {
-     setNewSub({ 
-       name: '', 
-       arabicName: '', 
-       categoryId: cat.id, 
-       parentName: lang === 'ar' ? cat.arabicName : cat.name 
-     });
-     setEditingSubCategoryId(null);
-     setShowSubModal(true);
+    setNewSub({
+      name: '',
+      arabicName: '',
+      categoryId: cat.id,
+      parentName: lang === 'ar' ? cat.arabicName : cat.name
+    });
+    setEditingSubCategoryId(null);
+    setShowSubModal(true);
   };
 
   const openCategoryCreateModal = () => {
     setEditingCategoryId(null);
-    setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true });
+    setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true, includeServiceName: true, includeColorCount: true, includePaperSize: true });
     setShowCatModal(true);
   };
 
@@ -164,11 +195,17 @@ const Categories: React.FC = () => {
     const extraFields = cat.extraFields || [];
     const hasDimensions = extraFields.some(f => f.key === 'dimensions');
     const hasNote = extraFields.some(f => f.key === 'note');
+    const hasServiceName = extraFields.some(f => f.key === 'serviceName');
+    const hasColorCount = extraFields.some(f => f.key === 'colorCount');
+    const hasPaperSize = extraFields.some(f => f.key === 'paperSize');
     setNewCat({
       name: cat.name,
       arabicName: cat.arabicName,
       includeDimensions: hasDimensions,
-      includeNote: hasNote
+      includeNote: hasNote,
+      includeServiceName: hasServiceName,
+      includeColorCount: hasColorCount,
+      includePaperSize: hasPaperSize
     });
     setShowCatModal(true);
   };
@@ -187,7 +224,7 @@ const Categories: React.FC = () => {
   const confirmDeleteAction = async () => {
     if (!itemToDelete) return;
     setIsProcessing(true);
-    
+
     try {
       if (itemToDelete.type === 'category') {
         await api.delete(`/api/v1/category?categoryId=${itemToDelete.id}`);
@@ -214,7 +251,7 @@ const Categories: React.FC = () => {
       {/* Mobile: Floating Action Button */}
       <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
         <div className={`w-full flex justify-end pointer-events-auto ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-          <button 
+          <button
             onClick={openCategoryCreateModal}
             className="size-14 rounded-full bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20"
             aria-label={t.categories.addCategory}
@@ -237,9 +274,9 @@ const Categories: React.FC = () => {
           <button onClick={fetchCategories} className="px-10 py-3 bg-primary text-white rounded-xl font-black text-base active:scale-95 shadow-md">{lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>
         </div>
       ) : categories.length === 0 ? (
-        <EmptyState 
-          title={lang === 'ar' ? 'لا توجد فئات' : 'No Categories'} 
-          subtitle={lang === 'ar' ? 'ابدأ بإضافة فئة جديدة' : 'Start by adding a new category'} 
+        <EmptyState
+          title={lang === 'ar' ? 'لا توجد فئات' : 'No Categories'}
+          subtitle={lang === 'ar' ? 'ابدأ بإضافة فئة جديدة' : 'Start by adding a new category'}
         />
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
@@ -264,18 +301,17 @@ const Categories: React.FC = () => {
               return (
                 <div key={cat.id} className="animate-in fade-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${idx * 30}ms` }}>
                   {/* Category Row */}
-                  <div 
+                  <div
                     onClick={() => toggleExpand(cat.id)}
                     className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          className={`size-7 rounded-lg flex items-center justify-center transition-all shrink-0 ${
-                            isExpanded
-                              ? 'bg-primary text-white'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                          }`}
+                          className={`size-7 rounded-lg flex items-center justify-center transition-all shrink-0 ${isExpanded
+                            ? 'bg-primary text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
                         >
                           <span className={`material-symbols-outlined text-base transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>
                             chevron_right
@@ -291,6 +327,20 @@ const Categories: React.FC = () => {
                           <div className="text-xs text-slate-500 dark:text-slate-400 font-bold mt-0.5 truncate">
                             {lang === 'ar' ? cat.name : cat.arabicName}
                           </div>
+                          {(cat.createdAt || cat.updatedAt) && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                              {cat.createdAt && (
+                                <span title={lang === 'ar' ? 'تاريخ الإنشاء' : 'Created'}>
+                                  {lang === 'ar' ? 'إنشاء:' : 'Created:'} {formatDate(cat.createdAt)}
+                                </span>
+                              )}
+                              {cat.updatedAt && (
+                                <span title={lang === 'ar' ? 'تاريخ التحديث' : 'Updated'}>
+                                  {lang === 'ar' ? 'تحديث:' : 'Updated:'} {formatDate(cat.updatedAt)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {cat.subCategories && cat.subCategories.length > 0 && (
                           <span className="px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/20 text-primary text-xs font-black border border-primary/20 shrink-0">
@@ -439,13 +489,13 @@ const Categories: React.FC = () => {
       {showCatModal && (
         <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            
+
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
               const startY = e.touches[0].clientY;
               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
               if (!modal) return;
-              
+
               const handleMove = (moveEvent: TouchEvent) => {
                 const currentY = moveEvent.touches[0].clientY;
                 const diff = currentY - startY;
@@ -454,7 +504,7 @@ const Categories: React.FC = () => {
                   modal.style.transition = 'none';
                 }
               };
-              
+
               const handleEnd = () => {
                 const finalY = modal.getBoundingClientRect().top;
                 if (finalY > window.innerHeight * 0.3) {
@@ -466,7 +516,7 @@ const Categories: React.FC = () => {
                 document.removeEventListener('touchmove', handleMove);
                 document.removeEventListener('touchend', handleEnd);
               };
-              
+
               document.addEventListener('touchmove', handleMove);
               document.addEventListener('touchend', handleEnd);
             }}>
@@ -478,11 +528,26 @@ const Categories: React.FC = () => {
                   <span className="material-symbols-outlined text-2xl">category</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.categories.addCategory}</h3>
-                  <p className="text-[10px] font-black text-slate-400 mt-2">{t.categories.nameEnArLabel}</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
+                    {editingCategoryId ? (lang === 'ar' ? 'تعديل الفئة' : 'Edit Category') : t.categories.addCategory}
+                  </h3>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">
+                    {editingCategoryId ? (() => {
+                      const cat = categories.find(c => c.id === editingCategoryId);
+                      if (cat && (cat.createdAt || cat.updatedAt)) {
+                        return (
+                          <span className="flex flex-wrap gap-x-3 gap-y-0.5">
+                            {cat.createdAt && <span>{lang === 'ar' ? 'إنشاء:' : 'Created:'} {formatDate(cat.createdAt)}</span>}
+                            {cat.updatedAt && <span>{lang === 'ar' ? 'تحديث:' : 'Updated:'} {formatDate(cat.updatedAt)}</span>}
+                          </span>
+                        );
+                      }
+                      return t.categories.nameEnArLabel;
+                    })() : t.categories.nameEnArLabel}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true }); }} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+              <button onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true, includeServiceName: true, includeColorCount: true, includePaperSize: true }); }} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
@@ -518,6 +583,33 @@ const Categories: React.FC = () => {
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
                     <input
                       type="checkbox"
+                      checked={newCat.includeServiceName}
+                      onChange={(e) => setNewCat({ ...newCat, includeServiceName: e.target.checked })}
+                      className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    {lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCat.includeColorCount}
+                      onChange={(e) => setNewCat({ ...newCat, includeColorCount: e.target.checked })}
+                      className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    {lang === 'ar' ? 'عدد الألوان' : 'Color Count'}
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newCat.includePaperSize}
+                      onChange={(e) => setNewCat({ ...newCat, includePaperSize: e.target.checked })}
+                      className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    {lang === 'ar' ? 'حجم الورق' : 'Paper Size'}
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={newCat.includeDimensions}
                       onChange={(e) => setNewCat({ ...newCat, includeDimensions: e.target.checked })}
                       className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
@@ -537,7 +629,7 @@ const Categories: React.FC = () => {
               </form>
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
-              <button type="button" onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true }); }} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
+              <button type="button" onClick={() => { setShowCatModal(false); setEditingCategoryId(null); setNewCat({ name: '', arabicName: '', includeDimensions: true, includeNote: true, includeServiceName: true, includeColorCount: true, includePaperSize: true }); }} className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">{t.categories.cancel}</button>
               <button form="addCatForm" type="submit" disabled={isProcessing} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
                 {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{editingCategoryId ? (lang === 'ar' ? 'حفظ التعديل' : 'Save Changes') : t.categories.save}<span className="material-symbols-outlined">verified</span></>}
               </button>

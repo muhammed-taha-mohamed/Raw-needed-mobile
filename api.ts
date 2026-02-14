@@ -1,7 +1,7 @@
 
 // Base URL 
- //export const BASE_URL = 'https://localhost:8644/raw-needed';
-export const BASE_URL = 'https://api.rawneeded.com/raw-needed';
+ export const BASE_URL = 'https://localhost:8644/raw-needed';
+//export const BASE_URL = 'https://api.rawneeded.com/raw-needed';
 
 
 export interface ApiResponse<T> {
@@ -116,10 +116,10 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
         const errorMsg = data.error?.errorMessage || `Server error (${response.status}): ${response.statusText}`;
         const errorCode = data.error?.errorCode;
 
-        // Check cooldown before showing error toast (skip for 518 - no searches - so UI can show buy-searches CTA)
+        // Check cooldown before showing error toast (skip for 518 - no searches, 513 - existing session - so UI can handle)
         const lastErrorTime = recentErrors.get(requestKey) || 0;
         const now = Date.now();
-        const shouldShowToast = (now - lastErrorTime) > ERROR_COOLDOWN && errorCode !== '518';
+        const shouldShowToast = (now - lastErrorTime) > ERROR_COOLDOWN && errorCode !== '518' && errorCode !== '513';
         if (shouldShowToast && toastService && errorMsg) {
           recentErrors.set(requestKey, now);
           toastService(errorMsg, 'error');

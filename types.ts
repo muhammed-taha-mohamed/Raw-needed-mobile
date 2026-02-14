@@ -251,6 +251,8 @@ export interface Category {
   extraFields?: CategoryExtraField[];
   subCategories?: SubCategory[];
   isLoadingSubs?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Product {

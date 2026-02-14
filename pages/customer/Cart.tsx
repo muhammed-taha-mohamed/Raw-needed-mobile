@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
+import { getCountryName } from '../../utils/countries';
 import { useNavigate } from 'react-router-dom';
 import EmptyState from '../../components/EmptyState';
 
@@ -328,7 +329,7 @@ const Cart: React.FC = () => {
                             {item.inStock ? (lang === 'ar' ? 'متوفر' : 'In Stock') : (lang === 'ar' ? 'نفذ' : 'Out')}
                           </span>
                           <span className="material-symbols-outlined text-slate-300 text-[14px]">public</span>
-                          <span className="text-[10px] font-bold text-slate-500  tabular-nums">{item.origin}</span>
+                          <span className="text-[10px] font-bold text-slate-500  tabular-nums">{getCountryName(item.origin, lang)}</span>
                        </div>
                     </div>
 

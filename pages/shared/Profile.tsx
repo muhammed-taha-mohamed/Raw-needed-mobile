@@ -240,6 +240,7 @@ const Profile: React.FC = () => {
   };
 
   const handleLogout = () => {
+    api.post('/api/v1/user/auth/logout', {}).catch(() => {});
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/'; 

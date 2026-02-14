@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../App';
@@ -19,12 +18,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExistingSessionModal, setShowExistingSessionModal] = useState(false);
+  const [isReplacingSession, setIsReplacingSession] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doLogin = async (forceReplaceSession = false) => {
     setError(null);
     setIsLoading(true);
-
     try {
       if (email === 'admin@raw.com' && password === 'admin123') {
         const mockResponse = {
@@ -45,14 +44,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         return;
       }
 
-      const response = await api.post<any>('/api/v1/user/auth/login', { email, password });
+      const response = await api.post<any>('/api/v1/user/auth/login', { email, password, forceReplaceSession });
       onLogin(response);
+      setShowExistingSessionModal(false);
       navigate('/');
     } catch (err: any) {
-      //setError(t.loginExtra.errorCredentials);
+      if (err?.errorCode === '513') {
+        setShowExistingSessionModal(true);
+      } else {
+        setError(err?.message || t.loginExtra?.errorCredentials || 'Login failed');
+      }
     } finally {
       setIsLoading(false);
+      setIsReplacingSession(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doLogin(false);
+  };
+
+  const handleReplaceSession = () => {
+    setIsReplacingSession(true);
+    doLogin(true);
   };
 
   return (
@@ -142,6 +157,48 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </div>
       </div>
+
+      {/* Existing Session Modal */}
+      {showExistingSessionModal && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-[90%] max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 animate-in zoom-in-95 duration-200">
+            <div className="text-center mb-6">
+              <div className="mx-auto size-14 rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-3xl text-amber-500">devices</span>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
+                {lang === 'ar' ? 'جلسة مفتوحة' : 'Active Session'}
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-bold">
+                {lang === 'ar' ? 'يوجد لديك جلسة نشطة على جهاز آخر. سجّل الدخول هنا لاستبدالها أو أبقِ على الجلسة الحالية.' : 'You have an active session on another device. Login here to replace it, or keep the current session.'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleReplaceSession}
+                disabled={isReplacingSession}
+                className="w-full py-3.5 bg-primary text-white rounded-xl font-black text-sm hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {isReplacingSession ? (
+                  <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-lg">login</span>
+                    {lang === 'ar' ? 'تسجيل الدخول هنا' : 'Login Here'}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowExistingSessionModal(false)}
+                disabled={isReplacingSession}
+                className="w-full py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-black text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-70"
+              >
+                {lang === 'ar' ? 'الإبقاء على الجلسة' : 'Keep Session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -186,7 +186,10 @@ const Orders: React.FC = () => {
     const extra = line.extraFieldValues || {};
     const hasNote = !!extra.note;
     const hasDims = !!(extra.dimensions_length || extra.dimensions_width || extra.dimensions_height);
-    if (!hasNote && !hasDims) return null;
+    const hasServiceName = !!extra.serviceName;
+    const hasColorCount = !!extra.colorCount;
+    const hasPaperSize = !!extra.paperSize;
+    if (!hasNote && !hasDims && !hasServiceName && !hasColorCount && !hasPaperSize) return null;
     return (
       <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 dark:bg-primary/10 p-2.5 space-y-1.5">
         {hasDims && (
@@ -198,6 +201,21 @@ const Orders: React.FC = () => {
               {lang === 'ar' ? 'طول' : 'Length'}: {extra.dimensions_length || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'عرض' : 'Width'}: {extra.dimensions_width || '-'} {lang === 'ar' ? 'سم' : 'cm'} - {lang === 'ar' ? 'ارتفاع' : 'Height'}: {extra.dimensions_height || '-'} {lang === 'ar' ? 'سم' : 'cm'}
             </p>
           </div>
+        )}
+        {hasServiceName && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'اسم الخدمة:' : 'Service Name:'} {extra.serviceName}
+          </p>
+        )}
+        {hasColorCount && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'عدد الألوان:' : 'Color Count:'} {extra.colorCount}
+          </p>
+        )}
+        {hasPaperSize && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'حجم الورق:' : 'Paper Size:'} {extra.paperSize}
+          </p>
         )}
         {hasNote && (
           <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">

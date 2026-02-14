@@ -36,6 +36,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import Toast from './components/Toast';
 import { setToastService } from './api';
 import { clearSubscriptionCache } from './utils/subscription';
+import { api } from './api';
 
 interface UserData {
   token: string;
@@ -151,9 +152,10 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogout = () => {
+    api.post('/api/v1/user/auth/logout', {}).catch(() => {});
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    clearSubscriptionCache(); // Clear subscription cache on logout
+    clearSubscriptionCache();
     setUser(null);
   };
 
