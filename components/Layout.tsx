@@ -94,6 +94,9 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         { name: lang === 'ar' ? 'ادارة الاعلانات' : 'Ad Management', icon: 'campaign', path: '/ad-packages' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
         { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
+        ...(role === 'SUPER_ADMIN'
+          ? [{ name: lang === 'ar' ? 'إدارة المسؤولين' : 'Admin Management', icon: 'admin_panel_settings', path: '/admin-management' }]
+          : []),
         { name: lang === 'ar' ? 'الدعم' : 'Support', icon: 'support_agent', path: '/support' },
         { name: lang === 'ar' ? 'حسابي' : 'Profile', icon: 'person', path: '/profile' },
       ];
@@ -211,6 +214,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/categories') info = { title: lang === 'ar' ? 'الفئات' : 'Categories', subtitle: lang === 'ar' ? 'إدارة الفئات والتصنيفات' : 'Manage categories and classifications' };
     else if (path === '/approvals') info = { title: lang === 'ar' ? 'الموافقات' : 'Approvals', subtitle: lang === 'ar' ? 'مراجعة وموافقة على الطلبات' : 'Review and approve requests' };
     else if (path === '/users') info = { title: lang === 'ar' ? 'المستخدمين' : 'Users', subtitle: lang === 'ar' ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users' };
+    else if (path === '/admin-management') info = { title: lang === 'ar' ? 'إدارة المسؤولين' : 'Admin Management', subtitle: lang === 'ar' ? 'إضافة ومتابعة حسابات الإدارة' : 'Create and monitor admin accounts' };
     else if (path === '/advertisements') info = { title: lang === 'ar' ? 'الإعلانات' : 'Advertisements', subtitle: lang === 'ar' ? 'إدارة الإعلانات والعروض الترويجية' : 'Manage advertisements and promotions' };
 
     return info;

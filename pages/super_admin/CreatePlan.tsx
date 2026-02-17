@@ -22,8 +22,7 @@ const CreatePlan: React.FC = () => {
     pricePerUser: '',
     billingFrequency: 'MONTHLY' as BillingFrequency,
     planType: 'CUSTOMER' as PlanType,
-    exclusive: false,
-    hasAdvertisements: false
+    exclusive: false
   });
 
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
@@ -50,8 +49,7 @@ const CreatePlan: React.FC = () => {
           pricePerUser: plan.pricePerUser.toString(),
           billingFrequency: plan.billingFrequency,
           planType: plan.planType || 'CUSTOMER',
-          exclusive: !!plan.exclusive,
-          hasAdvertisements: !!plan.hasAdvertisements
+          exclusive: !!plan.exclusive
         });
         setSpecialOffers(plan.specialOffers || []);
         setFeatures(plan.features && plan.features.length > 0 ? plan.features : ['']);
@@ -96,7 +94,6 @@ const CreatePlan: React.FC = () => {
       billingFrequency: formData.billingFrequency,
       planType: formData.planType,
       exclusive: formData.exclusive,
-      hasAdvertisements: formData.hasAdvertisements,
       features: features.filter(f => f.trim() !== ''),
       specialOffers: specialOffers.map(offer => ({
         ...offer,
@@ -214,10 +211,7 @@ const CreatePlan: React.FC = () => {
                 <label htmlFor="exclusiveMain" className="text-sm  font-bold text-slate-500 cursor-pointer">{lang === 'ar' ? 'خطة حصرية (Exclusive)' : 'Exclusive Plan'}</label>
               </div>
               
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="hasAds" className="rounded-md border-slate-200 text-primary focus:ring-primary size-4" checked={formData.hasAdvertisements} onChange={(e) => setFormData({...formData, hasAdvertisements: e.target.checked})} disabled={isSubmitting} />
-                <label htmlFor="hasAds" className="text-sm  font-bold text-slate-500 cursor-pointer">{lang === 'ar' ? 'يحتوي على إعلانات' : 'Has Advertisements'}</label>
-              </div>
+              
             </div>
           </div>
 

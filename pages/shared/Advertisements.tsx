@@ -6,6 +6,7 @@ import { AdPackage, AdSettings, AdSubscription, Advertisement } from '../../type
 import { api } from '../../api';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -441,8 +442,8 @@ const Advertisements: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {canCreateAds && isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full md:w-[90%] md:max-w-xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[150] ${MODAL_OVERLAY_BASE_CLASS}`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-xl`}>
             
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
@@ -530,7 +531,7 @@ const Advertisements: React.FC = () => {
                     value={formData.text}
                     onChange={(e) => setFormData({ ...formData, text: e.target.value })}
                     placeholder={t.ads.textPlaceholder}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white min-h-[100px]"
+                    className={MODAL_TEXTAREA_CLASS}
                   />
                 </div>
 
@@ -541,7 +542,7 @@ const Advertisements: React.FC = () => {
                       required
                       value={selectedPackageId}
                       onChange={(e) => setSelectedPackageId(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base"
+                      className={MODAL_DROPDOWN_TRIGGER_CLASS}
                     >
                       {adPackages.map((p) => (
                         <option key={p.id} value={p.id}>

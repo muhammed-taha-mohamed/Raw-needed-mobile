@@ -7,6 +7,7 @@ import { Category, CategoryExtraField, SubCategory } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import { getCountryOptions, getCountryName } from '../../utils/countries';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface Supplier {
   id: string;
@@ -684,6 +685,15 @@ const Vendors: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={suppliers.length}
+      />
 
       {/* Vendor Details Modal - opens from details button so content is fully visible */}
       {detailsModalVendor && (

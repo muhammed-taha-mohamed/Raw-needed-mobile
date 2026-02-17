@@ -5,6 +5,8 @@ import { Advertisement } from '../../types';
 import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
+import { MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -145,6 +147,39 @@ const Advertisements: React.FC = () => {
     }
   };
 
+  const handleMobileSheetDrag = (
+    e: React.TouchEvent<HTMLDivElement>,
+    close: () => void
+  ) => {
+    const startY = e.touches[0].clientY;
+    const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement | null;
+    if (!modal) return;
+
+    const onMove = (moveEvent: TouchEvent) => {
+      const currentY = moveEvent.touches[0].clientY;
+      const diff = currentY - startY;
+      if (diff > 0) {
+        modal.style.transform = `translateY(${diff}px)`;
+        modal.style.transition = 'none';
+      }
+    };
+
+    const onEnd = () => {
+      const finalY = modal.getBoundingClientRect().top;
+      if (finalY > window.innerHeight * 0.3) {
+        close();
+      } else {
+        modal.style.transform = '';
+        modal.style.transition = '';
+      }
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
+  };
+
   return (
     <div className="w-full py-8 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       
@@ -273,6 +308,14 @@ const Advertisements: React.FC = () => {
            </div>
         </div>
       )}
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={ads.length}
+      />
 
       {/* Delete Confirmation */}
       {deleteConfirmId && (
@@ -318,8 +361,14 @@ const Advertisements: React.FC = () => {
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-[90%] md:w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-primary/20 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[150] ${MODAL_OVERLAY_BASE_CLASS} md:items-center`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:w-full md:max-w-xl md:rounded-xl`}>
+            <div
+              className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing"
+              onTouchStart={(e) => handleMobileSheetDrag(e, () => setIsModalOpen(false))}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             
             <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
                <div className="flex items-center gap-5">
@@ -374,7 +423,7 @@ const Advertisements: React.FC = () => {
                   <label className="text-[11px] font-black text-slate-400 px-1   ">{t.ads.text}</label>
                   <textarea 
                     required value={formData.text} onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner min-h-[120px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                    className={MODAL_TEXTAREA_CLASS}
                     placeholder={t.ads.textPlaceholder}
                   />
                 </div>

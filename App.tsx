@@ -8,6 +8,7 @@ import Approvals from './pages/super_admin/Approvals';
 import Categories from './pages/super_admin/Categories';
 import Users from './pages/super_admin/Users';
 import AdPackages from './pages/super_admin/AdPackages';
+import AdminManagement from './pages/super_admin/AdminManagement';
 import PaymentInfo from './pages/super_admin/PaymentInfo';
 import Orders from './pages/shared/Orders';
 import SupplierOrders from './pages/supplier/SupplierOrders';
@@ -185,6 +186,9 @@ const AppContent: React.FC = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/users" element={<Users />} />
             <Route path="/ad-packages" element={<AdPackages />} />
+            {role === 'SUPER_ADMIN' && (
+              <Route path="/admin-management" element={<AdminManagement />} />
+            )}
             <Route path="/market-requests" element={<MarketRequests />} />
             <Route path="/support" element={<Complaints />} />
             <Route path="*" element={<Navigate to="/" replace />} />

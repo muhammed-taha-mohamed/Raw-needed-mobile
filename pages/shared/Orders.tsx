@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface RFQOrder {
   id: string;
@@ -548,6 +549,15 @@ const Orders: React.FC = () => {
           </div>
         )}
       </div>
+
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={orders.length}
+      />
 
       {/* Details Modal */}
       {selectedOrder && (

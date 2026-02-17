@@ -71,9 +71,9 @@ export interface Plan {
   features?: (string | PlanFeature)[];
   productSearchesConfig?: ProductSearchesConfig;
   baseSubscriptionPrice?: number;
+  free?: boolean;
   exclusive: boolean;
   description?: string;
-  hasAdvertisements?: boolean;
 }
 
 export interface Advertisement {

@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
 
 interface SpecialOffer {
   id: string;
@@ -153,6 +154,39 @@ const SpecialOffers: React.FC = () => {
     }
   };
 
+  const handleMobileSheetDrag = (
+    e: React.TouchEvent<HTMLDivElement>,
+    close: () => void
+  ) => {
+    const startY = e.touches[0].clientY;
+    const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement | null;
+    if (!modal) return;
+
+    const onMove = (moveEvent: TouchEvent) => {
+      const currentY = moveEvent.touches[0].clientY;
+      const diff = currentY - startY;
+      if (diff > 0) {
+        modal.style.transform = `translateY(${diff}px)`;
+        modal.style.transition = 'none';
+      }
+    };
+
+    const onEnd = () => {
+      const finalY = modal.getBoundingClientRect().top;
+      if (finalY > window.innerHeight * 0.3) {
+        close();
+      } else {
+        modal.style.transform = '';
+        modal.style.transition = '';
+      }
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
+  };
+
   if (hasFeatureAccess === null) {
     return (
       <div className="w-full py-6 animate-in fade-in duration-700 font-display">
@@ -260,8 +294,14 @@ const SpecialOffers: React.FC = () => {
 
       {/* Add/Edit Offer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[300] ${MODAL_OVERLAY_BASE_CLASS}`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-lg`}>
+            <div
+              className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing"
+              onTouchStart={(e) => handleMobileSheetDrag(e, () => setIsModalOpen(false))}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -289,7 +329,7 @@ const SpecialOffers: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
                     required
                     disabled={!!editingOffer}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                    className={MODAL_DROPDOWN_TRIGGER_CLASS}
                   >
                     <option value="">{lang === 'ar' ? 'اختر المنتج' : 'Select Product'}</option>
                     {products.map((p) => (
@@ -307,7 +347,7 @@ const SpecialOffers: React.FC = () => {
                     value={formData.discountPercentage}
                     onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                    className={MODAL_INPUT_CLASS}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -317,7 +357,7 @@ const SpecialOffers: React.FC = () => {
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                    className={MODAL_INPUT_CLASS}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -327,7 +367,7 @@ const SpecialOffers: React.FC = () => {
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                    className={MODAL_INPUT_CLASS}
                   />
                 </div>
               </form>

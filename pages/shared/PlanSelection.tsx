@@ -150,7 +150,16 @@ const PlanSelection: React.FC = () => {
       ]);
 
       if (plansData.status === 'fulfilled') {
-        setPlans(plansData.value.filter(p => p.active));
+        let available = plansData.value.filter(p => p.active);
+        if (subData.status === 'fulfilled' && subData.value && available.length > 0) {
+          const freePlanIds = new Set(available.filter(p => p.free).map(p => p.id));
+          if (freePlanIds.size > 0) {
+            if (subData.value.planId && freePlanIds.has(subData.value.planId)) {
+              available = available.filter(p => !p.free);
+            }
+          }
+        }
+        setPlans(available);
       }
       if (subData.status === 'fulfilled') {
         setSubscription(subData.value);
@@ -711,16 +720,18 @@ const PlanSelection: React.FC = () => {
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate">{plan.name}</h3>
+                <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate flex items-center gap-2">
+                  {plan.name}
+                  {plan.free && (
+                    <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0">
+                      {lang === 'ar' ? 'مجانية' : 'Free'}
+                    </span>
+                  )}
+                </h3>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="size-2 rounded-full bg-emerald-500" />
                       <span className="text-[12px] font-bold text-slate-500">{t.plans.statusActive}</span>
-                      {plan.hasAdvertisements && (
-                        <span className="flex items-center gap-1 ml-2 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-black border border-emerald-100 dark:border-emerald-900/30">
-                          <span className="material-symbols-outlined text-[12px]">ads_click</span>
-                          {lang === 'ar' ? 'إعلانات' : 'ADS'}
-                        </span>
-                      )}
+                      
                     </div>
                   </div>
                 </div>

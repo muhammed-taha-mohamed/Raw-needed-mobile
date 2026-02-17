@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -16,6 +17,7 @@ const Complaints: React.FC = () => {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 10;
 
   // Detail & Chat State
   const [selectedTicket, setSelectedTicket] = useState<Complaint | null>(null);
@@ -56,8 +58,8 @@ const Complaints: React.FC = () => {
     setIsLoading(true);
     try {
       const endpoint = isAdmin 
-        ? `/api/v1/complaints/admin/all?page=${pageNum}&size=10`
-        : `/api/v1/complaints/my-complaints?page=${pageNum}&size=10`;
+        ? `/api/v1/complaints/admin/all?page=${pageNum}&size=${pageSize}`
+        : `/api/v1/complaints/my-complaints?page=${pageNum}&size=${pageSize}`;
       
       const response = await api.get<any>(endpoint);
       const data = response.data || response;
@@ -268,6 +270,15 @@ const Complaints: React.FC = () => {
            )}
         </div>
       </div>
+
+      <PaginationFooter
+        currentPage={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={fetchComplaints}
+        currentCount={complaints.length}
+      />
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (

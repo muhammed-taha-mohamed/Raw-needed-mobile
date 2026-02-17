@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import Dropdown from '../../components/Dropdown';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface Category {
   id: string;
@@ -117,6 +118,7 @@ const Users: React.FC = () => {
   const getRoleLabel = (role: string) => {
     const roleMap: Record<string, { ar: string; en: string }> = {
       'SUPER_ADMIN': { ar: 'مسؤول النظام', en: 'Super Admin' },
+      'ADMIN': { ar: 'مسؤول', en: 'Admin' },
       'CUSTOMER_OWNER': { ar: 'عميل', en: 'Customer Owner' },
       'CUSTOMER_STAFF': { ar: 'موظف عميل', en: 'Customer Staff' },
       'SUPPLIER_OWNER': { ar: 'مورد', en: 'Supplier Owner' },
@@ -333,6 +335,15 @@ const Users: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <PaginationFooter
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          currentCount={users.length}
+        />
 
         {/* Desktop Details Modal */}
         {desktopDetailsUserId && (() => {

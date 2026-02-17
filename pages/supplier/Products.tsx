@@ -8,6 +8,7 @@ import { getCountryOptions, getCountryName } from '../../utils/countries';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
 
 interface SupplierProfile {
   id: string;
@@ -965,8 +966,8 @@ const Products: React.FC = () => {
 
       {/* ... (Add/Edit Product Modal remains the same) ... */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full md:w-[90%] md:max-w-lg md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[300] ${MODAL_OVERLAY_BASE_CLASS}`}>
+           <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-2xl`}>
              
              {/* Drag Handle - Mobile Only */}
              <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
@@ -1014,30 +1015,30 @@ const Products: React.FC = () => {
                 <form onSubmit={handleSubmit} id="productForm" className="space-y-5">
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.name}</label>
-                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={t.products.namePlaceholder} />
+                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className={MODAL_INPUT_CLASS} placeholder={t.products.namePlaceholder} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.origin}</label>
-                      <Dropdown options={getCountryOptions(lang)} value={formData.origin} onChange={(v) => setFormData({...formData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
+                      <Dropdown options={getCountryOptions(lang)} value={formData.origin} onChange={(v) => setFormData({...formData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName={MODAL_DROPDOWN_TRIGGER_CLASS} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الكمية' : 'Stock Quantity'}</label>
-                      <input required type="number" min="0" value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                      <input required type="number" min="0" value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} className={MODAL_INPUT_CLASS} />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.unit}</label>
-                      <input type="text" value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold placeholder:text-xs placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
+                      <input type="text" value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} className={MODAL_INPUT_CLASS} placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.productionDate}</label>
-                      <input type="date" value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                      <input type="date" value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} className={MODAL_INPUT_CLASS} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.expirationDate}</label>
-                      <input type="date" value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                      <input type="date" value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} className={MODAL_INPUT_CLASS} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -1048,11 +1049,11 @@ const Products: React.FC = () => {
                       setExtraFieldValues({});
                       if (catId) api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`).then(setSubCategories);
                       else setSubCategories([]);
-                    }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" />
+                    }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName={`flex items-center justify-between gap-2 pl-4 pr-10 rtl:pl-10 rtl:pr-4 ${MODAL_DROPDOWN_TRIGGER_CLASS}`} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
-                    <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={formData.subCategoryId} onChange={(v) => setFormData({...formData, subCategoryId: v})} placeholder={t.products.selectSubCategory} disabled={!formData.categoryId} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-3 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-30 disabled:cursor-not-allowed" />
+                    <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={formData.subCategoryId} onChange={(v) => setFormData({...formData, subCategoryId: v})} placeholder={t.products.selectSubCategory} disabled={!formData.categoryId} isRtl={lang === 'ar'} triggerClassName={`flex items-center justify-between gap-2 pl-4 pr-10 rtl:pl-10 rtl:pr-4 disabled:opacity-30 disabled:cursor-not-allowed ${MODAL_DROPDOWN_TRIGGER_CLASS}`} />
                   </div>
                   {categoryExtraFields.length > 0 && (
                     <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
@@ -1070,21 +1071,21 @@ const Products: React.FC = () => {
                               value={extraFieldValues.dimensions_length || ''}
                               onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))}
                               placeholder={lang === 'ar' ? 'طول' : 'Length'}
-                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
                             />
                             <input
                               type="text"
                               value={extraFieldValues.dimensions_width || ''}
                               onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))}
                               placeholder={lang === 'ar' ? 'عرض' : 'Width'}
-                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
                             />
                             <input
                               type="text"
                               value={extraFieldValues.dimensions_height || ''}
                               onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))}
                               placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
-                              className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
                             />
                           </div>
                         </div>
@@ -1096,7 +1097,7 @@ const Products: React.FC = () => {
                             value={extraFieldValues.note || ''}
                             onChange={(e) => setExtraFieldValues(prev => ({ ...prev, note: e.target.value }))}
                             rows={3}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            className={MODAL_TEXTAREA_CLASS}
                             placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
                           />
                         </div>
@@ -1109,7 +1110,7 @@ const Products: React.FC = () => {
                             value={extraFieldValues.serviceName || ''}
                             onChange={(e) => setExtraFieldValues(prev => ({ ...prev, serviceName: e.target.value }))}
                             placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            className={MODAL_INPUT_CLASS}
                           />
                         </div>
                       )}
@@ -1121,7 +1122,7 @@ const Products: React.FC = () => {
                             value={extraFieldValues.colorCount || ''}
                             onChange={(e) => setExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))}
                             placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            className={MODAL_INPUT_CLASS}
                           />
                         </div>
                       )}
@@ -1133,7 +1134,7 @@ const Products: React.FC = () => {
                             value={extraFieldValues.paperSize || ''}
                             onChange={(e) => setExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))}
                             placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                            className={MODAL_INPUT_CLASS}
                           />
                         </div>
                       )}

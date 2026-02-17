@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
+import PaginationFooter from '../../components/PaginationFooter';
+import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
 
 interface StaffMember {
   id: string;
@@ -723,10 +725,19 @@ const MyTeam: React.FC = () => {
         </div>
       )}
 
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={members.length}
+      />
+
       {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[600] ${MODAL_OVERLAY_BASE_CLASS}`}>
+           <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-2xl`}>
              
              {/* Drag Handle - Mobile Only */}
              <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
@@ -784,19 +795,19 @@ const MyTeam: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div className="space-y-1.5">
                          <label className="text-[11px] font-black text-slate-500 px-1">{t.team.name}</label>
-                         <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                         <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className={MODAL_INPUT_CLASS} />
                        </div>
                        <div className="space-y-1.5">
                          <label className="text-[11px] font-black text-slate-500 px-1">{t.team.email}</label>
-                         <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                         <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className={MODAL_INPUT_CLASS} />
                        </div>
                        <div className="space-y-1.5">
                          <label className="text-[11px] font-black text-slate-500 px-1">{t.team.phone}</label>
-                         <input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white tabular-nums" />
+                         <input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className={`${MODAL_INPUT_CLASS} tabular-nums`} />
                        </div>
                        <div className="space-y-1.5">
                          <label className="text-[11px] font-black text-slate-500 px-1">{t.team.password}</label>
-                         <input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold placeholder:text-xs md:placeholder:text-sm placeholder:font-medium focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" />
+                         <input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className={MODAL_INPUT_CLASS} />
                        </div>
                     </div>
                     <div className="space-y-1.5">

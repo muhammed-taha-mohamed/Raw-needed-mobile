@@ -45,6 +45,7 @@ const Register: React.FC = () => {
     name: '', 
     email: '',
     password: '',
+    confirmPassword: '',
     phoneNumber: '',
     categoryId: '',
     subCategoryIds: [] as string[],
@@ -126,6 +127,10 @@ const Register: React.FC = () => {
     setError(null);
 
     try {
+      if (formData.password !== formData.confirmPassword) {
+        setError(lang === 'ar' ? 'كلمة المرور وتأكيدها غير متطابقين' : 'Password and confirm password do not match');
+        return;
+      }
       let profileUrl = '';
       let crnUrl = '';
 
@@ -159,6 +164,7 @@ const Register: React.FC = () => {
         formData.name.trim() !== '' &&
         isEmailValid(formData.email) &&
         formData.password.length >= 6 &&
+        formData.password === formData.confirmPassword &&
         formData.phoneNumber.trim() !== ''
       );
     }
@@ -282,6 +288,14 @@ const Register: React.FC = () => {
                   <div className="space-y-1">
                     <InputGroup icon="lock" type="password" lang={lang} value={formData.password} onChange={(e: any) => setFormData({...formData, password: e.target.value})} placeholder={t.register.passwordPlaceholder} required minLength={6} />
                     <p className="text-[10px] text-white/60 px-4">{t.registerExtra.passwordHint}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <InputGroup icon="lock_reset" type="password" lang={lang} value={formData.confirmPassword} onChange={(e: any) => setFormData({...formData, confirmPassword: e.target.value})} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} required minLength={6} />
+                    {formData.confirmPassword.length > 0 && formData.confirmPassword !== formData.password && (
+                      <p className="text-[10px] text-red-300 font-bold px-4 animate-in fade-in slide-in-from-top-1">
+                        {lang === 'ar' ? 'كلمة المرور غير متطابقة' : 'Passwords do not match'}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

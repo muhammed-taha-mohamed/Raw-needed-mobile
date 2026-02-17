@@ -4,6 +4,7 @@ import { Category, SubCategory } from '../../types';
 import { api } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import EmptyState from '../../components/EmptyState';
+import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
 
 const Categories: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -487,8 +488,8 @@ const Categories: React.FC = () => {
 
       {/* Add Category Modal */}
       {showCatModal && (
-        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[300] ${MODAL_OVERLAY_BASE_CLASS}`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-md md:rounded-2xl`}>
 
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
@@ -561,7 +562,7 @@ const Categories: React.FC = () => {
                     onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
                     placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400"
+                    className={MODAL_INPUT_CLASS}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -573,7 +574,7 @@ const Categories: React.FC = () => {
                     placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
                     required
                     dir="rtl"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400 text-right"
+                    className={`${MODAL_INPUT_CLASS} text-right`}
                   />
                 </div>
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 space-y-3">
@@ -640,8 +641,8 @@ const Categories: React.FC = () => {
 
       {/* Add Sub-category Modal */}
       {showSubModal && (
-        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[300] ${MODAL_OVERLAY_BASE_CLASS}`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-md md:rounded-2xl`}>
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
               const startY = e.touches[0].clientY;
@@ -698,7 +699,7 @@ const Categories: React.FC = () => {
                     onChange={(e) => setNewSub({ ...newSub, name: e.target.value })}
                     placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400"
+                    className={MODAL_INPUT_CLASS}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -710,7 +711,7 @@ const Categories: React.FC = () => {
                     placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
                     required
                     dir="rtl"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400 text-right"
+                    className={`${MODAL_INPUT_CLASS} text-right`}
                   />
                 </div>
               </form>

@@ -7,11 +7,11 @@ import type { PlanType } from './types';
 export const PLAN_FEATURE_LABELS: Record<string, { en: string; ar: string; planType: 'SUPPLIER' | 'CUSTOMER' }> = {
   // Supplier Features
   SUPPLIER_ADVERTISEMENTS: { en: 'Advertisements', ar: 'الإعلانات', planType: 'SUPPLIER' },
-  SUPPLIER_PRIVATE_ORDERS: { en: 'Private Orders', ar: 'الطلبات الخاصة', planType: 'SUPPLIER' },
+  SUPPLIER_PRIVATE_ORDERS: { en: 'Clients Special Orders', ar: 'طلبات العملاء الخاصة', planType: 'SUPPLIER' },
   SUPPLIER_SPECIAL_OFFERS: { en: 'Special Offers', ar: 'العروض الخاصة', planType: 'SUPPLIER' },
   SUPPLIER_ADVANCED_REPORTS: { en: 'Advanced Reports', ar: 'التقارير المتقدمة', planType: 'SUPPLIER' },
   // Customer Features
-  CUSTOMER_PRIVATE_ORDERS: { en: 'Private Orders', ar: 'الطلبات الخاصة', planType: 'CUSTOMER' },
+  CUSTOMER_PRIVATE_ORDERS: { en: 'Clients Special Orders', ar: 'طلبات العملاء الخاصة', planType: 'CUSTOMER' },
   CUSTOMER_RAW_MATERIALS_ADVANCE: { en: 'Raw Materials Advance', ar: 'سلفة الخامات', planType: 'CUSTOMER' },
   CUSTOMER_VIEW_SUPPLIER_OFFERS: { en: 'View Supplier Special Offers', ar: 'ظهور العروض الخاصة للموردين', planType: 'CUSTOMER' },
   CUSTOMER_ADVANCED_REPORTS: { en: 'Advanced Reports', ar: 'التقارير المتقدمة', planType: 'CUSTOMER' },

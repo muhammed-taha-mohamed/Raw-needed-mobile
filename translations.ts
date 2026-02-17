@@ -25,7 +25,7 @@ export const translations = {
       favItems: 'Favourite Items',
       cart: 'Cart',
       orders: 'Orders',
-      marketRequests: 'Special Requests',
+      marketRequests: 'Clients Special Orders',
       ads: 'Advertisements',
       support: 'Support & Complaints'
     },
@@ -84,7 +84,7 @@ export const translations = {
       selectSupplier: 'Select Supplier'
     },
     marketRequests: {
-      title: 'Special Requests',
+      title: 'Clients Special Orders',
       subtitle: 'Browse urgent material requests or post your own needs to find verified sources.',
       createPost: 'Request Material',
       materialName: 'Material Name',
@@ -296,7 +296,7 @@ export const translations = {
       statusDraft: 'Draft'
     },
     orders: {
-      featureRequired: 'Private orders feature is not included in your current subscription plan. Please upgrade your plan to access private orders.',
+      featureRequired: 'Clients special orders feature is not included in your current subscription plan. Please upgrade your plan to access it.',
       featureRequiredTitle: 'Feature Not Available',
       quantityPlaceholder: 'e.g. 1'
     },
@@ -509,7 +509,7 @@ export const translations = {
       favItems: 'العناصر المفضلة',
       cart: 'العربة',
       orders: 'الطلبات',
-      marketRequests: 'طلبات خاصة',
+      marketRequests: 'طلبات العملاء الخاصة',
       ads: 'الإعلانات',
       support: 'الدعم والشكاوى'
     },
@@ -570,7 +570,7 @@ export const translations = {
       originPlaceholder: 'اختر الدولة'
     },
     marketRequests: {
-      title: 'طلبات خاصة',
+      title: 'طلبات العملاء الخاصة',
       subtitle: 'تصفح طلبات المواد العاجلة أو انشر احتياجك لتجد مصادر توريد موثوقة.',
       createPost: 'طلب مادة جديدة',
       materialName: 'اسم المادة الخام',
@@ -782,7 +782,7 @@ export const translations = {
       statusDraft: 'مسودة'
     },
     orders: {
-      featureRequired: 'ميزة الطلبات الخاصة غير متوفرة في اشتراكك الحالي. يرجى ترقية باقاتك للوصول إلى الطلبات الخاصة.',
+      featureRequired: 'ميزة طلبات العملاء الخاصة غير متوفرة في اشتراكك الحالي. يرجى ترقية باقاتك للوصول إليها.',
       featureRequiredTitle: 'الميزة غير متوفرة',
       quantityPlaceholder: 'مثال: 1'
     },

@@ -27,8 +27,8 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
     pricePerUser: '',
     billingFrequency: 'MONTHLY' as BillingFrequency,
     planType: 'CUSTOMER' as PlanType,
+    free: false,
     exclusive: false,
-    hasAdvertisements: false
   });
 
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
@@ -41,7 +41,7 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
     if (isOpen) {
       if (planId) fetchPlanDetails(planId);
       else {
-        setFormData({ name: '', description: '', pricePerUser: '', billingFrequency: 'MONTHLY', planType: 'CUSTOMER', exclusive: false, hasAdvertisements: false });
+        setFormData({ name: '', description: '', pricePerUser: '', billingFrequency: 'MONTHLY', planType: 'CUSTOMER', free: false, exclusive: false });
         setSpecialOffers([]);
         setFeatures(['']);
         setPlanFeaturesWithPrices([]);
@@ -66,8 +66,8 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
           pricePerUser: plan.pricePerUser.toString(), 
           billingFrequency: plan.billingFrequency, 
           planType: plan.planType || 'CUSTOMER', 
-          exclusive: !!plan.exclusive,
-          hasAdvertisements: !!plan.hasAdvertisements
+          free: !!plan.free,
+          exclusive: !!plan.exclusive
         });
         setSpecialOffers(plan.specialOffers || []);
         const featList = plan.features || [];
@@ -128,11 +128,12 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
     const payload: any = {
       name: formData.name,
       description: formData.description,
-      pricePerUser: parseFloat(formData.pricePerUser) || 0,
+      pricePerUser: formData.free ? 0 : (parseFloat(formData.pricePerUser) || 0),
       billingFrequency: formData.billingFrequency,
       planType: formData.planType,
+      free: !!formData.free,
       exclusive: formData.exclusive,
-      hasAdvertisements: formData.hasAdvertisements,
+      
       specialOffers: specialOffers.map(offer => ({
         ...offer,
         minUserCount: Number(offer.minUserCount),
@@ -283,13 +284,21 @@ const PlanModal: React.FC<PlanModalProps> = ({ isOpen, onClose, planId, onSucces
 
                 <div className="flex flex-wrap gap-6 mt-1 px-1">
                   <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="free"
+                      className="rounded-md border-primary/30 text-primary focus:ring-primary size-4"
+                      checked={formData.free}
+                      onChange={(e) => setFormData({...formData, free: e.target.checked, pricePerUser: e.target.checked ? '0' : formData.pricePerUser})}
+                      disabled={isSubmitting}
+                    />
+                    <label htmlFor="free" className="text-xs font-bold text-slate-500 cursor-pointer">{lang === 'ar' ? 'خطة مجانية' : 'Free plan'}</label>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <input type="checkbox" id="exclusive" className="rounded-md border-primary/30 text-primary focus:ring-primary size-4" checked={formData.exclusive} onChange={(e) => setFormData({...formData, exclusive: e.target.checked})} disabled={isSubmitting} />
                     <label htmlFor="exclusive" className="text-xs font-bold text-slate-500 cursor-pointer">{lang === 'ar' ? 'خطة حصرية (Exclusive)' : 'Exclusive Plan'}</label>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" id="hasAdsModal" className="rounded-md border-primary/30 text-primary focus:ring-primary size-4" checked={formData.hasAdvertisements} onChange={(e) => setFormData({...formData, hasAdvertisements: e.target.checked})} disabled={isSubmitting} />
-                    <label htmlFor="hasAdsModal" className="text-xs font-bold text-slate-500 cursor-pointer">{lang === 'ar' ? 'يحتوي على إعلانات' : 'Has Advertisements'}</label>
-                  </div>
+                  
                 </div>
               </div>
 

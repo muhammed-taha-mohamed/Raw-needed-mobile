@@ -7,6 +7,7 @@ import { Category, CategoryExtraField, SubCategory, UserSubscription } from '../
 import Dropdown from '../../components/Dropdown';
 import { getCountryOptions, getCountryName } from '../../utils/countries';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 import { clearSubscriptionCache } from '../../utils/subscription';
 
 interface Product {
@@ -1259,6 +1260,14 @@ const ProductSearch: React.FC = () => {
            </div>
         </div>
       )}
+      <PaginationFooter
+        currentPage={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        currentCount={results.length}
+      />
 
       <style>{`
         input[type=number]::-webkit-inner-spin-button, 

@@ -4,6 +4,7 @@ import { Plan, BillingFrequency, PlanType, PlanFeature } from '../../types';
 import { api } from '../../api';
 import PlanModal from '../../components/PlanModal';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 import Approvals from './Approvals';
 import { getPlanFeatureLabel } from '../../constants';
 
@@ -53,6 +54,7 @@ const Plans: React.FC = () => {
   const [approvedTotalPages, setApprovedTotalPages] = useState(0);
   const [approvedTotalElements, setApprovedTotalElements] = useState(0);
   const approvedPageSize = 10;
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
 
   // Tooltip states for features and offers
@@ -61,6 +63,7 @@ const Plans: React.FC = () => {
 
   useEffect(() => {
     fetchPlans();
+    void fetchPendingApprovalsCount();
 
     const handleClickOutside = () => {
       setActiveFeatureId(null);
@@ -89,6 +92,17 @@ const Plans: React.FC = () => {
       setApprovedSubscriptions([]);
     } finally {
       setLoadingApproved(false);
+    }
+  };
+
+  const fetchPendingApprovalsCount = async () => {
+    try {
+      const response = await api.get<PaginatedResponse<ApprovedSubscription>>(
+        '/api/v1/admin/user-subscriptions/pending?page=0&size=1'
+      );
+      setPendingApprovalsCount(response.totalElements ?? 0);
+    } catch {
+      setPendingApprovalsCount(0);
     }
   };
 
@@ -204,7 +218,14 @@ const Plans: React.FC = () => {
           onClick={() => setActiveTab('approvals')}
           className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'approvals' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
         >
-          {lang === 'ar' ? 'الموافقات' : 'Approvals'}
+          <span className="inline-flex items-center gap-1.5">
+            <span>{lang === 'ar' ? 'الموافقات' : 'Approvals'}</span>
+            {pendingApprovalsCount > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] leading-none font-black inline-flex items-center justify-center tabular-nums">
+                {pendingApprovalsCount}
+              </span>
+            )}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('subscriptions')}
@@ -260,18 +281,20 @@ const Plans: React.FC = () => {
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate  ">{plan.name}</h3>
+                              <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate  flex items-center gap-2">
+                                {plan.name}
+                                {plan.free && (
+                                  <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0">
+                                    {lang === 'ar' ? 'مجانية' : 'Free'}
+                                  </span>
+                                )}
+                              </h3>
                               <div className="flex items-center gap-1.5 mt-1">
                                 <span className={`size-2 rounded-full ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
                                 <span className="text-[12px] font-bold text-slate-500  ">
                                   {plan.active ? t.plans.statusActive : t.plans.statusArchived}
                                 </span>
-                                {plan.hasAdvertisements && (
-                                  <span className="flex items-center gap-1 ml-2 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-black border border-emerald-100 dark:border-emerald-900/30">
-                                    <span className="material-symbols-outlined text-[12px]">ads_click</span>
-                                    {lang === 'ar' ? 'إعلانات' : 'ADS'}
-                                  </span>
-                                )}
+                                
                               </div>
                             </div>
                           </div>
@@ -432,7 +455,7 @@ const Plans: React.FC = () => {
                             </button>
                           </div>
 
-                          <button onClick={() => setDeleteConfirmId(plan.id)} className="size-9 rounded-xl bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm" title="Delete">
+                          <button disabled={!!plan.free} onClick={() => setDeleteConfirmId(plan.id)} className={`size-9 rounded-xl ${plan.free ? 'opacity-40 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'} flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm`} title="Delete">
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
                         </div>
@@ -796,6 +819,14 @@ const Plans: React.FC = () => {
                 </div>
               </div>
             )}
+            <PaginationFooter
+              currentPage={approvedPage}
+              totalPages={approvedTotalPages}
+              totalElements={approvedTotalElements}
+              pageSize={approvedPageSize}
+              onPageChange={setApprovedPage}
+              currentCount={approvedSubscriptions.length}
+            />
           </div>
         </div>
       )}

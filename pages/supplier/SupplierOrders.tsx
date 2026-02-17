@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface SupplierResponse {
   price: number;
@@ -656,6 +657,15 @@ const SupplierOrders: React.FC = () => {
           </div>
         )}
       </div>
+
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={offers.length}
+      />
 
       {respondingOffer && (
         <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">

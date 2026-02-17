@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { AdPackage, AdSubscription } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import EmptyState from '../../components/EmptyState';
+import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
 
 interface PendingPage {
   content: AdSubscription[];
@@ -243,7 +244,14 @@ const AdPackages: React.FC = () => {
           onClick={() => setActiveTab('pending')}
           className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'pending' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
         >
-          {lang === 'ar' ? 'طلبات الاشتراك' : 'Pending'}
+          <span className="inline-flex items-center gap-1.5">
+            <span>{lang === 'ar' ? 'طلبات الاشتراك' : 'Pending'}</span>
+            {pendingSubscriptions.length > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] leading-none font-black inline-flex items-center justify-center tabular-nums">
+                {pendingSubscriptions.length}
+              </span>
+            )}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('subscriptions')}
@@ -813,8 +821,8 @@ const AdPackages: React.FC = () => {
 
       {/* Add/Edit package modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setModalOpen(false)}>
-          <div className="w-full md:w-[90%] md:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-[200] ${MODAL_OVERLAY_BASE_CLASS}`} onClick={() => setModalOpen(false)}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-md`} onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
@@ -835,24 +843,24 @@ const AdPackages: React.FC = () => {
               <form id="adPkgForm" onSubmit={(e) => { e.preventDefault(); handleSavePackage(); }} className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الاسم (ع)' : 'Name (AR)'}</label>
-                  <input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} placeholder={t.adPackage.nameArPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                  <input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} placeholder={t.adPackage.nameArPlaceholder} className={MODAL_INPUT_CLASS} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الاسم (en)' : 'Name (EN)'}</label>
-                  <input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder={t.adPackage.nameEnPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                  <input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder={t.adPackage.nameEnPlaceholder} className={MODAL_INPUT_CLASS} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'مدة كل إعلان (يوم)' : 'Per-ad duration (days)'}</label>
-                  <input type="number" min={1} value={form.numberOfDays} onChange={(e) => setForm({ ...form, numberOfDays: e.target.value })} placeholder={t.adPackage.durationDaysPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                  <input type="number" min={1} value={form.numberOfDays} onChange={(e) => setForm({ ...form, numberOfDays: e.target.value })} placeholder={t.adPackage.durationDaysPlaceholder} className={MODAL_INPUT_CLASS} />
                   <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'كل إعلان يظهر لهذه المدة ثم يختفي' : 'Each ad is shown for this many days then hidden'}</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'سعر الإعلان الواحد (EGP)' : 'Price per ad (EGP)'}</label>
-                  <input type="number" min={0} step={0.01} value={form.pricePerAd} onChange={(e) => setForm({ ...form, pricePerAd: e.target.value })} placeholder={t.adPackage.pricePerAdPlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                  <input type="number" min={0} step={0.01} value={form.pricePerAd} onChange={(e) => setForm({ ...form, pricePerAd: e.target.value })} placeholder={t.adPackage.pricePerAdPlaceholder} className={MODAL_INPUT_CLASS} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'سعر عرض أولاً (EGP)' : 'Featured price (EGP)'}</label>
-                  <input type="number" min={0} step={0.01} value={form.featuredPrice} onChange={(e) => setForm({ ...form, featuredPrice: e.target.value })} placeholder={t.adPackage.featuredPricePlaceholder} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-slate-400" />
+                  <input type="number" min={0} step={0.01} value={form.featuredPrice} onChange={(e) => setForm({ ...form, featuredPrice: e.target.value })} placeholder={t.adPackage.featuredPricePlaceholder} className={MODAL_INPUT_CLASS} />
                   <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'السعر الإضافي الذي يدفعه المورد ليظهر إعلانه في الأول' : 'Extra price the supplier pays to display their ad first'}</p>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import EmptyState from '../../components/EmptyState';
+import PaginationFooter from '../../components/PaginationFooter';
 
 interface PendingSubscription {
   id: string;
@@ -76,10 +77,15 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
   const [addSearchesLoading, setAddSearchesLoading] = useState(false);
   const [addSearchesProcessingId, setAddSearchesProcessingId] = useState<string | null>(null);
   const [showAddSearchesSection, setShowAddSearchesSection] = useState(false);
+  const [addSearchesPendingCount, setAddSearchesPendingCount] = useState(0);
 
   useEffect(() => {
     fetchPendingRequests(currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    fetchAddSearchesPendingCount();
+  }, []);
 
   useEffect(() => {
     if (showAddSearchesSection) fetchAddSearchesPending();
@@ -99,11 +105,22 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
     }
   };
 
+  const fetchAddSearchesPendingCount = async () => {
+    try {
+      const res = await api.get<any>('/api/v1/admin/add-searches/pending?page=0&size=1');
+      const data = res?.content?.data ?? res?.data ?? res;
+      setAddSearchesPendingCount(data?.totalElements ?? 0);
+    } catch {
+      setAddSearchesPendingCount(0);
+    }
+  };
+
   const handleApproveAddSearches = async (requestId: string) => {
     setAddSearchesProcessingId(requestId);
     try {
       await api.post(`/api/v1/admin/add-searches/${requestId}/approve`, {});
       await fetchAddSearchesPending();
+      await fetchAddSearchesPendingCount();
     } catch (err: any) {
       alert(err?.message || (lang === 'ar' ? 'فشل الموافقة' : 'Approve failed'));
     } finally {
@@ -117,6 +134,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
     try {
       await api.post(`/api/v1/admin/add-searches/${requestId}/reject`, { reason });
       await fetchAddSearchesPending();
+      await fetchAddSearchesPendingCount();
     } catch (err: any) {
       alert(err?.message || (lang === 'ar' ? 'فشل الرفض' : 'Reject failed'));
     } finally {
@@ -219,7 +237,12 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 font-black text-sm transition-all"
         >
           <span className="material-symbols-outlined text-lg">search</span>
-          {lang === 'ar' ? 'طلبات إضافة عمليات البحث' : 'Add Searches Requests'}
+          <span>{lang === 'ar' ? 'طلبات إضافة عمليات البحث' : 'Add Searches Requests'}</span>
+          {addSearchesPendingCount > 0 && (
+            <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] leading-none font-black inline-flex items-center justify-center tabular-nums">
+              {addSearchesPendingCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -394,6 +417,15 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
           )}
         </>
       )}
+
+      <PaginationFooter
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        currentCount={requests.length}
+      />
 
       {/* Popup for add-search requests */}
       {showAddSearchesSection && (
