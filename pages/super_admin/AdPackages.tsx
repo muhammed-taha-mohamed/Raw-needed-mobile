@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
-import { AdPackage, AdSubscription } from '../../types';
+import { AdPackage, AdSubscription, AdSpecialOffer } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import EmptyState from '../../components/EmptyState';
 import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
@@ -21,7 +21,7 @@ const AdPackages: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdPackage | null>(null);
-  const [form, setForm] = useState<{ nameAr: string; nameEn: string; numberOfDays: string; pricePerAd: string; featuredPrice: string; active: boolean; sortOrder: number }>({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: 0 });
+  const [form, setForm] = useState<{ nameAr: string; nameEn: string; numberOfDays: string; pricePerAd: string; featuredPrice: string; active: boolean; sortOrder: number; specialOffers: AdSpecialOffer[] }>({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: 0, specialOffers: [] });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<AdSubscription[]>([]);
@@ -100,7 +100,7 @@ const AdPackages: React.FC = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: packages.length });
+    setForm({ nameAr: '', nameEn: '', numberOfDays: '', pricePerAd: '', featuredPrice: '', active: true, sortOrder: packages.length, specialOffers: [] });
     setModalOpen(true);
   };
 
@@ -114,6 +114,7 @@ const AdPackages: React.FC = () => {
       featuredPrice: String((p as any).featuredPrice ?? ''),
       active: p.active,
       sortOrder: p.sortOrder ?? 0,
+      specialOffers: p.specialOffers || [],
     });
     setModalOpen(true);
   };
@@ -136,27 +137,22 @@ const AdPackages: React.FC = () => {
     }
     setSaving(true);
     try {
+      const payload: any = {
+        nameAr: form.nameAr || undefined,
+        nameEn: form.nameEn || undefined,
+        numberOfDays: numDays,
+        pricePerAd,
+        featuredPrice,
+        active: form.active,
+        sortOrder: form.sortOrder,
+        specialOffers: form.specialOffers.length > 0 ? form.specialOffers : undefined,
+      };
+      
       if (editing) {
-        await api.put(`/api/v1/admin/ad-packages/${editing.id}`, {
-          nameAr: form.nameAr || undefined,
-          nameEn: form.nameEn || undefined,
-          numberOfDays: numDays,
-          pricePerAd,
-          featuredPrice,
-          active: form.active,
-          sortOrder: form.sortOrder,
-        });
+        await api.put(`/api/v1/admin/ad-packages/${editing.id}`, payload);
         showToast(lang === 'ar' ? 'تم تحديث الباقة' : 'Package updated', 'success');
       } else {
-        await api.post('/api/v1/admin/ad-packages', {
-          nameAr: form.nameAr || undefined,
-          nameEn: form.nameEn || undefined,
-          numberOfDays: numDays,
-          pricePerAd,
-          featuredPrice,
-          active: form.active,
-          sortOrder: form.sortOrder,
-        });
+        await api.post('/api/v1/admin/ad-packages', payload);
         showToast(lang === 'ar' ? 'تم إضافة الباقة' : 'Package created', 'success');
       }
       setModalOpen(false);
@@ -866,6 +862,90 @@ const AdPackages: React.FC = () => {
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                   <input type="checkbox" id="active" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="size-5 rounded-md border-slate-300 text-primary focus:ring-primary" />
                   <label htmlFor="active" className="text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">{lang === 'ar' ? 'نشط' : 'Active'}</label>
+                </div>
+
+                {/* Special Offers Section */}
+                <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الخصومات (مربوطة بعدد الإعلانات)' : 'Discounts (based on number of ads)'}</label>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, specialOffers: [...form.specialOffers, { minAdCount: 1, discountPercentage: 0, description: '' }] })}
+                      className="px-3 py-1.5 text-xs font-black bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-all border border-primary/20"
+                    >
+                      <span className="material-symbols-outlined text-sm mr-1 align-middle">add</span>
+                      {lang === 'ar' ? 'إضافة' : 'Add'}
+                    </button>
+                  </div>
+                  {form.specialOffers.length === 0 ? (
+                    <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'لا توجد خصومات. اضغط "إضافة" لإضافة خصم جديد.' : 'No discounts. Click "Add" to add a new discount.'}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {form.specialOffers.map((offer, idx) => (
+                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-600 dark:text-slate-400">{lang === 'ar' ? `خصم ${idx + 1}` : `Discount ${idx + 1}`}</span>
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, specialOffers: form.specialOffers.filter((_, i) => i !== idx) })}
+                              className="size-6 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 flex items-center justify-center transition-all"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span>
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الحد الأدنى لعدد الإعلانات' : 'Minimum number of ads'}</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={offer.minAdCount}
+                                onChange={(e) => {
+                                  const updated = [...form.specialOffers];
+                                  updated[idx] = { ...offer, minAdCount: parseInt(e.target.value) || 1 };
+                                  setForm({ ...form, specialOffers: updated });
+                                }}
+                                className={MODAL_INPUT_CLASS}
+                                placeholder={lang === 'ar' ? 'مثال: 5' : 'e.g., 5'}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نسبة الخصم (%)' : 'Discount percentage (%)'}</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                value={offer.discountPercentage}
+                                onChange={(e) => {
+                                  const updated = [...form.specialOffers];
+                                  updated[idx] = { ...offer, discountPercentage: parseFloat(e.target.value) || 0 };
+                                  setForm({ ...form, specialOffers: updated });
+                                }}
+                                className={MODAL_INPUT_CLASS}
+                                placeholder={lang === 'ar' ? 'مثال: 10' : 'e.g., 10'}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوصف (اختياري)' : 'Description (optional)'}</label>
+                              <input
+                                type="text"
+                                value={offer.description || ''}
+                                onChange={(e) => {
+                                  const updated = [...form.specialOffers];
+                                  updated[idx] = { ...offer, description: e.target.value };
+                                  setForm({ ...form, specialOffers: updated });
+                                }}
+                                className={MODAL_INPUT_CLASS}
+                                placeholder={lang === 'ar' ? 'مثال: خصم 10% عند شراء 5 إعلانات أو أكثر' : 'e.g., 10% off when buying 5+ ads'}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-400 px-1">{lang === 'ar' ? 'سيتم تطبيق أعلى خصم متاح بناءً على عدد الإعلانات المطلوبة' : 'The highest applicable discount will be applied based on the number of ads requested'}</p>
                 </div>
               </form>
             </div>

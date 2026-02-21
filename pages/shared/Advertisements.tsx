@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../App';
-import { AdPackage, AdSettings, AdSubscription, Advertisement } from '../../types';
+import { AdPackage, AdSettings, AdSubscription, Advertisement, AdvertisementViewStats } from '../../types';
 import { api } from '../../api';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
@@ -49,6 +49,12 @@ const Advertisements: React.FC = () => {
   const [hasActiveAdSubscription, setHasActiveAdSubscription] = useState<boolean | null>(null);
   /** First APPROVED subscription for supplier – used as the only allowed package when adding an ad */
   const [supplierApprovedSubscription, setSupplierApprovedSubscription] = useState<AdSubscription | null>(null);
+  
+  // Stats modal state
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [selectedAdId, setSelectedAdId] = useState<string | null>(null);
+  const [viewStats, setViewStats] = useState<AdvertisementViewStats[]>([]);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -94,17 +100,7 @@ const Advertisements: React.FC = () => {
     return () => { cancelled = true; };
   }, [userRole]);
 
-  useEffect(() => {
-    fetchAds(currentPage, pageSize);
-  }, [currentPage, pageSize]);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
+  // تعريف الأدوار قبل استخدامها
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
   const isSupplier = userRole.includes('SUPPLIER') && !isAdmin;
   const canCreateAds = isAdmin || (isSupplier && hasActiveAdSubscription === true);
@@ -124,6 +120,53 @@ const Advertisements: React.FC = () => {
     }
   };
 
+  const fetchMyAds = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Advertisement[]>(`/api/v1/advertisements/my-advertisements`);
+      setAds(Array.isArray(response) ? response : (response?.data || []));
+      setTotalPages(1);
+      setTotalElements(Array.isArray(response) ? response.length : (response?.data?.length || 0));
+    } catch (err: any) {
+      setError(err.message || "Failed to load advertisements.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isSupplier || isAdmin) {
+      fetchMyAds();
+    } else {
+      fetchAds(currentPage, pageSize);
+    }
+  }, [currentPage, pageSize, isSupplier, isAdmin]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // تحديث featured تلقائياً عند تغيير الباقة المختارة
+  useEffect(() => {
+    if (!isModalOpen || editingAd) return;
+    
+    if (isSupplier && supplierApprovedSubscription) {
+      // للمورد: فحص الباقة المعتمدة
+      const selectedPkg = adPackages.find((pkg: any) => pkg.id === supplierApprovedSubscription.adPackageId);
+      const hasFeaturedOption = selectedPkg ? ((selectedPkg as any).featuredPrice ?? 0) > 0 : false;
+      setFeatured(hasFeaturedOption);
+    } else if (isAdmin && selectedPackageId && adPackages.length > 0) {
+      // للمسؤول: فحص الباقة المختارة
+      const selectedPkg = adPackages.find((pkg: any) => pkg.id === selectedPackageId);
+      const hasFeaturedOption = selectedPkg ? ((selectedPkg as any).featuredPrice ?? 0) > 0 : false;
+      setFeatured(hasFeaturedOption);
+    }
+  }, [selectedPackageId, adPackages, isModalOpen, editingAd, isSupplier, isAdmin, supplierApprovedSubscription]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -140,22 +183,38 @@ const Advertisements: React.FC = () => {
     setSelectedFile(null);
     setImagePreview(null);
     setFormData({ text: '', image: '' });
+    setFeatured(false); // إعادة تعيين إلى false في البداية
+    
     if (isSupplier && supplierApprovedSubscription) {
       setSelectedPackageId(supplierApprovedSubscription.adPackageId);
-      setFeatured(!!(supplierApprovedSubscription as any).featured);
     } else {
       setSelectedPackageId('');
-      setFeatured(false);
     }
+    
     if (isSupplier || isAdmin) {
       try {
         const [pkgRes, setRes] = await Promise.all([
           api.get<{ data: AdPackage[] }>('/api/v1/advertisements/packages'),
           api.get<{ data: AdSettings }>('/api/v1/advertisements/settings'),
         ]);
-        setAdPackages(pkgRes.data || []);
+        const packages = pkgRes.data || [];
+        setAdPackages(packages);
         setAdSettings(setRes.data || null);
-        if (isAdmin && (pkgRes.data?.length ?? 0) > 0) setSelectedPackageId((prev) => prev || pkgRes.data![0].id);
+        
+        if (isAdmin && packages.length > 0) {
+          const firstPkgId = packages[0].id;
+          const finalPkgId = selectedPackageId || firstPkgId;
+          setSelectedPackageId(finalPkgId);
+          // تعيين featured تلقائياً بناءً على الباقة المختارة
+          const selectedPkg = packages.find((pkg: any) => pkg.id === finalPkgId);
+          const hasFeaturedOption = selectedPkg ? ((selectedPkg as any).featuredPrice ?? 0) > 0 : false;
+          setFeatured(hasFeaturedOption);
+        } else if (isSupplier && supplierApprovedSubscription) {
+          // للمورد: فحص الباقة المعتمدة
+          const approvedPkg = packages.find((pkg: any) => pkg.id === supplierApprovedSubscription.adPackageId);
+          const hasFeaturedOption = approvedPkg ? ((approvedPkg as any).featuredPrice ?? 0) > 0 : false;
+          setFeatured(hasFeaturedOption);
+        }
       } catch (e) {
         setToast({ message: (e as Error).message || 'Failed to load options', type: 'error' });
       }
@@ -178,6 +237,21 @@ const Advertisements: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const openStatsModal = async (adId: string) => {
+    setSelectedAdId(adId);
+    setStatsModalOpen(true);
+    setLoadingStats(true);
+    try {
+      const response = await api.get<AdvertisementViewStats[]>(`/api/v1/advertisements/${adId}/stats`);
+      setViewStats(Array.isArray(response) ? response : (response?.data || []));
+    } catch (err: any) {
+      setToast({ message: err.message || 'Failed to load stats', type: 'error' });
+      setViewStats([]);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
     setIsProcessing(true);
@@ -185,7 +259,11 @@ const Advertisements: React.FC = () => {
       await api.delete(`/api/v1/advertisements/${deleteConfirmId}`);
       setToast({ message: t.ads.successDelete, type: 'success' });
       setDeleteConfirmId(null);
-      await fetchAds(currentPage, pageSize);
+      if (isSupplier || isAdmin) {
+        await fetchMyAds();
+      } else {
+        await fetchAds(currentPage, pageSize);
+      }
     } catch (err: any) {
       setToast({ message: err.message || "Deletion failed", type: 'error' });
     } finally {
@@ -235,7 +313,11 @@ const Advertisements: React.FC = () => {
         setToast({ message: t.ads.successAdd, type: 'success' });
       }
 
-      await fetchAds(currentPage, pageSize);
+      if (isSupplier || isAdmin) {
+        await fetchMyAds();
+      } else {
+        await fetchAds(currentPage, pageSize);
+      }
       setIsModalOpen(false);
     } catch (err: any) {
       setError((err as Error).message || 'Operation failed.');
@@ -330,12 +412,92 @@ const Advertisements: React.FC = () => {
                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 line-clamp-3 leading-relaxed">
                    {ad.text}
                  </p>
-                 <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 tabular-nums">{t.ads.refLabel}: #{ad.id.slice(-6)}</span>
-                    <div className="flex items-center gap-1">
-                       <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                       <span className="text-[9px] font-black text-emerald-500">{t.common.live}</span>
+                 <div className="mt-auto pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-black text-slate-400 tabular-nums">{t.ads.refLabel}: #{ad.id.slice(-6)}</span>
+                       <div className="flex items-center gap-1">
+                          {(() => {
+                            // Check if ad is expired based on endDate
+                            const isExpired = ad.endDate ? new Date(ad.endDate) <= new Date() : false;
+                            const hasRemainingDays = ad.remainingDays !== null && ad.remainingDays !== undefined && ad.remainingDays > 0;
+                            
+                            if (!isExpired && hasRemainingDays) {
+                              return (
+                                <>
+                                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span className="text-[9px] font-black text-emerald-500">{t.common.live}</span>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <>
+                                  <span className="size-1.5 rounded-full bg-red-500"></span>
+                                  <span className="text-[9px] font-black text-red-500">{lang === 'ar' ? 'منتهي' : 'Expired'}</span>
+                                </>
+                              );
+                            }
+                          })()}
+                       </div>
                     </div>
+                    {canCreateAds && (
+                      <>
+                        {/* عرض تواريخ البداية والنهاية */}
+                        {ad.startDate && (
+                          <div className="space-y-1 text-[10px]">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                              <span className="material-symbols-outlined text-xs">schedule</span>
+                              <span className="font-black">{lang === 'ar' ? 'بدء العرض:' : 'Start:'}</span>
+                              <span className="font-bold">
+                                {new Date(ad.startDate).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            {ad.endDate && (
+                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-xs">event_busy</span>
+                                <span className="font-black">{lang === 'ar' ? 'انتهاء العرض:' : 'End:'}</span>
+                                <span className="font-bold">
+                                  {new Date(ad.endDate).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* عدد المشاهدات */}
+                        <div className="flex items-center justify-between text-[10px]">
+                         {ad.remainingDays !== null && ad.remainingDays !== undefined ? (
+                           <span className={`font-black ${ad.remainingDays > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                             {ad.remainingDays > 0 
+                               ? (lang === 'ar' ? `متبقي ${ad.remainingDays} ${ad.remainingDays === 1 ? 'يوم' : 'أيام'}` : `${ad.remainingDays} ${ad.remainingDays === 1 ? 'day' : 'days'} remaining`)
+                               : (lang === 'ar' ? 'منتهي' : 'Expired')
+                             }
+                           </span>
+                         ) : null}
+                         {ad.viewCount !== undefined && (
+                           <button
+                             onClick={() => openStatsModal(ad.id)}
+                             className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white text-slate-600 dark:text-slate-400 transition-colors"
+                             title={lang === 'ar' ? 'عرض الإحصائيات' : 'View statistics'}
+                           >
+                             <span className="material-symbols-outlined text-xs">visibility</span>
+                             <span className="font-black">{ad.viewCount}</span>
+                             <span className="text-[9px]">{lang === 'ar' ? 'مشاهدة' : 'views'}</span>
+                           </button>
+                         )}
+                      </div>
+                      </>
+                    )}
                  </div>
               </div>
             </div>
@@ -355,14 +517,16 @@ const Advertisements: React.FC = () => {
         </div>
       )}
 
-      <PaginationFooter
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-        currentCount={ads.length}
-      />
+      {!(isSupplier || isAdmin) && (
+        <PaginationFooter
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          currentCount={ads.length}
+        />
+      )}
 
       {/* Delete Confirmation */}
       {canCreateAds && deleteConfirmId && (
@@ -553,21 +717,12 @@ const Advertisements: React.FC = () => {
                   </div>
                 )}
                 {!editingAd && isSupplier && supplierApprovedSubscription && (
-                  <>
-                    <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20">
-                      <p className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الباقة المعتمدة' : 'Approved package'}</p>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
-                        {lang === 'ar' ? (supplierApprovedSubscription.packageNameAr || supplierApprovedSubscription.packageNameEn) : (supplierApprovedSubscription.packageNameEn || supplierApprovedSubscription.packageNameAr)} — {lang === 'ar' ? 'متبقي' : 'remaining'}: {supplierApprovedSubscription.remainingAds ?? 0}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="size-5 rounded-md border-slate-300 text-primary focus:ring-primary" />
-                        <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'عرض الإعلان في الأول' : 'Display ad first'}</span>
-                      </label>
-                      <span className="text-sm font-bold text-primary">+{(adSettings?.featuredPrice ?? 0)} EGP</span>
-                    </div>
-                  </>
+                  <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20">
+                    <p className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الباقة المعتمدة' : 'Approved package'}</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
+                      {lang === 'ar' ? (supplierApprovedSubscription.packageNameAr || supplierApprovedSubscription.packageNameEn) : (supplierApprovedSubscription.packageNameEn || supplierApprovedSubscription.packageNameAr)} — {lang === 'ar' ? 'متبقي' : 'remaining'}: {supplierApprovedSubscription.remainingAds ?? 0}
+                    </p>
+                  </div>
                 )}
 
                 <div className="pt-2">
@@ -603,6 +758,86 @@ const Advertisements: React.FC = () => {
             >
               <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Modal */}
+      {canCreateAds && statsModalOpen && (
+        <div className={`fixed inset-0 z-[400] ${MODAL_OVERLAY_BASE_CLASS}`}>
+          <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-2xl`}>
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <span className="material-symbols-outlined text-2xl">analytics</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">
+                    {lang === 'ar' ? 'إحصائيات المشاهدات' : 'View Statistics'}
+                  </h3>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">
+                    {lang === 'ar' ? 'من شاف الإعلان ومتى' : 'Who viewed and when'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setStatsModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              {loadingStats ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-500 font-black text-sm">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
+                </div>
+              ) : viewStats.length === 0 ? (
+                <div className="text-center py-20">
+                  <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">visibility_off</span>
+                  <p className="text-slate-500 font-black">{lang === 'ar' ? 'لا توجد مشاهدات بعد' : 'No views yet'}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                      {lang === 'ar' ? `إجمالي المشاهدات: ${viewStats.length}` : `Total Views: ${viewStats.length}`}
+                    </p>
+                  </div>
+                  {viewStats.map((stat, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-primary/30 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-sm text-primary">person</span>
+                            <p className="text-sm font-black text-slate-900 dark:text-white truncate">{stat.viewerName}</p>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{stat.viewerEmail}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="material-symbols-outlined text-xs text-slate-400">schedule</span>
+                            <p className="text-xs font-black text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              {new Date(stat.viewedAt).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-500">
+                            {new Date(stat.viewedAt).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
-import { AdPackage, AdSubscription } from '../../types';
+import { AdPackage, AdSubscription, AdSpecialOffer } from '../../types';
 import type { PaymentInfo } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import EmptyState from '../../components/EmptyState';
@@ -24,6 +24,7 @@ const SupplierAdPackages: React.FC = () => {
   const [paymentMethodsTooltipOpen, setPaymentMethodsTooltipOpen] = useState(false);
   const [subscriptionDetailsTooltipOpen, setSubscriptionDetailsTooltipOpen] = useState(false);
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null);
+  const [activeDiscountId, setActiveDiscountId] = useState<string | null>(null);
   const [copiedTransferId, setCopiedTransferId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,11 +32,13 @@ const SupplierAdPackages: React.FC = () => {
     setLoading(true);
     try {
       const [pkgRes, subRes, paymentData] = await Promise.all([
-        api.get<AdPackage[] | { data: AdPackage[] }>('/api/v1/advertisements/packages'),
+        api.get<any>('/api/v1/advertisements/packages'),
         api.get<AdSubscription[] | { data: AdSubscription[] }>('/api/v1/supplier/ad-subscriptions'),
         api.get<PaymentInfo[]>('/api/v1/admin/payment-info').then((d) => (Array.isArray(d) ? d : [])).catch(() => []),
       ]);
-      const pkgList = Array.isArray(pkgRes) ? pkgRes : (pkgRes as { data?: AdPackage[] })?.data ?? [];
+      // Handle nested response structure: content.data or data or direct array
+      const pkgData = pkgRes?.content?.data || pkgRes?.data || pkgRes;
+      const pkgList = Array.isArray(pkgData) ? pkgData : [];
       const subList = Array.isArray(subRes) ? subRes : (subRes as { data?: AdSubscription[] })?.data ?? [];
       setPackages(pkgList);
       setSubscriptions(subList);
@@ -56,6 +59,7 @@ const SupplierAdPackages: React.FC = () => {
       setPaymentMethodsTooltipOpen(false);
       setSubscriptionDetailsTooltipOpen(false);
       setActiveFeatureId(null);
+      setActiveDiscountId(null);
     };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
@@ -84,7 +88,31 @@ const SupplierAdPackages: React.FC = () => {
   const pricePerAd = selectedPackage ? Number((selectedPackage as any).pricePerAd ?? (selectedPackage as any).price ?? 0) : 0;
   const featuredPrice = selectedPackage ? Number((selectedPackage as any).featuredPrice ?? 0) : 0;
   const basePrice = numberOfAds * pricePerAd;
-  const totalPrice = basePrice + (featured ? featuredPrice : 0);
+  
+  // Calculate discount based on special offers
+  const calculateDiscount = (): number => {
+    if (!selectedPackage?.specialOffers || selectedPackage.specialOffers.length === 0) {
+      return 0;
+    }
+    
+    // Find the best applicable offer (highest discount for the given ad count)
+    const applicableOffers = selectedPackage.specialOffers.filter(
+      (offer: AdSpecialOffer) => numberOfAds >= offer.minAdCount
+    );
+    
+    if (applicableOffers.length === 0) {
+      return 0;
+    }
+    
+    const bestOffer = applicableOffers.reduce((best: AdSpecialOffer, current: AdSpecialOffer) => 
+      current.discountPercentage > best.discountPercentage ? current : best
+    );
+    
+    return (basePrice * bestOffer.discountPercentage) / 100;
+  };
+  
+  const discount = calculateDiscount();
+  const totalPrice = basePrice + (featured ? featuredPrice : 0) - discount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,9 +429,60 @@ const SupplierAdPackages: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/20 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 text-[11px] font-black">
-                  <span className="material-symbols-outlined text-base">loyalty</span>
-                  <span>0 {lang === 'ar' ? 'خصومات متاحة' : 'Discounts'}</span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDiscountId(activeDiscountId === p.id ? null : p.id);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${
+                      activeDiscountId === p.id ? 'bg-amber-500 text-white border-amber-500' : 
+                      p.specialOffers && p.specialOffers.length > 0 
+                        ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:border-amber-500' 
+                        : 'bg-white dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700'
+                    }`}
+                    disabled={!p.specialOffers || p.specialOffers.length === 0}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-base">loyalty</span>
+                      <span>{p.specialOffers?.length || 0} {lang === 'ar' ? 'خصومات متاحة' : 'Available Discounts'}</span>
+                    </div>
+                    {(p.specialOffers && p.specialOffers.length > 0) && (
+                      <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeDiscountId === p.id ? 'rotate-180' : ''}`}>expand_more</span>
+                    )}
+                  </button>
+                  {activeDiscountId === p.id && p.specialOffers && p.specialOffers.length > 0 && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className={`absolute bottom-full mb-3 z-[60] w-64 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-amber-500/10 animate-in fade-in zoom-in-95 duration-200 ${lang === 'ar' ? 'right-0' : 'left-0'}`}
+                    >
+                      <div className="space-y-3 max-h-[200px] overflow-y-auto no-scrollbar">
+                        <p className="text-[10px] font-black text-slate-400 pb-2 border-b border-primary/5">{lang === 'ar' ? 'الخصومات المتاحة' : 'Available Discounts'}</p>
+                        {p.specialOffers.map((offer, offerIdx) => (
+                          <div key={offerIdx} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+                            <span className="material-symbols-outlined text-[16px] text-amber-500 mt-0.5">loyalty</span>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold leading-tight">
+                                  {lang === 'ar' ? `من ${offer.minAdCount} إعلان` : `${offer.minAdCount}+ ads`}
+                                </span>
+                                <span className="text-[11px] font-black text-amber-600 dark:text-amber-400">
+                                  {offer.discountPercentage}%
+                                </span>
+                              </div>
+                              {offer.description && (
+                                <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-1">
+                                  {offer.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className={`absolute -bottom-1.5 w-3 h-3 bg-white dark:bg-slate-800 border-r border-b border-amber-500/10 rotate-45 ${lang === 'ar' ? 'right-10' : 'left-10'}`} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -469,8 +548,17 @@ const SupplierAdPackages: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-primary/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'السعر الأساسي' : 'Base Price'}</span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white">{basePrice} EGP</span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white">{basePrice.toLocaleString()} EGP</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-base">loyalty</span>
+                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{lang === 'ar' ? 'الخصم' : 'Discount'}</span>
+                      </div>
+                      <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">-{discount.toLocaleString()} EGP</span>
+                    </div>
+                  )}
                   {featuredPrice > 0 && (
                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-primary/20">
                       <div className="flex items-center gap-2">
@@ -482,7 +570,7 @@ const SupplierAdPackages: React.FC = () => {
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                    <span className="text-xl font-black text-primary">{totalPrice} EGP</span>
+                    <span className="text-xl font-black text-primary">{totalPrice.toLocaleString()} EGP</span>
                   </div>
                 </div>
               </div>

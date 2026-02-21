@@ -318,7 +318,7 @@ const Orders: React.FC = () => {
                           <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
                             <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">inventory_2</span> {order.numberOfLines} {lang === 'ar' ? 'مواد' : 'Items'}</span>
                             <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span>
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {formatDate(order.createdAt)}</span>
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {lang === 'ar' ? 'تاريخ الطلب:' : 'Order Date:'} <span className="font-black text-slate-600 dark:text-slate-300">{formatDate(order.createdAt)}</span></span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -435,7 +435,7 @@ const Orders: React.FC = () => {
                         <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-slate-400">
                           <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">inventory_2</span> {order.numberOfLines} {lang === 'ar' ? 'مواد' : 'Items'}</span>
                           <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span>
-                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">calendar_today</span> {formatDate(order.createdAt)}</span>
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">calendar_today</span> {lang === 'ar' ? 'تاريخ الطلب:' : 'Order Date:'} <span className="font-black text-slate-600 dark:text-slate-300">{formatDate(order.createdAt)}</span></span>
                         </div>
                       </div>
                     </div>

@@ -88,6 +88,22 @@ export interface Advertisement {
   createdAt?: string;
   updatedAt?: string;
   active?: boolean;
+  hidden?: boolean;
+  remainingDays?: number | null;
+  viewCount?: number;
+}
+
+export interface AdvertisementViewStats {
+  viewerId: string;
+  viewerName: string;
+  viewerEmail: string;
+  viewedAt: string;
+}
+
+export interface AdSpecialOffer {
+  minAdCount: number;
+  discountPercentage: number;
+  description?: string;
 }
 
 export interface AdPackage {
@@ -97,6 +113,9 @@ export interface AdPackage {
   numberOfDays: number;
   /** Price per ad (EGP) */
   pricePerAd: number;
+  featuredPrice?: number;
+  /** Special offers based on number of ads (discounts) */
+  specialOffers?: AdSpecialOffer[];
   active: boolean;
   sortOrder?: number;
 }
@@ -110,6 +129,8 @@ export interface AdSubscription {
   id: string;
   supplierId: string;
   supplierName?: string;
+  discount?: number;
+  finalPrice?: number;
   supplierOrganizationName?: string;
   supplierImage?: string;
   adPackageId: string;
@@ -125,6 +146,8 @@ export interface AdSubscription {
   pricePerAd?: number;
   numberOfAds: number;
   totalPrice?: number;
+  discount?: number;
+  finalPrice?: number;
   remainingAds?: number;
 }
 

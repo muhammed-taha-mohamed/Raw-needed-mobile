@@ -114,23 +114,26 @@ const Vendors: React.FC = () => {
   const [catalogSubCategories, setCatalogSubCategories] = useState<SubCategory[]>([]);
   const [showCatalogFilters, setShowCatalogFilters] = useState(false);
   
-  // Manual Order States
+  // Manual Order States - Multiple Orders Support
+  interface ManualOrderItem {
+    id: string; // unique id for each order item
+    name: string;
+    origin: string;
+    quantity: number;
+    unit: string;
+    categoryId: string;
+    subCategoryId: string;
+    subCategories: SubCategory[];
+    categoryExtraFields: CategoryExtraField[];
+    extraFieldValues: Record<string, string>;
+    file: File | null;
+    preview: string | null;
+  }
+
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const [manualFormData, setManualFormData] = useState({
-    name: '',
-    origin: '',
-    quantity: 1,
-    unit: '',
-    categoryId: '',
-    subCategoryId: ''
-  });
-  const [manualSubCategories, setManualSubCategories] = useState<SubCategory[]>([]);
-  const [manualCategoryExtraFields, setManualCategoryExtraFields] = useState<CategoryExtraField[]>([]);
-  const [manualExtraFieldValues, setManualExtraFieldValues] = useState<Record<string, string>>({});
-  const [manualFile, setManualFile] = useState<File | null>(null);
-  const [manualPreview, setManualPreview] = useState<string | null>(null);
+  const [manualOrders, setManualOrders] = useState<ManualOrderItem[]>([]);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
-  const manualFileInputRef = useRef<HTMLInputElement>(null);
+  const manualFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const catalogFilterRef = useRef<HTMLDivElement>(null);
   const hasOpenedFromAdRef = useRef<boolean>(false);
@@ -319,57 +322,75 @@ const Vendors: React.FC = () => {
     hasOpenedFromAdRef.current = false; // Reset when closing
   };
 
-  const handleManualFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const createNewManualOrder = (): ManualOrderItem => ({
+    id: `order-${Date.now()}-${Math.random()}`,
+    name: '',
+    origin: '',
+    quantity: 1,
+    unit: '',
+    categoryId: '',
+    subCategoryId: '',
+    subCategories: [],
+    categoryExtraFields: [],
+    extraFieldValues: {},
+    file: null,
+    preview: null
+  });
+
+  const handleManualFileChange = (orderId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setManualFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => setManualPreview(reader.result as string);
+      reader.onloadend = () => {
+        setManualOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { ...order, file, preview: reader.result as string }
+            : order
+        ));
+      };
       reader.readAsDataURL(file);
     }
   };
 
+  const addManualOrder = () => {
+    setManualOrders(prev => [...prev, createNewManualOrder()]);
+  };
+
+  const removeManualOrder = (orderId: string) => {
+    setManualOrders(prev => prev.filter(order => order.id !== orderId));
+    // Clean up ref
+    delete manualFileInputRefs.current[orderId];
+  };
+
   const openManualModal = () => {
-    setManualFormData({
-      name: '',
-      origin: '',
-      quantity: 1,
-      unit: '',
-      categoryId: '',
-      subCategoryId: ''
-    });
-    setManualSubCategories([]);
-    setManualCategoryExtraFields([]);
-    setManualExtraFieldValues({});
-    setManualFile(null);
-    setManualPreview(null);
+    setManualOrders([createNewManualOrder()]);
     setIsManualModalOpen(true);
   };
 
-  const buildManualExtraFieldValues = () => {
+  const buildManualExtraFieldValues = (extraFields: CategoryExtraField[], extraFieldValues: Record<string, string>) => {
     const values: Record<string, string> = {};
-    if (manualCategoryExtraFields.some(f => f.key === 'dimensions')) {
-      const length = (manualExtraFieldValues.dimensions_length || '').trim();
-      const width = (manualExtraFieldValues.dimensions_width || '').trim();
-      const height = (manualExtraFieldValues.dimensions_height || '').trim();
+    if (extraFields.some(f => f.key === 'dimensions')) {
+      const length = (extraFieldValues.dimensions_length || '').trim();
+      const width = (extraFieldValues.dimensions_width || '').trim();
+      const height = (extraFieldValues.dimensions_height || '').trim();
       if (length) values.dimensions_length = length;
       if (width) values.dimensions_width = width;
       if (height) values.dimensions_height = height;
     }
-    if (manualCategoryExtraFields.some(f => f.key === 'note')) {
-      const note = (manualExtraFieldValues.note || '').trim();
+    if (extraFields.some(f => f.key === 'note')) {
+      const note = (extraFieldValues.note || '').trim();
       if (note) values.note = note;
     }
-    if (manualCategoryExtraFields.some(f => f.key === 'serviceName')) {
-      const v = (manualExtraFieldValues.serviceName || '').trim();
+    if (extraFields.some(f => f.key === 'serviceName')) {
+      const v = (extraFieldValues.serviceName || '').trim();
       if (v) values.serviceName = v;
     }
-    if (manualCategoryExtraFields.some(f => f.key === 'colorCount')) {
-      const v = (manualExtraFieldValues.colorCount || '').trim();
+    if (extraFields.some(f => f.key === 'colorCount')) {
+      const v = (extraFieldValues.colorCount || '').trim();
       if (v) values.colorCount = v;
     }
-    if (manualCategoryExtraFields.some(f => f.key === 'paperSize')) {
-      const v = (manualExtraFieldValues.paperSize || '').trim();
+    if (extraFields.some(f => f.key === 'paperSize')) {
+      const v = (extraFieldValues.paperSize || '').trim();
       if (v) values.paperSize = v;
     }
     return values;
@@ -377,48 +398,51 @@ const Vendors: React.FC = () => {
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!viewingSupplier) return;
+    if (!viewingSupplier || manualOrders.length === 0) return;
     setIsSubmittingManual(true);
     try {
-      let imageUrl = '';
-      if (manualFile) {
-        const formData = new FormData();
-        formData.append('file', manualFile);
-        imageUrl = await api.post<string>('/api/v1/image/upload', formData);
-      }
       const userStr = localStorage.getItem('user');
       const userData = userStr ? JSON.parse(userStr) : null;
       const userId = userData?.userInfo?.id || userData?.id;
 
-      const productName = (manualCategoryExtraFields.some(f => f.key === 'serviceName') && (manualExtraFieldValues.serviceName || '').trim())
-        ? (manualExtraFieldValues.serviceName || '').trim()
-        : manualFormData.name;
-      const payload = {
-        userId,
-        items: [{
+      // Process all orders and upload images
+      const items = await Promise.all(manualOrders.map(async (order) => {
+        let imageUrl = '';
+        if (order.file) {
+          const formData = new FormData();
+          formData.append('file', order.file);
+          imageUrl = await api.post<string>('/api/v1/image/upload', formData);
+        }
+
+        const productName = (order.categoryExtraFields.some(f => f.key === 'serviceName') && (order.extraFieldValues.serviceName || '').trim())
+          ? (order.extraFieldValues.serviceName || '').trim()
+          : order.name;
+
+        return {
           id: null,
           name: productName,
-          origin: manualFormData.origin,
+          origin: order.origin,
           supplierId: viewingSupplier.id,
           supplierName: viewingSupplier.organizationName || viewingSupplier.name,
           inStock: true,
-          quantity: manualFormData.quantity,
-          unit: manualFormData.unit || null,
+          quantity: order.quantity,
+          unit: order.unit || null,
           image: imageUrl || null,
-          categoryId: manualFormData.categoryId || null,
-          subCategoryId: manualFormData.subCategoryId || null,
-          extraFieldValues: buildManualExtraFieldValues()
-        }]
+          categoryId: order.categoryId || null,
+          subCategoryId: order.subCategoryId || null,
+          extraFieldValues: buildManualExtraFieldValues(order.categoryExtraFields, order.extraFieldValues)
+        };
+      }));
+
+      const payload = {
+        userId,
+        items
       };
       await api.post('/api/v1/rfq', payload);
       setToast({ message: t.manualOrder.success, type: 'success' });
       setIsManualModalOpen(false);
-      setManualFormData({ name: '', origin: '', quantity: 1, unit: '', categoryId: '', subCategoryId: '' });
-      setManualSubCategories([]);
-      setManualCategoryExtraFields([]);
-      setManualExtraFieldValues({});
-      setManualPreview(null);
-      setManualFile(null);
+      setManualOrders([]);
+      manualFileInputRefs.current = {};
     } catch (err: any) {
       setToast({ message: err.message || 'Submission failed', type: 'error' });
     } finally { setIsSubmittingManual(false); }
@@ -444,13 +468,21 @@ const Vendors: React.FC = () => {
       setProdSearchCat('');
       setProdSearchSub('');
     }
-    if (manualFormData.categoryId && manualFormData.categoryId !== viewingSupplier.category.id) {
-      setManualFormData(prev => ({ ...prev, categoryId: '', subCategoryId: '' }));
-      setManualSubCategories([]);
-      setManualCategoryExtraFields([]);
-      setManualExtraFieldValues({});
-    }
-  }, [viewingSupplier, prodSearchCat, manualFormData.categoryId]);
+    // Reset manual orders categories if they don't match supplier category
+    setManualOrders(prev => prev.map(order => {
+      if (order.categoryId && order.categoryId !== viewingSupplier.category?.id) {
+        return {
+          ...order,
+          categoryId: '',
+          subCategoryId: '',
+          subCategories: [],
+          categoryExtraFields: [],
+          extraFieldValues: {}
+        };
+      }
+      return order;
+    }));
+  }, [viewingSupplier, prodSearchCat]);
 
   return (
     <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -987,121 +1019,284 @@ const Vendors: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                 <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-5">
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label><input required type="text" value={manualFormData.name} onChange={(e) => setManualFormData({...manualFormData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
-                        <Dropdown
-                          options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
-                          value={manualFormData.categoryId}
-                          onChange={(value) => {
-                            setManualFormData({ ...manualFormData, categoryId: value, subCategoryId: '' });
-                            setManualCategoryExtraFields(value ? (categories.find(c => c.id === value)?.extraFields || []) : []);
-                            setManualExtraFieldValues({});
-                            if (value) {
-                              api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${value}`).then((data) => setManualSubCategories(data || [])).catch(() => setManualSubCategories([]));
-                            } else {
-                              setManualSubCategories([]);
-                            }
-                          }}
-                          placeholder={t.products.selectCategory}
-                          isRtl={lang === 'ar'}
-                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
-                        <Dropdown
-                          options={manualSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
-                          value={manualFormData.subCategoryId}
-                          onChange={(value) => setManualFormData({ ...manualFormData, subCategoryId: value })}
-                          placeholder={t.products.selectSubCategory}
-                          disabled={!manualFormData.categoryId}
-                          isRtl={lang === 'ar'}
-                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                    {manualCategoryExtraFields.length > 0 && (
-                      <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
-                        {manualCategoryExtraFields.some(field => field.key === 'serviceName') && (
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
-                            <input
-                              type="text"
-                              value={manualExtraFieldValues.serviceName || ''}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setManualExtraFieldValues(prev => ({ ...prev, serviceName: val }));
-                                setManualFormData(prev => ({ ...prev, name: val }));
-                              }}
-                              placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
-                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                            />
-                          </div>
-                        )}
-                        {manualCategoryExtraFields.some(field => field.key === 'dimensions') && (
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}</label>
-                            <div className="grid grid-cols-3 gap-2">
-                              <input type="text" value={manualExtraFieldValues.dimensions_length || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))} placeholder={lang === 'ar' ? 'طول' : 'Length'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
-                              <input type="text" value={manualExtraFieldValues.dimensions_width || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))} placeholder={lang === 'ar' ? 'عرض' : 'Width'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
-                              <input type="text" value={manualExtraFieldValues.dimensions_height || ''} onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))} placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'} className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white" />
-                            </div>
-                          </div>
-                        )}
-                        {manualCategoryExtraFields.some(field => field.key === 'note') && (
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
-                            <textarea
-                              value={manualExtraFieldValues.note || ''}
-                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, note: e.target.value }))}
-                              rows={3}
-                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                              placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
-                            />
-                          </div>
-                        )}
-                        {manualCategoryExtraFields.some(field => field.key === 'colorCount') && (
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
-                            <input
-                              type="text"
-                              value={manualExtraFieldValues.colorCount || ''}
-                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))}
-                              placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
-                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                            />
-                          </div>
-                        )}
-                        {manualCategoryExtraFields.some(field => field.key === 'paperSize') && (
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
-                            <input
-                              type="text"
-                              value={manualExtraFieldValues.paperSize || ''}
-                              onChange={(e) => setManualExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))}
-                              placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
-                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label><Dropdown options={getCountryOptions(lang)} value={manualFormData.origin} onChange={(v) => setManualFormData({...manualFormData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start" /></div><div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label><input required type="number" min="1" value={manualFormData.quantity} onChange={(e) => setManualFormData({...manualFormData, quantity: parseInt(e.target.value) || 1})} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white" /></div></div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
-                      <input
-                        required
-                        type="text"
-                        value={manualFormData.unit}
-                        onChange={(e) => setManualFormData({ ...manualFormData, unit: e.target.value })}
-                        placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                      />
-                    </div>
-                    <div className="space-y-1.5"><label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label><div onClick={() => manualFileInputRef.current?.click()} className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${manualPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}>{manualPreview ? <img src={manualPreview} className="size-full object-cover" alt="" /> : <><span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span><span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span></>}</div><input ref={manualFileInputRef} type="file" className="hidden" accept="image/*" onChange={handleManualFileChange} /></div>
+                 <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-6">
+                   {manualOrders.map((order, index) => (
+                     <div key={order.id} className="space-y-5 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                       {/* Order Header */}
+                       <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                         <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">
+                           {lang === 'ar' ? `طلب ${index + 1}` : `Order ${index + 1}`}
+                         </h4>
+                         {manualOrders.length > 1 && (
+                           <button
+                             type="button"
+                             onClick={() => removeManualOrder(order.id)}
+                             className="size-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center active:scale-95"
+                             title={lang === 'ar' ? 'حذف الطلب' : 'Remove Order'}
+                           >
+                             <span className="material-symbols-outlined text-lg">delete</span>
+                           </button>
+                         )}
+                       </div>
+
+                       {/* Product Name */}
+                       <div className="space-y-1.5">
+                         <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label>
+                         <input
+                           required
+                           type="text"
+                           value={order.name}
+                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
+                           className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                         />
+                       </div>
+
+                       {/* Category & SubCategory */}
+                       <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1.5">
+                           <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
+                           <Dropdown
+                             options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                             value={order.categoryId}
+                             onChange={(value) => {
+                               const category = categories.find(c => c.id === value);
+                               setManualOrders(prev => prev.map(o => {
+                                 if (o.id === order.id) {
+                                   if (value) {
+                                     api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${value}`)
+                                       .then((data) => {
+                                         setManualOrders(prevOrders => prevOrders.map(ord => 
+                                           ord.id === order.id ? { ...ord, subCategories: data || [] } : ord
+                                         ));
+                                       })
+                                       .catch(() => {
+                                         setManualOrders(prevOrders => prevOrders.map(ord => 
+                                           ord.id === order.id ? { ...ord, subCategories: [] } : ord
+                                         ));
+                                       });
+                                   }
+                                   return {
+                                     ...o,
+                                     categoryId: value,
+                                     subCategoryId: '',
+                                     categoryExtraFields: category?.extraFields || [],
+                                     extraFieldValues: {}
+                                   };
+                                 }
+                                 return o;
+                               }));
+                             }}
+                             placeholder={t.products.selectCategory}
+                             isRtl={lang === 'ar'}
+                             triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                           />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
+                           <Dropdown
+                             options={order.subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
+                             value={order.subCategoryId}
+                             onChange={(value) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, subCategoryId: value } : o))}
+                             placeholder={t.products.selectSubCategory}
+                             disabled={!order.categoryId}
+                             isRtl={lang === 'ar'}
+                             triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
+                           />
+                         </div>
+                       </div>
+
+                       {/* Extra Fields */}
+                       {order.categoryExtraFields.length > 0 && (
+                         <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
+                           {order.categoryExtraFields.some(field => field.key === 'serviceName') && (
+                             <div className="space-y-1.5">
+                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
+                               <input
+                                 type="text"
+                                 value={order.extraFieldValues.serviceName || ''}
+                                 onChange={(e) => {
+                                   const val = e.target.value;
+                                   setManualOrders(prev => prev.map(o => 
+                                     o.id === order.id 
+                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, serviceName: val }, name: val }
+                                       : o
+                                   ));
+                                 }}
+                                 placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
+                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                               />
+                             </div>
+                           )}
+                           {order.categoryExtraFields.some(field => field.key === 'dimensions') && (
+                             <div className="space-y-2">
+                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}</label>
+                               <div className="grid grid-cols-3 gap-2">
+                                 <input
+                                   type="text"
+                                   value={order.extraFieldValues.dimensions_length || ''}
+                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                     o.id === order.id 
+                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_length: e.target.value } }
+                                       : o
+                                   ))}
+                                   placeholder={lang === 'ar' ? 'طول' : 'Length'}
+                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                 />
+                                 <input
+                                   type="text"
+                                   value={order.extraFieldValues.dimensions_width || ''}
+                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                     o.id === order.id 
+                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_width: e.target.value } }
+                                       : o
+                                   ))}
+                                   placeholder={lang === 'ar' ? 'عرض' : 'Width'}
+                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                 />
+                                 <input
+                                   type="text"
+                                   value={order.extraFieldValues.dimensions_height || ''}
+                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                     o.id === order.id 
+                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_height: e.target.value } }
+                                       : o
+                                   ))}
+                                   placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
+                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                 />
+                               </div>
+                             </div>
+                           )}
+                           {order.categoryExtraFields.some(field => field.key === 'note') && (
+                             <div className="space-y-1.5">
+                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
+                               <textarea
+                                 value={order.extraFieldValues.note || ''}
+                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                   o.id === order.id 
+                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, note: e.target.value } }
+                                     : o
+                                 ))}
+                                 rows={3}
+                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                 placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                               />
+                             </div>
+                           )}
+                           {order.categoryExtraFields.some(field => field.key === 'colorCount') && (
+                             <div className="space-y-1.5">
+                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
+                               <input
+                                 type="text"
+                                 value={order.extraFieldValues.colorCount || ''}
+                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                   o.id === order.id 
+                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, colorCount: e.target.value } }
+                                     : o
+                                 ))}
+                                 placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
+                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                               />
+                             </div>
+                           )}
+                           {order.categoryExtraFields.some(field => field.key === 'paperSize') && (
+                             <div className="space-y-1.5">
+                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
+                               <input
+                                 type="text"
+                                 value={order.extraFieldValues.paperSize || ''}
+                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                   o.id === order.id 
+                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, paperSize: e.target.value } }
+                                     : o
+                                 ))}
+                                 placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
+                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                               />
+                             </div>
+                           )}
+                         </div>
+                       )}
+
+                       {/* Origin & Quantity */}
+                       <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1.5">
+                           <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label>
+                           <Dropdown
+                             options={getCountryOptions(lang)}
+                             value={order.origin}
+                             onChange={(v) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, origin: v } : o))}
+                             placeholder={t.products.originPlaceholder}
+                             isRtl={lang === 'ar'}
+                             searchable
+                             searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
+                             noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
+                             showClear={false}
+                             triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                           />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label>
+                           <input
+                             required
+                             type="number"
+                             min="1"
+                             value={order.quantity}
+                             onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
+                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                           />
+                         </div>
+                       </div>
+
+                       {/* Unit */}
+                       <div className="space-y-1.5">
+                         <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
+                         <input
+                           required
+                           type="text"
+                           value={order.unit}
+                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
+                           placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
+                           className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
+                         />
+                       </div>
+
+                       {/* Image */}
+                       <div className="space-y-1.5">
+                         <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label>
+                         <div
+                           onClick={() => manualFileInputRefs.current[order.id]?.click()}
+                           className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${order.preview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}
+                         >
+                           {order.preview ? (
+                             <img src={order.preview} className="size-full object-cover" alt="" />
+                           ) : (
+                             <>
+                               <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                               <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
+                             </>
+                           )}
+                         </div>
+                         <input
+                           ref={(el) => { manualFileInputRefs.current[order.id] = el; }}
+                           type="file"
+                           className="hidden"
+                           accept="image/*"
+                           onChange={(e) => handleManualFileChange(order.id, e)}
+                         />
+                       </div>
+                     </div>
+                   ))}
+
+                   {/* Add Another Order Button */}
+                   <button
+                     type="button"
+                     onClick={addManualOrder}
+                     className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                   >
+                     <span className="material-symbols-outlined text-lg">add</span>
+                     {lang === 'ar' ? 'إضافة طلب آخر' : 'Add Another Order'}
+                   </button>
                  </form>
               </div>
 

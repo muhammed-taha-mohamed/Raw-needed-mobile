@@ -41,6 +41,19 @@ const AdSlider: React.FC = () => {
 
   const fetchAds = async () => {
     try {
+      // Try dashboard endpoint first (list, not paginated), fallback to paginated endpoint
+      try {
+        const dashboardResponse = await api.get<Advertisement[]>('/api/v1/admin/dashboard/advertisements');
+        const adsList = Array.isArray(dashboardResponse) ? dashboardResponse : (dashboardResponse?.data || []);
+        if (adsList.length > 0) {
+          setAds(adsList);
+          setIsLoading(false);
+          return;
+        }
+      } catch (dashboardErr) {
+        // Fallback to paginated endpoint
+      }
+      
       const response = await api.get<{ content: Advertisement[] }>('/api/v1/advertisements?page=0&size=10');
       setAds(response.content || []);
     } catch (err) {
@@ -50,12 +63,26 @@ const AdSlider: React.FC = () => {
     }
   };
 
-  const handleAdClick = (ad: Advertisement) => {
+  const handleAdClick = async (ad: Advertisement) => {
+    // View is already recorded when ad appears in slider, no need to record again on click
     const supplierId = ad.userId || ad.supplierId;
     if (supplierId) {
       navigate('/vendors', { state: { initialSupplierId: supplierId } });
     }
   };
+
+  // Record view when ad is displayed in slider (only for logged-in customers)
+  useEffect(() => {
+    if (ads.length > 0 && currentIndex < ads.length && userRole.includes('CUSTOMER')) {
+      const currentAd = ads[currentIndex];
+      if (currentAd?.id) {
+        // Record view when ad appears in slider (only once per user per ad)
+        api.post(`/api/v1/advertisements/${currentAd.id}/view`).catch(() => {
+          // Silent fail - view tracking is not critical
+        });
+      }
+    }
+  }, [currentIndex, ads, userRole]);
 
   // Only show ads for customers
   if (!userRole.includes('CUSTOMER')) return null;
@@ -79,7 +106,7 @@ const AdSlider: React.FC = () => {
                 <img 
                   src={ad.image} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                  alt="Advertisement" 
+                  alt="Advertisement"
                 />
                 
                 {supplierId && (
@@ -92,7 +119,7 @@ const AdSlider: React.FC = () => {
                       className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary hover:bg-white text-white hover:text-primary text-[10px] font-black  shadow-2xl border border-white/20 transition-all active:scale-95 group/label"
                     >
                       <span className="size-2 rounded-full bg-white group-hover/label:bg-primary animate-pulse transition-colors"></span>
-                      {lang === 'ar' ? 'عرض الكتالوج' : 'View Catalog'}
+                      {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
                       <span className="material-symbols-outlined text-sm rtl-flip group-hover/label:translate-x-1 rtl:group-hover/label:-translate-x-1 transition-transform">arrow_forward</span>
                     </button>
                   </div>

@@ -116,7 +116,9 @@ const AdvancedReports: React.FC = () => {
 
   const [products, setProducts] = useState<SupplierProductOption[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [productCardReport, setProductCardReport] = useState<ProductCardReport | null>(null);
+  const [allProductCardLines, setAllProductCardLines] = useState<ProductCardReportLine[]>([]);
   const [salesReport, setSalesReport] = useState<SupplierSalesReport | null>(null);
   const [insightsReport, setInsightsReport] = useState<SupplierInsightsReport | null>(null);
 
@@ -231,7 +233,21 @@ const AdvancedReports: React.FC = () => {
     if (!selectedProductId) return;
     setIsLoadingProductCardReport(true);
     try {
-      const data = await api.get<ProductCardReport>(`/api/v1/reports/supplier/product-card?productId=${selectedProductId}`);
+      // تحميل التقرير الأصلي أولاً (بدون فلتر) لحفظ قائمة العملاء
+      if (allProductCardLines.length === 0) {
+        const urlWithoutFilter = `/api/v1/reports/supplier/product-card?productId=${selectedProductId}`;
+        const dataWithoutFilter = await api.get<ProductCardReport>(urlWithoutFilter);
+        if (dataWithoutFilter?.lines) {
+          setAllProductCardLines(dataWithoutFilter.lines);
+        }
+      }
+      
+      // تحميل التقرير مع الفلتر إذا كان موجوداً
+      let url = `/api/v1/reports/supplier/product-card?productId=${selectedProductId}`;
+      if (selectedCustomerId) {
+        url += `&customerId=${selectedCustomerId}`;
+      }
+      const data = await api.get<ProductCardReport>(url);
       setProductCardReport(data || null);
     } finally {
       setIsLoadingProductCardReport(false);
@@ -267,6 +283,20 @@ const AdvancedReports: React.FC = () => {
       setIsLoadingInsightsReport(false);
     }
   };
+
+  useEffect(() => {
+    // Reset customer filter when product changes
+    setSelectedCustomerId('');
+    setAllProductCardLines([]);
+  }, [selectedProductId]);
+
+  useEffect(() => {
+    // Reload report when customer filter changes (if report is already loaded)
+    if (selectedProductId && productCardReport && !isLoadingProductCardReport) {
+      void loadProductCardReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomerId]);
 
   const onSelectReport = (type: ReportType) => {
     setSelectedReport(type);
@@ -925,7 +955,42 @@ const AdvancedReports: React.FC = () => {
 
               <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
-                  <p className="text-xs md:text-sm font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'تفاصيل كل الطلبات على الصنف' : 'Detailed Requests for Product'}</p>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <p className="text-xs md:text-sm font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'تفاصيل كل الطلبات على الصنف' : 'Detailed Requests for Product'}</p>
+                    {productCardReport && (allProductCardLines.length > 0 || productCardReport.lines.length > 0) && (
+                      <div className="w-full md:w-auto md:min-w-[280px]">
+                        <Dropdown
+                          label={lang === 'ar' ? 'فلتر بالعميل (اختياري)' : 'Filter by Customer (Optional)'}
+                          options={[
+                            { value: '', label: lang === 'ar' ? 'جميع العملاء' : 'All Customers' },
+                            ...Array.from(new Map(
+                              (allProductCardLines.length > 0 ? allProductCardLines : productCardReport.lines)
+                                .filter(line => line.customerOwnerId)
+                                .map(line => [
+                                  line.customerOwnerId!,
+                                  {
+                                    value: line.customerOwnerId!,
+                                    label: line.customerOrganizationName || line.customerName || line.customerOwnerId || '-'
+                                  }
+                                ])
+                            ).values())
+                          ]}
+                          value={selectedCustomerId}
+                          onChange={(val) => {
+                            setSelectedCustomerId(val);
+                          }}
+                          placeholder={lang === 'ar' ? 'اختر عميلاً' : 'Select customer'}
+                          searchable
+                          searchPlaceholder={lang === 'ar' ? 'ابحث باسم العميل...' : 'Search by customer name...'}
+                          noResultsText={lang === 'ar' ? 'لا يوجد نتائج' : 'No matching customers'}
+                          showClear
+                          isRtl={lang === 'ar'}
+                          wrapperClassName="space-y-1.5"
+                          triggerClassName="w-full min-h-[38px] flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-9 rtl:pl-9 rtl:pr-3 py-2 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full min-w-[720px]">

@@ -37,6 +37,7 @@ interface RFQOffer {
   status: 'PENDING' | 'RESPONDED' | 'REJECTED' | 'APPROVED' | 'COMPLETED';
   supplierResponse: SupplierResponse | null;
   specialOfferId?: string; // Flag to indicate if order line is from special offer
+  createdAt?: string; // Order creation date
 }
 
 interface PaginatedOffers {
@@ -204,6 +205,11 @@ const SupplierOrders: React.FC = () => {
     return configs[status] || configs.PENDING;
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
       setCurrentPage(newPage);
@@ -348,8 +354,12 @@ const SupplierOrders: React.FC = () => {
                             <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">corporate_fare</span> {offer.customerOrganizationName}</span>
                             <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                             <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">numbers</span> {offer.quantity} {offer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</span>
-                            <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                            <span className="flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                            {offer.createdAt && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                                <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {lang === 'ar' ? 'تاريخ الطلب:' : 'Order Date:'} <span className="font-black text-slate-600 dark:text-slate-300">{formatDate(offer.createdAt)}</span></span>
+                              </>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -509,8 +519,12 @@ const SupplierOrders: React.FC = () => {
                           <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">corporate_fare</span> {offer.customerOrganizationName}</span>
                           <span className="w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
                           <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">numbers</span> {offer.quantity} {offer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</span>
-                          <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
-                          <span className="hidden sm:inline flex items-center gap-1 tracking-tighter">Ref: {offer.id.slice(-8).toUpperCase()}</span>
+                          {offer.createdAt && (
+                            <>
+                              <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-200 dark:border-slate-700"></span>
+                              <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[15px]">calendar_today</span> {lang === 'ar' ? 'تاريخ الطلب:' : 'Order Date:'} <span className="font-black text-slate-600 dark:text-slate-300">{formatDate(offer.createdAt)}</span></span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -851,7 +865,6 @@ const SupplierOrders: React.FC = () => {
             <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'تفاصيل الطلب' : 'Order details'}</h3>
-                <p className="text-[11px] font-bold text-slate-400">Ref: {detailsOffer.id.slice(-8).toUpperCase()}</p>
               </div>
               <button onClick={() => setDetailsOffer(null)} className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center">
                 <span className="material-symbols-outlined">close</span>
@@ -863,6 +876,9 @@ const SupplierOrders: React.FC = () => {
                 <p className="text-sm font-black text-slate-800 dark:text-white">{detailsOffer.productName}</p>
                 <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'العميل:' : 'Customer:'} {detailsOffer.customerOrganizationName || '-'}</p>
                 <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'الكمية:' : 'Quantity:'} {detailsOffer.quantity} {detailsOffer.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</p>
+                {detailsOffer.createdAt && (
+                  <p className="text-xs font-bold text-slate-500">{lang === 'ar' ? 'تاريخ الطلب:' : 'Order Date:'} <span className="font-black text-slate-700 dark:text-slate-200">{formatDate(detailsOffer.createdAt)}</span></p>
+                )}
                 <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'رقم الطلب:' : 'Order ID:'} {detailsOffer.orderId}</p>
                 <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'الفئة:' : 'Category ID:'} {detailsOffer.categoryId || '-'}</p>
                 <p className="text-xs font-bold text-slate-500 break-all">{lang === 'ar' ? 'الفئة الفرعية:' : 'Subcategory ID:'} {detailsOffer.subCategoryId || '-'}</p>

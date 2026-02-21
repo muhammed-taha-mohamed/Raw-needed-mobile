@@ -41,13 +41,22 @@ const MarketRequests: React.FC = () => {
   const [userRole, setUserRole] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
-  const [newPostForm, setNewPostForm] = useState({
-    materialName: '',
-    quantity: '',
-    unit: '',
-    targetType: 'SUPPLIERS' as 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH',
-    image: '',
-  });
+  
+  // Market Post Item Interface - Multiple Orders Support
+  interface MarketPostItem {
+    id: string; // unique id for each post item
+    materialName: string;
+    quantity: string;
+    unit: string;
+    targetType: 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH';
+    image: string;
+    file: File | null;
+    preview: string | null;
+  }
+
+  const [marketPosts, setMarketPosts] = useState<MarketPostItem[]>([]);
+  const marketFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  
   const [hasPrivateOrdersFeature, setHasPrivateOrdersFeature] = useState<boolean | null>(null);
   const pageSize = 10;
 
@@ -91,32 +100,85 @@ const MarketRequests: React.FC = () => {
     } catch (err) {} finally { setIsLoading(false); }
   };
 
+  const createNewMarketPost = (): MarketPostItem => ({
+    id: `post-${Date.now()}-${Math.random()}`,
+    materialName: '',
+    quantity: '',
+    unit: '',
+    targetType: 'SUPPLIERS',
+    image: '',
+    file: null,
+    preview: null
+  });
+
+  const addMarketPost = () => {
+    setMarketPosts(prev => [...prev, createNewMarketPost()]);
+  };
+
+  const removeMarketPost = (postId: string) => {
+    setMarketPosts(prev => prev.filter(post => post.id !== postId));
+    // Clean up ref
+    delete marketFileInputRefs.current[postId];
+  };
+
+  const handleMarketFileChange = (postId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMarketPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, file, preview: reader.result as string }
+            : post
+        ));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const resetCreatePostForm = () => {
-    setNewPostForm({
-      materialName: '',
-      quantity: '',
-      unit: '',
-      targetType: 'SUPPLIERS',
-      image: '',
-    });
+    setMarketPosts([createNewMarketPost()]);
+    marketFileInputRefs.current = {};
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPostForm.materialName.trim() || !newPostForm.unit.trim() || Number(newPostForm.quantity) <= 0) {
-      showToast(lang === 'ar' ? 'يرجى إدخال بيانات صحيحة للطلب' : 'Please fill valid request details', 'warning');
+    
+    // Validate all posts
+    const invalidPosts = marketPosts.filter(post => 
+      !post.materialName.trim() || !post.unit.trim() || Number(post.quantity) <= 0
+    );
+    
+    if (invalidPosts.length > 0) {
+      showToast(lang === 'ar' ? 'يرجى إدخال بيانات صحيحة لجميع الطلبات' : 'Please fill valid details for all requests', 'warning');
       return;
     }
 
     setIsSubmittingPost(true);
     try {
-      await api.post('/api/v1/clients-special-orders', {
-        materialName: newPostForm.materialName.trim(),
-        quantity: Number(newPostForm.quantity),
-        unit: newPostForm.unit.trim(),
-        targetType: newPostForm.targetType,
-        image: newPostForm.image.trim() || null,
-      });
+      // Process all posts and upload images
+      const postsData = await Promise.all(marketPosts.map(async (post) => {
+        let imageUrl = '';
+        if (post.file) {
+          const formData = new FormData();
+          formData.append('file', post.file);
+          imageUrl = await api.post<string>('/api/v1/image/upload', formData);
+        }
+
+        return {
+          materialName: post.materialName.trim(),
+          quantity: Number(post.quantity),
+          unit: post.unit.trim(),
+          targetType: post.targetType,
+          image: imageUrl || post.image.trim() || null,
+        };
+      }));
+
+      // Send all posts sequentially
+      for (const postData of postsData) {
+        await api.post('/api/v1/clients-special-orders', postData);
+      }
+
       showToast(t.marketRequests.postSuccess, 'success');
       setIsCreateModalOpen(false);
       resetCreatePostForm();
@@ -222,6 +284,7 @@ const MarketRequests: React.FC = () => {
             <button
               onClick={() => {
                 setActiveTab('create');
+                setMarketPosts([createNewMarketPost()]);
                 setIsCreateModalOpen(true);
               }}
               className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all ${activeTab === 'create' ? 'bg-white dark:bg-slate-900 text-primary shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
@@ -311,11 +374,11 @@ const MarketRequests: React.FC = () => {
       )}
 
       {isCreateModalOpen && (
-        <div className={`fixed inset-0 z-[500] ${MODAL_OVERLAY_BASE_CLASS}`} onClick={() => { setIsCreateModalOpen(false); if (activeTab === 'create') setActiveTab('all'); }}>
+        <div className={`fixed inset-0 z-[500] ${MODAL_OVERLAY_BASE_CLASS}`} onClick={() => { setIsCreateModalOpen(false); resetCreatePostForm(); if (activeTab === 'create') setActiveTab('all'); }}>
           <div className={`${MODAL_PANEL_BASE_CLASS} md:max-w-lg`} onClick={(e) => e.stopPropagation()}>
             <div
               className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing"
-              onTouchStart={(e) => handleMobileSheetDrag(e, () => { setIsCreateModalOpen(false); if (activeTab === 'create') setActiveTab('all'); })}
+              onTouchStart={(e) => handleMobileSheetDrag(e, () => { setIsCreateModalOpen(false); resetCreatePostForm(); if (activeTab === 'create') setActiveTab('all'); })}
             >
               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
             </div>
@@ -331,71 +394,130 @@ const MarketRequests: React.FC = () => {
                   <p className="text-[10px] font-black text-slate-400 mt-2">{lang === 'ar' ? 'إنشاء طلب خامة جديد' : 'Create a new material request'}</p>
                 </div>
               </div>
-              <button onClick={() => { setIsCreateModalOpen(false); if (activeTab === 'create') setActiveTab('all'); }} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
+              <button onClick={() => { setIsCreateModalOpen(false); resetCreatePostForm(); if (activeTab === 'create') setActiveTab('all'); }} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-              <form id="createPostForm" onSubmit={handleCreatePost} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.materialName}</label>
-                  <input
-                    required
-                    type="text"
-                    value={newPostForm.materialName}
-                    onChange={(e) => setNewPostForm((prev) => ({ ...prev, materialName: e.target.value }))}
-                    className={MODAL_INPUT_CLASS}
-                    placeholder={t.marketRequests.materialName}
-                  />
-                </div>
+              <form id="createPostForm" onSubmit={handleCreatePost} className="space-y-6">
+                {marketPosts.map((post, index) => (
+                  <div key={post.id} className="space-y-5 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                    {/* Post Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                      <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">
+                        {lang === 'ar' ? `طلب ${index + 1}` : `Request ${index + 1}`}
+                      </h4>
+                      {marketPosts.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeMarketPost(post.id)}
+                          className="size-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center active:scale-95"
+                          title={lang === 'ar' ? 'حذف الطلب' : 'Remove Request'}
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.quantity}</label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      step="0.01"
-                      value={newPostForm.quantity}
-                      onChange={(e) => setNewPostForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                      className={MODAL_INPUT_CLASS}
-                      placeholder="1"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.unit}</label>
-                    <input
-                      required
-                      type="text"
-                      value={newPostForm.unit}
-                      onChange={(e) => setNewPostForm((prev) => ({ ...prev, unit: e.target.value }))}
-                      className={MODAL_INPUT_CLASS}
-                      placeholder={lang === 'ar' ? 'مثال: كجم' : 'e.g. KG'}
-                    />
-                  </div>
-                </div>
+                    {/* Material Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.materialName}</label>
+                      <input
+                        required
+                        type="text"
+                        value={post.materialName}
+                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, materialName: e.target.value } : p))}
+                        className={MODAL_INPUT_CLASS}
+                        placeholder={t.marketRequests.materialName}
+                      />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.target}</label>
-                  <select
-                    value={newPostForm.targetType}
-                    onChange={(e) => setNewPostForm((prev) => ({ ...prev, targetType: e.target.value as 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH' }))}
-                    className={MODAL_DROPDOWN_TRIGGER_CLASS}
-                  >
-                    <option value="SUPPLIERS">{t.marketRequests.suppliersOnly}</option>
-                    <option value="CUSTOMERS">{t.marketRequests.customersOnly}</option>
-                    <option value="BOTH">{t.marketRequests.both}</option>
-                  </select>
-                </div>
+                    {/* Quantity & Unit */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.quantity}</label>
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          value={post.quantity}
+                          onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, quantity: e.target.value } : p))}
+                          className={MODAL_INPUT_CLASS}
+                          placeholder="1"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.unit}</label>
+                        <input
+                          required
+                          type="text"
+                          value={post.unit}
+                          onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, unit: e.target.value } : p))}
+                          className={MODAL_INPUT_CLASS}
+                          placeholder={lang === 'ar' ? 'مثال: كجم' : 'e.g. KG'}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Target Type */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.target}</label>
+                      <select
+                        value={post.targetType}
+                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: e.target.value as 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH' } : p))}
+                        className={MODAL_DROPDOWN_TRIGGER_CLASS}
+                      >
+                        <option value="SUPPLIERS">{t.marketRequests.suppliersOnly}</option>
+                        <option value="CUSTOMERS">{t.marketRequests.customersOnly}</option>
+                        <option value="BOTH">{t.marketRequests.both}</option>
+                      </select>
+                    </div>
+
+                    {/* Image Upload */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'صورة المنتج (اختياري)' : 'Product Image (Optional)'}</label>
+                      <div
+                        onClick={() => marketFileInputRefs.current[post.id]?.click()}
+                        className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${post.preview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}
+                      >
+                        {post.preview ? (
+                          <img src={post.preview} className="size-full object-cover" alt="" />
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                            <span className="text-[9px] font-black text-slate-400">{lang === 'ar' ? 'اضغط للرفع' : 'Click to upload'}</span>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        ref={(el) => { marketFileInputRefs.current[post.id] = el; }}
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleMarketFileChange(post.id, e)}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add Another Post Button */}
+                <button
+                  type="button"
+                  onClick={addMarketPost}
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  {lang === 'ar' ? 'إضافة طلب آخر' : 'Add Another Request'}
+                </button>
               </form>
             </div>
 
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">
               <button
                 type="button"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => { setIsCreateModalOpen(false); resetCreatePostForm(); if (activeTab === 'create') setActiveTab('all'); }}
                 className="flex-1 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
               >
                 {lang === 'ar' ? 'إلغاء' : 'Cancel'}
