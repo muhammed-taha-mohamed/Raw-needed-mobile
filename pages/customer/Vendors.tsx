@@ -299,6 +299,12 @@ const Vendors: React.FC = () => {
     setLocalQtys(prev => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
 
+  const handleQtyChange = (productId: string, value: string) => {
+    const numValue = parseInt(value) || 1;
+    const validQty = Math.max(1, numValue);
+    setLocalQtys(prev => ({ ...prev, [productId]: validQty }));
+  };
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
       setCurrentPage(newPage);
@@ -966,9 +972,64 @@ const Vendors: React.FC = () => {
                                      <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black">{p.unit}</span> : <span className="text-[9px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
                                      <div className="flex items-center gap-2">
                                         {isInCart ? (
-                                          <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20"><button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">remove</span></button><span className="px-2 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{cartQty}</span><button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30"><span className="material-symbols-outlined text-xs">add</span></button></div>
+                                          <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20">
+                                            <button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
+                                              <span className="material-symbols-outlined text-xs">remove</span>
+                                            </button>
+                                            <div className="flex items-center gap-1 px-1">
+                                              <input
+                                                type="number"
+                                                min="1"
+                                                value={cartQty}
+                                                onChange={(e) => {
+                                                  const val = parseInt(e.target.value) || 1;
+                                                  handleAddToCart(p.id, Math.max(1, val));
+                                                }}
+                                                onBlur={(e) => {
+                                                  const val = parseInt(e.target.value) || 1;
+                                                  handleAddToCart(p.id, Math.max(1, val));
+                                                }}
+                                                disabled={processingId === p.id}
+                                                className="w-10 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-center bg-transparent border-none outline-none focus:ring-0 disabled:opacity-30"
+                                              />
+                                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                                                {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                              </span>
+                                            </div>
+                                            <button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
+                                              <span className="material-symbols-outlined text-xs">add</span>
+                                            </button>
+                                          </div>
                                         ) : (
-                                          <div className="flex items-center gap-2"><div className="flex items-center bg-slate-50 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-100 dark:border-slate-700"><button onClick={() => updateLocalQty(p.id, -1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center"><span className="material-symbols-outlined text-xs">remove</span></button><span className="px-2 text-[12px] font-black text-slate-800 dark:text-white tabular-nums">{localQtys[p.id] || 1}</span><button onClick={() => updateLocalQty(p.id, 1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center"><span className="material-symbols-outlined text-xs">add</span></button></div><button onClick={() => handleAddToCart(p.id)} disabled={processingId === p.id || !p.inStock} className="size-8 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95 flex items-center justify-center disabled:grayscale disabled:opacity-50"><span className="material-symbols-outlined text-base">add_shopping_cart</span></button></div>
+                                          <div className="flex items-center gap-2">
+                                            <div className="flex items-center bg-slate-50 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-100 dark:border-slate-700">
+                                              <button onClick={() => updateLocalQty(p.id, -1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-xs">remove</span>
+                                              </button>
+                                              <div className="flex items-center gap-1 px-1">
+                                                <input
+                                                  type="number"
+                                                  min="1"
+                                                  value={localQtys[p.id] || 1}
+                                                  onChange={(e) => handleQtyChange(p.id, e.target.value)}
+                                                  onBlur={(e) => {
+                                                    const val = parseInt(e.target.value) || 1;
+                                                    handleQtyChange(p.id, Math.max(1, val).toString());
+                                                  }}
+                                                  className="w-10 text-[12px] font-black text-slate-800 dark:text-white tabular-nums text-center bg-transparent border-none outline-none focus:ring-0"
+                                                />
+                                                <span className="text-[10px] font-black text-slate-800 dark:text-white">
+                                                  {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                                </span>
+                                              </div>
+                                              <button onClick={() => updateLocalQty(p.id, 1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-xs">add</span>
+                                              </button>
+                                            </div>
+                                            <button onClick={() => handleAddToCart(p.id)} disabled={processingId === p.id || !p.inStock} className="size-8 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95 flex items-center justify-center disabled:grayscale disabled:opacity-50">
+                                              <span className="material-symbols-outlined text-base">add_shopping_cart</span>
+                                            </button>
+                                          </div>
                                         )}
                                      </div>
                                   </div>

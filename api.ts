@@ -22,6 +22,13 @@ export const setToastService = (service: (message: string, type?: 'error' | 'suc
   toastService = service;
 };
 
+// Session expired callback
+let sessionExpiredCallback: (() => void) | null = null;
+
+export const setSessionExpiredCallback = (callback: () => void) => {
+  sessionExpiredCallback = callback;
+};
+
 // Track pending requests to prevent duplicate calls
 const pendingRequests = new Map<string, Promise<any>>();
 
@@ -115,6 +122,16 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
       if (!response.ok || data.error) {
         const errorMsg = data.error?.errorMessage || `Server error (${response.status}): ${response.statusText}`;
         const errorCode = data.error?.errorCode;
+
+        // Handle access denied / unauthorized (401) - show session expired modal
+        if (response.status === 401 || (errorMsg && (errorMsg.includes('Access Denied') || errorMsg.includes('Unauthorized')))) {
+          if (sessionExpiredCallback) {
+            sessionExpiredCallback();
+          }
+          const err = new Error(errorMsg) as Error & { errorCode?: string };
+          if (errorCode) err.errorCode = errorCode;
+          throw err;
+        }
 
         // Check cooldown before showing error toast (skip for 518 - no searches, 513 - existing session - so UI can handle)
         const lastErrorTime = recentErrors.get(requestKey) || 0;

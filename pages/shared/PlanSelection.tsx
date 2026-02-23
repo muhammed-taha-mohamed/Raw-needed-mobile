@@ -6,6 +6,7 @@ import { Plan, BillingFrequency, UserSubscription, PlanType, CalculatePriceRespo
 import { api } from '../../api';
 import { getPlanFeatureLabel } from '../../constants';
 import { clearSubscriptionCache } from '../../utils/subscription';
+import EmptyState from '../../components/EmptyState';
 
 type CheckoutStep = 'calculate' | 'upload' | 'success';
 
@@ -698,8 +699,16 @@ const PlanSelection: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 items-stretch pb-6 overflow-visible min-w-0">
-        {plans.map((plan, idx) => {
+      {plans.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-8 md:p-12">
+          <EmptyState 
+            title={lang === 'ar' ? 'لا توجد خطط متاحة حالياً' : 'No plans available at the moment'}
+            subtitle={lang === 'ar' ? 'يرجى المحاولة لاحقاً أو التواصل مع الدعم' : 'Please try again later or contact support'}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 items-stretch pb-6 overflow-visible min-w-0">
+          {plans.map((plan, idx) => {
           const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
           return (
             <div
@@ -879,7 +888,8 @@ const PlanSelection: React.FC = () => {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {isModalOpen && selectedPlan && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">

@@ -35,9 +35,10 @@ import Complaints from './pages/shared/Complaints';
 import { Language, translations } from './translations';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import Toast from './components/Toast';
-import { setToastService } from './api';
+import { setToastService, setSessionExpiredCallback } from './api';
 import { clearSubscriptionCache } from './utils/subscription';
 import { api } from './api';
+import SessionExpiredModal from './components/SessionExpiredModal';
 
 interface UserData {
   token: string;
@@ -102,10 +103,19 @@ const AppContent: React.FC = () => {
     return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
 
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
   // Connect toast service to API
   useEffect(() => {
     setToastService(showToast);
   }, [showToast]);
+
+  // Connect session expired callback to API
+  useEffect(() => {
+    setSessionExpiredCallback(() => {
+      setShowSessionExpiredModal(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -158,6 +168,13 @@ const AppContent: React.FC = () => {
     localStorage.removeItem('user');
     clearSubscriptionCache();
     setUser(null);
+    setShowSessionExpiredModal(false);
+  };
+
+  const handleSessionExpiredClose = () => {
+    handleLogout();
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   const t = translations[lang];
@@ -311,6 +328,11 @@ const AppContent: React.FC = () => {
   return (
     <AppContext.Provider value={{ lang, setLang, t, isDarkMode, toggleDarkMode }}>
       <Toast />
+      <SessionExpiredModal 
+        isOpen={showSessionExpiredModal} 
+        onClose={handleSessionExpiredClose}
+        lang={lang}
+      />
       <Routes>
         <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
         <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />

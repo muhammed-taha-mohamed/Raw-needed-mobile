@@ -397,6 +397,12 @@ const ProductSearch: React.FC = () => {
     setLocalQtys(prev => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
 
+  const handleQtyChange = (productId: string, value: string) => {
+    const numValue = parseInt(value) || 1;
+    const validQty = Math.max(1, numValue);
+    setLocalQtys(prev => ({ ...prev, [productId]: validQty }));
+  };
+
   const resetFilters = () => {
     setSelectedCat('');
     setSelectedSub('');
@@ -592,10 +598,11 @@ const ProductSearch: React.FC = () => {
             <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
             <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
           </div>
-          <div className="min-w-[180px] flex-1 space-y-1">
+          {/* Temporarily hidden country filter */}
+          {/* <div className="min-w-[180px] flex-1 space-y-1">
             <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.origin}</label>
             <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
-          </div>
+          </div> */}
           <button type="button" onClick={resetFilters} className="text-[10px] font-black text-primary hover:underline shrink-0 self-end pb-2.5">{t.products.clearAll}</button>
           <button type="button" onClick={openManualModal} className="shrink-0 self-end pb-2.5 min-h-[42px] px-5 rounded-xl bg-primary text-white font-black text-[12px] shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2">
             <span className="material-symbols-outlined text-lg">edit_document</span>
@@ -886,7 +893,26 @@ const ProductSearch: React.FC = () => {
                                       >
                                          <span className="material-symbols-outlined text-sm">remove</span>
                                       </button>
-                                      <span className="px-3 text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{cartQty}</span>
+                                      <div className="flex items-center gap-1 px-2">
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={cartQty}
+                                          onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 1;
+                                            handleAddToCart(product.id, Math.max(1, val));
+                                          }}
+                                          onBlur={(e) => {
+                                            const val = parseInt(e.target.value) || 1;
+                                            handleAddToCart(product.id, Math.max(1, val));
+                                          }}
+                                          disabled={processingId === product.id}
+                                          className="w-12 text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-center bg-transparent border-none outline-none focus:ring-0 disabled:opacity-30"
+                                        />
+                                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                                          {product.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                        </span>
+                                      </div>
                                       <button 
                                         onClick={() => handleAddToCart(product.id, cartItems[product.id] + 1)}
                                         disabled={processingId === product.id}
@@ -904,9 +930,22 @@ const ProductSearch: React.FC = () => {
                                         >
                                            <span className="material-symbols-outlined text-sm">remove</span>
                                         </button>
-                                        <span className="px-3 text-sm font-black text-slate-800 dark:text-white tabular-nums">
-                                          {localQtys[product.id] || 1}
-                                        </span>
+                                        <div className="flex items-center gap-1 px-2">
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            value={localQtys[product.id] || 1}
+                                            onChange={(e) => handleQtyChange(product.id, e.target.value)}
+                                            onBlur={(e) => {
+                                              const val = parseInt(e.target.value) || 1;
+                                              handleQtyChange(product.id, Math.max(1, val).toString());
+                                            }}
+                                            className="w-12 text-sm font-black text-slate-800 dark:text-white tabular-nums text-center bg-transparent border-none outline-none focus:ring-0"
+                                          />
+                                          <span className="text-sm font-black text-slate-800 dark:text-white">
+                                            {product.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                          </span>
+                                        </div>
                                         <button 
                                           onClick={() => updateLocalQty(product.id, 1)}
                                           className="size-7 rounded-lg bg-white dark:bg-slate-700 text-slate-500 hover:text-primary transition-all flex items-center justify-center shadow-sm"
@@ -988,10 +1027,11 @@ const ProductSearch: React.FC = () => {
                       <Dropdown label={lang === 'ar' ? 'المورد' : 'Supplier'} options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* Temporarily hidden country filter */}
+                  {/* <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
                       <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mt-6 space-y-1.5">

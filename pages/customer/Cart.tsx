@@ -106,6 +106,12 @@ const Cart: React.FC = () => {
     }
   };
 
+  const handleQtyInputChange = (productId: string, value: string) => {
+    const numValue = parseInt(value) || 1;
+    const validQty = Math.max(1, numValue);
+    updateQty(productId, validQty);
+  };
+
   const handleFinalizeRFQ = async () => {
     if (!cart || cart.items.length === 0) return;
     setIsSubmittingOrder(true);
@@ -342,9 +348,18 @@ const Cart: React.FC = () => {
                       >
                          <span className="material-symbols-outlined text-base">add</span>
                       </button>
-                      <span className="w-8 text-center text-xs md:text-sm font-black text-slate-900 dark:text-white tabular-nums">
-                        {item.quantity}
-                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => handleQtyInputChange(item.id, e.target.value)}
+                        onBlur={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          handleQtyInputChange(item.id, Math.max(1, val).toString());
+                        }}
+                        disabled={isProcessing === item.id}
+                        className="w-12 md:w-14 text-center text-xs md:text-sm font-black text-slate-900 dark:text-white tabular-nums bg-transparent border-none outline-none focus:ring-0 disabled:opacity-50"
+                      />
                       <button 
                         disabled={isProcessing === item.id} 
                         onClick={() => updateQty(item.id, item.quantity - 1)} 

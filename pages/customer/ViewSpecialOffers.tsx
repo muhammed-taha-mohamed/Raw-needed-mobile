@@ -33,6 +33,7 @@ const ViewSpecialOffers: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 10;
+  const [localQtys, setLocalQtys] = useState<Record<string, number>>({});
 
   useEffect(() => {
     checkFeature();
@@ -66,6 +67,20 @@ const ViewSpecialOffers: React.FC = () => {
     }
   };
 
+  const updateLocalQty = (offerId: string, delta: number) => {
+    setLocalQtys(prev => {
+      const current = prev[offerId] || 1;
+      const newQty = Math.max(1, current + delta);
+      return { ...prev, [offerId]: newQty };
+    });
+  };
+
+  const handleQtyChange = (offerId: string, value: string) => {
+    const numValue = parseInt(value) || 1;
+    const validQty = Math.max(1, numValue);
+    setLocalQtys(prev => ({ ...prev, [offerId]: validQty }));
+  };
+
   const handleAddToCart = async (offer: SpecialOffer) => {
     try {
       const userStr = localStorage.getItem('user');
@@ -76,8 +91,9 @@ const ViewSpecialOffers: React.FC = () => {
         return;
       }
 
+      const quantity = localQtys[offer.id] || 1;
       // Add product to cart with special offer flag
-      await api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${offer.productId}&quantity=1&specialOfferId=${offer.id}`, {});
+      await api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${offer.productId}&quantity=${quantity}&specialOfferId=${offer.id}`, {});
       showToast(lang === 'ar' ? 'تم إضافة المنتج للعربة' : 'Product added to cart', 'success');
     } catch (err: any) {
       showToast(err.message || (lang === 'ar' ? 'فشل في إضافة المنتج' : 'Failed to add product'), 'error');
@@ -94,6 +110,7 @@ const ViewSpecialOffers: React.FC = () => {
         return;
       }
 
+      const quantity = localQtys[offer.id] || 1;
       // Create order directly with special offer
       const payload = {
         userId: userId,
@@ -104,7 +121,7 @@ const ViewSpecialOffers: React.FC = () => {
           supplierId: offer.supplierId,
           supplierName: offer.supplierName,
           inStock: true,
-          quantity: 1,
+          quantity: quantity,
           image: offer.productImage,
           specialOfferId: offer.id // Flag for special offer
         }],
@@ -185,21 +202,55 @@ const ViewSpecialOffers: React.FC = () => {
                   <span>{new Date(offer.endDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleAddToCart(offer)}
-                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-black text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-sm">shopping_cart</span>
-                  {lang === 'ar' ? 'عربة' : 'Cart'}
-                </button>
-                <button
-                  onClick={() => handleCreateOrder(offer)}
-                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-black text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-sm">receipt_long</span>
-                  {lang === 'ar' ? 'طلب' : 'Order'}
-                </button>
+              <div className="space-y-2">
+                {/* Quantity Selector */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-black text-slate-500 px-1 shrink-0">
+                    {lang === 'ar' ? 'الكمية' : 'Quantity'}
+                  </label>
+                  <div className="flex items-center bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-100 dark:border-slate-700 flex-1">
+                    <button 
+                      onClick={() => updateLocalQty(offer.id, -1)}
+                      className="size-7 rounded-lg bg-white dark:bg-slate-700 text-slate-500 hover:text-primary transition-all flex items-center justify-center shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-sm">remove</span>
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={localQtys[offer.id] || 1}
+                      onChange={(e) => handleQtyChange(offer.id, e.target.value)}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        handleQtyChange(offer.id, Math.max(1, val).toString());
+                      }}
+                      className="w-16 px-2 text-sm font-black text-slate-800 dark:text-white tabular-nums text-center bg-transparent border-none outline-none focus:ring-0"
+                    />
+                    <button 
+                      onClick={() => updateLocalQty(offer.id, 1)}
+                      className="size-7 rounded-lg bg-white dark:bg-slate-700 text-slate-500 hover:text-primary transition-all flex items-center justify-center shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                    </button>
+                  </div>
+                </div>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAddToCart(offer)}
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-black text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">shopping_cart</span>
+                    {lang === 'ar' ? 'عربة' : 'Cart'}
+                  </button>
+                  <button
+                    onClick={() => handleCreateOrder(offer)}
+                    className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-black text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">receipt_long</span>
+                    {lang === 'ar' ? 'طلب' : 'Order'}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
