@@ -153,13 +153,13 @@ const Users: React.FC = () => {
         <>
         {/* Desktop Table View - Fixed Size with Scroll */}
         <div className="hidden md:block mb-6">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
-            <div className="h-[90vh] flex flex-col">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+            <div className="flex flex-col min-h-0 h-[90vh]">
               {/* Scrollable Table Container */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                 <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
-                  <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
-                    <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                  <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
+                    <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                       <th className="px-6 py-4">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
                       <th className="px-6 py-4">{lang === 'ar' ? 'الدور' : 'Role'}</th>
                       <th className="px-6 py-4">{lang === 'ar' ? 'المؤسسة' : 'Organization'}</th>
@@ -276,74 +276,33 @@ const Users: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              {/* Pagination Footer - Fixed at Bottom */}
               {totalPages > 0 && (
-                <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
-                      <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                        {currentPage + 1} / {totalPages}
-                      </span>
-                    </div>
-                    <div className="h-6 w-px bg-primary/20 mx-1"></div>
-                    <div className="flex items-center gap-1.5">
-                      <button 
-                        onClick={() => handlePageChange(currentPage - 1)} 
-                        disabled={currentPage === 0 || isLoading}
-                        className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                      >
-                        <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-                      </button>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i;
-                          } else if (currentPage < 3) {
-                            pageNum = i;
-                          } else if (currentPage > totalPages - 4) {
-                            pageNum = totalPages - 5 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => handlePageChange(pageNum)}
-                              className={`size-9 rounded-full font-black text-xs transition-all ${
-                                currentPage === pageNum 
-                                ? 'bg-primary text-white shadow-md' 
-                                : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
-                              }`}
-                            >
-                              {pageNum + 1}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <button 
-                        onClick={() => handlePageChange(currentPage + 1)} 
-                        disabled={currentPage >= totalPages - 1 || isLoading}
-                        className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                      >
-                        <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <PaginationFooter
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalElements={totalElements}
+                  pageSize={pageSize}
+                  onPageChange={handlePageChange}
+                  currentCount={users.length}
+                  asTableFooter
+                />
               )}
             </div>
           </div>
         </div>
 
-        <PaginationFooter
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalElements={totalElements}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          currentCount={users.length}
-        />
+        <div className="md:hidden">
+          {totalPages > 0 && (
+            <PaginationFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              currentCount={users.length}
+            />
+          )}
+        </div>
 
         {/* Desktop Details Modal */}
         {desktopDetailsUserId && (() => {
@@ -721,7 +680,7 @@ const Users: React.FC = () => {
                             <span className="material-symbols-outlined text-xl">close</span>
                           </button>
                         </div>
-                        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <div className="max-h-[90vh] overflow-y-auto custom-scrollbar">
                           <div className="space-y-0 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
                               <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الدور' : 'Role'}</span>

@@ -106,9 +106,11 @@
         
         [dir="rtl"] .material-symbols-outlined.rtl-flip { transform: scaleX(-1); }
 
-        /* Table header: light primary (logo color) only */
-        .table-thead-primary thead tr { background: rgba(0, 154, 167, 0.1); border-bottom: 1px solid rgba(0, 154, 167, 0.2); }
-        .dark .table-thead-primary thead tr { background: rgba(0, 154, 167, 0.15); }
+        /* Table header: solid (not transparent) */
+        .table-thead-primary thead tr,
+        .table-thead-solid thead tr { background: #f1f5f9; border-bottom: 2px solid #e2e8f0; }
+        .dark .table-thead-primary thead tr,
+        .dark .table-thead-solid thead tr { background: #1e293b; border-bottom: 2px solid #334155; }
 
         /* Mobile safe areas handling */
         .safe-pt {

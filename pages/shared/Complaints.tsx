@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
 import EmptyState from '../../components/EmptyState';
-import PaginationFooter from '../../components/PaginationFooter';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -12,18 +11,17 @@ const Complaints: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
-  
-  // Pagination
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const pageSize = 10;
 
   // Detail & Chat State
   const [selectedTicket, setSelectedTicket] = useState<Complaint | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [messageImageFile, setMessageImageFile] = useState<File | null>(null);
+  const [messageImagePreview, setMessageImagePreview] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isClosingTicket, setIsClosingTicket] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const messageImageInputRef = useRef<HTMLInputElement>(null);
 
   // New Ticket Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -41,7 +39,7 @@ const Complaints: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userRole) fetchComplaints(0);
+    if (userRole) fetchComplaints();
   }, [userRole]);
 
   useEffect(() => {
@@ -54,26 +52,34 @@ const Complaints: React.FC = () => {
 
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
 
-  const fetchComplaints = async (pageNum: number) => {
+  const fetchComplaints = async () => {
     setIsLoading(true);
     try {
-      const endpoint = isAdmin 
-        ? `/api/v1/complaints/admin/all?page=${pageNum}&size=${pageSize}`
-        : `/api/v1/complaints/my-complaints?page=${pageNum}&size=${pageSize}`;
-      
+      const endpoint = isAdmin
+        ? `/api/v1/complaints/admin/all?page=0&size=500`
+        : `/api/v1/complaints/my-complaints?page=0&size=500`;
       const response = await api.get<any>(endpoint);
       const data = response.data || response;
-      
-      setComplaints(data.content || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalElements(data.totalElements || 0);
-      setPage(data.number || 0);
+      const list: Complaint[] = data.content || [];
+      setComplaints(list);
     } catch (err) {
       console.error("Fetch complaints failed", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // ترتيب: آخر شكوى فيها رسالة (أحدث نشاط) تكون الأولى
+  const sortedComplaints = useMemo(() => {
+    return [...complaints].sort((a, b) => {
+      const lastActivity = (c: Complaint) => {
+        const msgs = c.messages;
+        if (msgs?.length) return new Date(msgs[msgs.length - 1].createdAt).getTime();
+        return new Date(c.updatedAt || c.createdAt).getTime();
+      };
+      return lastActivity(b) - lastActivity(a);
+    });
+  }, [complaints]);
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,22 +99,55 @@ const Complaints: React.FC = () => {
       });
       setIsCreateModalOpen(false);
       resetForm();
-      fetchComplaints(0);
+      fetchComplaints();
     } catch (err) { console.error(err); } finally { setIsProcessing(false); }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTicket || !newMessage.trim()) return;
+    if (!selectedTicket || (!newMessage.trim() && !messageImageFile)) return;
     setIsSending(true);
     try {
+      let imageUrl: string | null = null;
+      if (messageImageFile) {
+        const formData = new FormData();
+        formData.append('file', messageImageFile);
+        imageUrl = await api.post<string>('/api/v1/image/upload', formData);
+      }
       const response = await api.post<ComplaintMessage>(`/api/v1/complaints/${selectedTicket.id}/messages`, {
-        message: newMessage,
-        image: null 
+        message: newMessage.trim() || (imageUrl ? ' ' : ''),
+        image: imageUrl
       });
       setSelectedTicket(prev => prev ? { ...prev, messages: [...(prev.messages || []), response] } : null);
       setNewMessage('');
+      setMessageImageFile(null);
+      setMessageImagePreview(null);
     } catch (err) { console.error(err); } finally { setIsSending(false); }
+  };
+
+  const handleMessageImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMessageImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setMessageImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleCloseComplaint = async () => {
+    if (!selectedTicket || selectedTicket.status === 'CLOSED' || !isAdmin) return;
+    setIsClosingTicket(true);
+    try {
+      const complaint = await api.put<Complaint>(`/api/v1/complaints/${selectedTicket.id}/close`, {});
+      setSelectedTicket(complaint);
+      setComplaints(prev => prev.map(c => c.id === complaint.id ? complaint : c));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsClosingTicket(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,152 +172,213 @@ const Complaints: React.FC = () => {
     return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' });
   };
 
-  return (
-    <div className="w-full py-6 animate-in fade-in duration-700 font-display min-h-screen relative pb-32 md:pb-8">
-      
-      {/* Top Add Button - Web only */}
-      {!isAdmin && (
-        <div className="hidden md:block mb-6">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-6 py-3 rounded-2xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all border border-primary/20 flex items-center gap-2"
-            title={t.complaints.addNew}
-          >
-            <span className="material-symbols-outlined text-xl">add_comment</span>
-            {t.complaints.addNew}
-          </button>
-        </div>
-      )}
+  // اليوم الساعة كذا / الأمس الساعة كذا / أو التاريخ الكامل
+  const formatMessageDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const timeStr = date.toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (msgDay.getTime() === today.getTime()) {
+      return lang === 'ar' ? `اليوم الساعة ${timeStr}` : `Today at ${timeStr}`;
+    }
+    if (msgDay.getTime() === yesterday.getTime()) {
+      return lang === 'ar' ? `الأمس الساعة ${timeStr}` : `Yesterday at ${timeStr}`;
+    }
+    return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  };
 
-      {/* Floating Action Button for New Ticket - Mobile only */}
-      {!isAdmin && (
-        <div className="md:hidden fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
-          <div className="w-full flex flex-col items-end pointer-events-auto">
-            <button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="size-14 rounded-full bg-primary text-white shadow-2xl shadow-primary/40 flex items-center justify-center active:scale-90 transition-all border-2 border-white/20 group overflow-hidden"
-              title={t.complaints.addNew}
-            >
-              <span className="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">add_comment</span>
-            </button>
+  const AUTO_REPLY_KEY = 'COMPLAINT_AUTO_REPLY';
+
+  // Messenger/WhatsApp Desktop: on mobile show either list or chat (back clears selection)
+  const showList = !selectedTicket;
+  const showChat = !!selectedTicket;
+
+  return (
+    <div className="w-full mt-4 md:mt-5 h-[calc(100vh-7.5rem)] md:h-[calc(100vh-6.5rem)] min-h-[420px] flex animate-in fade-in duration-500 font-display overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+      {/* Left: Conversation list (sidebar) - hidden on mobile when chat is open */}
+      <aside className={`flex flex-col w-full md:w-[340px] lg:w-[380px] shrink-0 border-slate-200 dark:border-slate-800 md:border-r bg-slate-50/50 dark:bg-slate-900/50 ${showChat ? 'hidden md:flex' : 'flex'}`}>
+        {/* Sidebar header */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">
+              {isAdmin ? (lang === 'ar' ? 'الشكاوى' : 'Complaints') : t.complaints.title}
+            </h2>
+            {!isAdmin && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 hover:bg-primary/90 active:scale-95 transition-all shrink-0"
+                title={t.complaints.addNew}
+              >
+                <span className="material-symbols-outlined text-xl">edit_square</span>
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Tickets List Sidebar */}
-        <div className="lg:col-span-4 space-y-4">
-           {isLoading && complaints.length === 0 ? (
-             <div className="py-20 flex justify-center">
-               <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
-             </div>
-           ) : complaints.length === 0 ? (
-             <div className="bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-               <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'يمكنك البدء بفتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
-             </div>
-           ) : (
-             <div className="space-y-4">
-               {complaints.map((ticket, idx) => (
-                 <div 
-                   key={ticket.id} 
-                   onClick={() => setSelectedTicket(ticket)} 
-                   className={`p-6 rounded-[2rem] border transition-all cursor-pointer relative overflow-hidden animate-in slide-in-from-right-4 duration-500 ${selectedTicket?.id === ticket.id ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary/30 shadow-sm'}`}
-                   style={{ animationDelay: `${idx * 50}ms` }}
-                 >
-                    <div className="flex justify-between items-start mb-4">
-                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black border ${ticket.status === 'OPEN' ? (selectedTicket?.id === ticket.id ? 'bg-white/20 text-white border-white/20' : 'bg-emerald-50 text-emerald-600 border-emerald-100') : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+          {isLoading && complaints.length === 0 ? (
+            <div className="py-16 flex justify-center">
+              <div className="size-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            </div>
+          ) : complaints.length === 0 ? (
+            <div className="p-6">
+              <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'افتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
+            </div>
+          ) : (
+            <div className="p-2 space-y-0.5">
+              {sortedComplaints.map((ticket) => {
+                const lastMsg = ticket.messages?.length ? ticket.messages[ticket.messages.length - 1] : null;
+                const preview = lastMsg ? lastMsg.message : ticket.description;
+                const isSelected = selectedTicket?.id === ticket.id;
+                return (
+                  <button
+                    key={ticket.id}
+                    type="button"
+                    onClick={() => setSelectedTicket(ticket)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isSelected ? 'bg-primary/15 dark:bg-primary/20 border border-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent'}`}
+                  >
+                    <div className={`size-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                      <span className="material-symbols-outlined text-2xl">support_agent</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className={`text-sm font-black truncate ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
+                          {isAdmin ? (ticket.userName || ticket.subject) : ticket.subject}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 tabular-nums shrink-0">{formatDate(lastMsg?.createdAt || ticket.createdAt)}</span>
+                      </div>
+                      {isAdmin && ticket.userName && (
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{ticket.subject}</p>
+                      )}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {(lastMsg?.message === AUTO_REPLY_KEY ? t.complaints.autoReply : preview) || '—'}
+                      </p>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-black ${ticket.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-400'}`}>
                         {ticket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}
                       </span>
-                      <span className="text-[10px] font-black opacity-60 tabular-nums">{formatDate(ticket.createdAt)}</span>
                     </div>
-                    <h3 className="text-base font-black truncate mb-1">{ticket.subject}</h3>
-                    <p className="text-[11px] font-medium line-clamp-1 opacity-80">{ticket.description}</p>
-                 </div>
-               ))}
-             </div>
-           )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
+      </aside>
 
-        {/* Chat Detail Area */}
-        <div className="lg:col-span-8 h-[650px] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden animate-in zoom-in-95 duration-700">
-           {selectedTicket ? (
-             <>
-               <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <div className="size-11 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-xl">forum</span></div>
-                    <div>
-                      <h3 className="text-base font-black text-slate-900 dark:text-white leading-none truncate max-w-[200px] md:max-w-md">{selectedTicket.subject}</h3>
-                      <p className="text-[9px] font-black text-slate-400  mt-1.5">Ticket ID: #{selectedTicket.id.slice(-6)}</p>
-                    </div>
-                  </div>
-               </div>
-               <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 custom-scrollbar bg-slate-50/20 dark:bg-slate-800/5">
-                  <div className="flex justify-center mb-10">
-                    <div className="max-w-[90%] bg-white dark:bg-slate-900 p-8 rounded-xl border border-primary/5 shadow-sm text-center">
-                      <p className="text-sm font-bold text-slate-600 dark:text-slate-300 leading-relaxed italic">{selectedTicket.description}</p>
-                      {selectedTicket.image && (
-                        <div className="mt-6 rounded-2xl overflow-hidden border border-slate-100 max-w-xs mx-auto shadow-lg">
-                          <img src={selectedTicket.image} className="w-full h-auto" alt="Attached Document" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {selectedTicket.messages?.map((msg, mIdx) => (
-                    <div key={msg.id} className={`flex ${isAdmin ? (msg.admin ? 'justify-end' : 'justify-start') : (msg.admin ? 'justify-start' : 'justify-end')} animate-in fade-in slide-in-from-bottom-2 duration-500`} style={{ animationDelay: `${mIdx * 30}ms` }}>
-                      <div className={`max-w-[80%] px-5 py-3.5 rounded-[1.8rem] shadow-sm ${msg.admin ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200' : 'bg-primary text-white'}`}>
-                        <p className="text-sm font-bold leading-relaxed">{msg.message}</p>
-                        <div className="flex justify-end mt-1">
-                          <span className="text-[8px] opacity-40 font-black  tabular-nums">{formatDate(msg.createdAt)}</span>
-                        </div>
+      {/* Right: Chat area (Messenger/WhatsApp style) */}
+      <main className={`flex-1 flex flex-col min-w-0 bg-slate-50/30 dark:bg-slate-800/20 ${showChat ? 'flex' : 'hidden md:flex'}`}>
+        {selectedTicket ? (
+          <>
+            {/* Chat header */}
+            <header className="h-16 px-4 flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+              <button type="button" onClick={() => setSelectedTicket(null)} className="md:hidden size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center shrink-0" aria-label="Back">
+                <span className="material-symbols-outlined text-2xl text-slate-600 dark:text-slate-300 rtl-flip">arrow_back</span>
+              </button>
+              <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">forum</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {isAdmin ? (selectedTicket.userName || selectedTicket.subject) : selectedTicket.subject}
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400">
+                  {isAdmin && selectedTicket.userName ? `${selectedTicket.subject} · ` : ''}#{selectedTicket.id.slice(-8).toUpperCase()}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${selectedTicket.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-400'}`}>
+                  {selectedTicket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}
+                </span>
+                {isAdmin && selectedTicket.status === 'OPEN' && (
+                  <button
+                    type="button"
+                    onClick={handleCloseComplaint}
+                    disabled={isClosingTicket}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all disabled:opacity-50"
+                    title={t.complaints.closeTicket}
+                  >
+                    {isClosingTicket ? (lang === 'ar' ? 'جاري...' : '...') : (lang === 'ar' ? 'إغلاق الشكوى' : 'Close ticket')}
+                  </button>
+                )}
+              </div>
+            </header>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
+              {selectedTicket.messages?.map((msg) => {
+                const isMe = isAdmin ? msg.admin : !msg.admin;
+                const displayText = msg.message === AUTO_REPLY_KEY ? t.complaints.autoReply : msg.message;
+                const showSenderName = msg.admin && msg.userName;
+                return (
+                  <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${showSenderName ? 'gap-0.5' : ''}`}>
+                    {showSenderName && (
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-1">{msg.userName}</span>
+                    )}
+                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`w-fit max-w-[75%] md:max-w-[65%] px-4 py-2.5 rounded-2xl ${isMe ? 'rounded-br-md bg-primary text-white' : 'rounded-bl-md bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700'} shadow-sm`}>
+                        {msg.image && (
+                          <button type="button" onClick={() => setLightboxImage(msg.image!)} className="rounded-xl overflow-hidden border border-white/20 dark:border-slate-600 mb-2 max-w-[220px] block text-left focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <img src={msg.image} className="w-full h-auto object-cover cursor-pointer hover:opacity-95 transition-opacity" alt="" />
+                          </button>
+                        )}
+                        {displayText.trim() ? <p className="text-sm font-bold leading-relaxed break-words">{displayText}</p> : null}
+                        <p className={`text-[10px] mt-1 tabular-nums ${isMe ? 'text-white/70' : 'text-slate-400'}`}>{formatMessageDate(msg.createdAt)}</p>
                       </div>
                     </div>
-                  ))}
-                  <div ref={chatEndRef} />
-               </div>
-               
-               {selectedTicket.status === 'OPEN' && (
-                 <div className="p-6 border-t border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-                    <form onSubmit={handleSendMessage} className="flex gap-4">
-                      <input 
-                        type="text" 
-                        value={newMessage} 
-                        onChange={(e) => setNewMessage(e.target.value)} 
-                        placeholder={t.complaints.messagePlaceholder} 
-                        className="flex-1 h-14 px-6 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold outline-none focus:border-primary transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium" 
-                      />
-                      <button 
-                        type="submit" 
-                        disabled={isSending || !newMessage.trim()} 
-                        className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 transition-all"
-                      >
-                        {isSending ? (
-                          <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                          <span className="material-symbols-outlined text-xl rtl-flip">send</span>
-                        )}
-                      </button>
-                    </form>
-                 </div>
-               )}
-             </>
-           ) : (
-             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-20">
-               <span className="material-symbols-outlined text-8xl text-primary mb-8">chat_bubble</span>
-               <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{lang === 'ar' ? 'اختر تذكرة لمراجعتها' : 'Select a ticket to view'}</h3>
-             </div>
-           )}
-        </div>
-      </div>
-
-      <PaginationFooter
-        currentPage={page}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        pageSize={pageSize}
-        onPageChange={fetchComplaints}
-        currentCount={complaints.length}
-      />
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+            {/* Input bar (fixed at bottom of chat) */}
+            {selectedTicket.status === 'OPEN' && (
+              <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+                {messageImagePreview && (
+                  <div className="mb-2 relative inline-block">
+                    <img src={messageImagePreview} alt="" className="h-20 w-20 object-cover rounded-xl border-2 border-primary/30" />
+                    <button type="button" onClick={() => { setMessageImageFile(null); setMessageImagePreview(null); }} className="absolute -top-1.5 -right-1.5 size-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg" aria-label="Remove">
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
+                  <input type="file" ref={messageImageInputRef} className="hidden" accept="image/*" onChange={handleMessageImageChange} />
+                  <button type="button" onClick={() => messageImageInputRef.current?.click()} className="size-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary flex items-center justify-center transition-all shrink-0" title={lang === 'ar' ? 'إرفاق صورة' : 'Attach image'}>
+                    <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
+                  </button>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder={t.complaints.messagePlaceholder}
+                    className="flex-1 min-w-0 h-12 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:border-primary transition-all text-sm placeholder:text-slate-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSending || (!newMessage.trim() && !messageImageFile)}
+                    className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 active:scale-95 disabled:opacity-50 transition-all shrink-0"
+                  >
+                    {isSending ? (
+                      <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <span className="material-symbols-outlined text-xl rtl-flip">send</span>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Empty state when no ticket selected (desktop) */
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+            <span className="material-symbols-outlined text-7xl mb-4 opacity-50">chat_bubble_outline</span>
+            <p className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'اختر تذكرة من القائمة' : 'Select a ticket from the list'}</p>
+          </div>
+        )}
+      </main>
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
@@ -378,6 +478,22 @@ const Complaints: React.FC = () => {
                  </button>
               </div>
            </div>
+        </div>
+      )}
+
+      {/* Image lightbox - click to open, click overlay or close to dismiss */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setLightboxImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lang === 'ar' ? 'عرض الصورة' : 'View image'}
+        >
+          <button type="button" onClick={() => setLightboxImage(null)} className="absolute top-4 right-4 size-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10" aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}>
+            <span className="material-symbols-outlined text-2xl">close</span>
+          </button>
+          <img src={lightboxImage} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
 

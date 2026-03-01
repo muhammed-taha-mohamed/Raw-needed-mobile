@@ -205,7 +205,7 @@ const Plans: React.FC = () => {
   };
 
   return (
-    <div className="w-full py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full min-w-0 max-w-full py-6 flex flex-col gap-8 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Tabs - full width of container */}
       <div className="flex gap-1 p-1 mb-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 w-full min-w-0">
         <button
@@ -261,28 +261,28 @@ const Plans: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 items-stretch min-w-0 w-full">
                   {plans.map((plan, idx) => {
                     const typeConfig = getPlanTypeConfig(plan.planType);
                     const validOffers = plan.specialOffers?.filter(o => o.discountPercentage > 0) || [];
                     return (
                       <div
                         key={plan.id}
-                        className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group overflow-hidden flex flex-col animate-in zoom-in-95 duration-700 ${plan.active ? '' : 'opacity-85 grayscale-[0.15]'}`}
+                        className={`bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 dark:border-slate-800 relative group overflow-hidden flex flex-col min-w-0 animate-in zoom-in-95 duration-700 ${plan.active ? '' : 'opacity-85 grayscale-[0.15]'}`}
                         style={{ animationDelay: `${idx * 40}ms` }}
                       >
                         <div className={`absolute top-0 ${lang === 'ar' ? 'right-0' : 'left-0'} w-1.5 h-full ${plan.active ? 'bg-primary' : 'bg-slate-300'} transition-all duration-300`}></div>
 
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex gap-4 items-center min-w-0">
-                            <div className={`size-12 rounded-xl flex items-center justify-center border shrink-0 shadow-sm transition-all duration-300 ${plan.active ? 'bg-primary/5 text-primary border-primary/10' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                              <span className="material-symbols-outlined text-[26px]">
+                        <div className="flex justify-between items-start gap-2 mb-4 min-w-0">
+                          <div className="flex gap-3 sm:gap-4 items-center min-w-0 flex-1">
+                            <div className={`size-10 sm:size-12 rounded-xl flex items-center justify-center border shrink-0 shadow-sm transition-all duration-300 ${plan.active ? 'bg-primary/5 text-primary border-primary/10' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                              <span className="material-symbols-outlined text-[22px] sm:text-[26px]">
                                 {plan.billingFrequency === 'YEARLY' ? 'calendar_month' : plan.billingFrequency === 'QUARTERLY' ? 'grid_view' : 'schedule'}
                               </span>
                             </div>
-                            <div className="min-w-0">
-                              <h3 className="font-bold text-slate-900 dark:text-white text-[17px] leading-tight truncate  flex items-center gap-2">
-                                {plan.name}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-bold text-slate-900 dark:text-white text-[15px] sm:text-[17px] leading-tight truncate flex items-center gap-2 flex-wrap">
+                                <span className="truncate">{plan.name}</span>
                                 {plan.free && (
                                   <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0">
                                     {lang === 'ar' ? 'مجانية' : 'Free'}
@@ -290,11 +290,10 @@ const Plans: React.FC = () => {
                                 )}
                               </h3>
                               <div className="flex items-center gap-1.5 mt-1">
-                                <span className={`size-2 rounded-full ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                                <span className="text-[12px] font-bold text-slate-500  ">
+                                <span className={`size-2 rounded-full shrink-0 ${plan.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                                <span className="text-[11px] sm:text-[12px] font-bold text-slate-500 truncate">
                                   {plan.active ? t.plans.statusActive : t.plans.statusArchived}
                                 </span>
-                                
                               </div>
                             </div>
                           </div>
@@ -312,28 +311,28 @@ const Plans: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-2 mb-6 flex-grow">
-                          <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
-                            <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.pricePerUser}</span>
-                            <div className="flex items-baseline gap-1">
-                              <span className="font-black text-slate-900 dark:text-white text-xl tabular-nums">{plan.pricePerUser}</span>
-                              <span className="text-[12px] text-slate-500 font-bold ">{t.plans.currency}</span>
+                        <div className="space-y-2 mb-6 flex-grow min-w-0">
+                          <div className="flex justify-between items-center gap-2 py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-500 font-bold text-xs sm:text-sm shrink-0">{t.plans.pricePerUser}</span>
+                            <div className="flex items-baseline gap-1 min-w-0 justify-end">
+                              <span className="font-black text-slate-900 dark:text-white text-lg sm:text-xl tabular-nums truncate">{plan.pricePerUser}</span>
+                              <span className="text-[11px] sm:text-[12px] text-slate-500 font-bold shrink-0">{t.plans.currency}</span>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
-                            <span className="text-slate-500 dark:text-slate-500 font-bold text-sm">{t.plans.frequency}</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-200 text-[13px]">{getFreqLabel(plan.billingFrequency)}</span>
+                          <div className="flex justify-between items-center gap-2 py-2 border-b border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-500 dark:text-slate-500 font-bold text-xs sm:text-sm shrink-0">{t.plans.frequency}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 text-[12px] sm:text-[13px] truncate">{getFreqLabel(plan.billingFrequency)}</span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 pt-4">
-                            <div className="relative">
+                          <div className="grid grid-cols-2 gap-1.5 sm:gap-2 pt-4 min-w-0">
+                            <div className="relative min-w-0">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveFeatureId(activeFeatureId === plan.id ? null : plan.id);
                                   setActiveOfferId(null);
                                 }}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${activeFeatureId === plan.id
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl border transition-all text-[10px] sm:text-[11px] font-black shadow-sm active:scale-95 w-full justify-between min-w-0 ${activeFeatureId === plan.id
                                     ? 'bg-primary text-white border-primary'
                                     : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-primary/10 hover:border-primary'
                                   }`}
@@ -377,22 +376,22 @@ const Plans: React.FC = () => {
                               )}
                             </div>
 
-                            <div className="relative">
+                            <div className="relative min-w-0">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveOfferId(activeOfferId === plan.id ? null : plan.id);
                                   setActiveFeatureId(null);
                                 }}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-[11px] font-black  shadow-sm active:scale-95 w-full justify-between ${activeOfferId === plan.id
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl border transition-all text-[10px] sm:text-[11px] font-black shadow-sm active:scale-95 w-full justify-between min-w-0 ${activeOfferId === plan.id
                                     ? 'bg-amber-500 text-white border-amber-500'
                                     : 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 border-amber-500/20 hover:border-amber-500'
                                   }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <span>{validOffers.length} {lang === 'ar' ? 'خصم' : 'Offers'}</span>
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="truncate">{validOffers.length} {lang === 'ar' ? 'خصم' : 'Offers'}</span>
                                 </div>
-                                <span className={`material-symbols-outlined text-base transition-transform duration-300 ${activeOfferId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
+                                <span className={`material-symbols-outlined text-sm sm:text-base shrink-0 transition-transform duration-300 ${activeOfferId === plan.id ? 'rotate-180' : ''}`}>expand_more</span>
                               </button>
 
                               {activeOfferId === plan.id && (
@@ -426,48 +425,46 @@ const Plans: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto -mx-6 px-6 -mb-6 pb-6 bg-slate-50/30 dark:bg-slate-800/20">
-                          <div className="flex gap-3 items-center">
-                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black    border shrink-0 shadow-sm transition-colors ${typeConfig.classes}`}>
+                        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 pt-4 sm:pt-5 border-t border-slate-100 dark:border-slate-800 mt-auto -mx-4 sm:-mx-6 px-4 sm:px-6 -mb-4 sm:-mb-6 pb-4 sm:pb-6 bg-slate-50/30 dark:bg-slate-800/20 min-w-0">
+                          <div className="flex flex-wrap gap-2 sm:gap-3 items-center min-w-0 flex-1">
+                            <span className={`px-2 sm:px-3 py-1 rounded-lg text-[10px] font-black border shrink-0 shadow-sm transition-colors ${typeConfig.classes}`}>
                               {typeConfig.label}
                             </span>
-                            <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                            <button onClick={() => openEditModal(plan.id)} className="text-primary text-sm font-bold hover:text-primary/80 flex items-center gap-1 transition-all group/btn">
-                              {t.plans.edit}
+                            <div className="hidden sm:block h-4 w-px bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                            <button onClick={() => openEditModal(plan.id)} className="text-primary text-xs sm:text-sm font-bold hover:text-primary/80 flex items-center gap-1 shrink-0 transition-all group/btn">
+                              <span className="hidden sm:inline">{t.plans.edit}</span>
                               <span className="material-symbols-outlined text-[16px]">edit_square</span>
                             </button>
-
                             <button
                               onClick={() => togglePlanStatus(plan)}
                               disabled={isStatusChanging === plan.id}
-                              className={`text-sm font-bold flex items-center gap-1 transition-all disabled:opacity-50 ${plan.active ? 'text-orange-500' : 'text-emerald-500'}`}
+                              className={`text-xs sm:text-sm font-bold flex items-center gap-1 shrink-0 transition-all disabled:opacity-50 ${plan.active ? 'text-orange-500' : 'text-emerald-500'}`}
                             >
                               {isStatusChanging === plan.id ? (
-                                <div className="size-4 border-2 border-current/20 border-t-current rounded-full animate-spin"></div>
+                                <div className="size-4 border-2 border-current/20 border-t-current rounded-full animate-spin shrink-0"></div>
                               ) : (
                                 <>
-                                  {plan.active ? t.plans.deactivate : t.plans.activate}
-                                  <span className="material-symbols-outlined text-[20px]">
+                                  <span className="hidden sm:inline">{plan.active ? t.plans.deactivate : t.plans.activate}</span>
+                                  <span className="material-symbols-outlined text-[18px] sm:text-[20px] shrink-0">
                                     {plan.active ? 'pause_circle' : 'play_circle'}
                                   </span>
                                 </>
                               )}
                             </button>
                           </div>
-
-                          <button disabled={!!plan.free} onClick={() => setDeleteConfirmId(plan.id)} className={`size-9 rounded-xl ${plan.free ? 'opacity-40 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'} flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm`} title="Delete">
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          <button disabled={!!plan.free} onClick={() => setDeleteConfirmId(plan.id)} className={`size-8 sm:size-9 rounded-xl shrink-0 ${plan.free ? 'opacity-40 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white'} flex items-center justify-center transition-all dark:bg-red-900/20 dark:text-red-400 active:scale-90 shadow-sm`} title={lang === 'ar' ? 'حذف' : 'Delete'}>
+                            <span className="material-symbols-outlined text-[16px] sm:text-[18px]">delete</span>
                           </button>
                         </div>
                       </div>
                     );
                   })}
 
-                  <div onClick={openAddModal} className="rounded-[1.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer group animate-in zoom-in-95 duration-700">
-                    <div className="bg-slate-50 dark:bg-slate-800 group-hover:bg-primary text-slate-500 group-hover:text-white rounded-xl p-4 mb-3 transition-all shadow-sm duration-300">
+                  <div onClick={openAddModal} className="rounded-[1.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center min-h-[280px] sm:min-h-[300px] cursor-pointer group animate-in zoom-in-95 duration-700 min-w-0">
+                    <div className="bg-slate-50 dark:bg-slate-800 group-hover:bg-primary text-slate-500 group-hover:text-white rounded-xl p-4 mb-3 transition-all shadow-sm duration-300 shrink-0">
                       <span className="material-symbols-outlined text-3xl">add</span>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-500 group-hover:text-primary transition-colors ">{t.plans.addNew}</h3>
+                    <h3 className="text-sm font-bold text-slate-500 group-hover:text-primary transition-colors text-center px-2">{t.plans.addNew}</h3>
                   </div>
                 </div>
             </>
@@ -486,10 +483,10 @@ const Plans: React.FC = () => {
         <div className="overflow-hidden animate-in fade-in duration-500">
           {/* Desktop Table View - Fixed Size with Scroll */}
           <div className="hidden md:block mb-6">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
-              <div className="h-[90vh] flex flex-col">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+              <div className="flex flex-col min-h-0 h-[90vh]">
                 {/* Scrollable Table Container */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                   {loadingApproved && approvedSubscriptions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-40">
                       <div className="size-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
@@ -501,8 +498,8 @@ const Plans: React.FC = () => {
                     </div>
                   ) : (
                     <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
-                      <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
-                        <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                      <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
+                        <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                           <th className="px-6 py-4">{lang === 'ar' ? 'المستخدم' : 'User'}</th>
                           <th className="px-6 py-4">{lang === 'ar' ? 'الخطة' : 'Plan'}</th>
                           <th className="px-6 py-4">{lang === 'ar' ? 'المقاعد' : 'Seats'}</th>
@@ -594,61 +591,16 @@ const Plans: React.FC = () => {
                     </table>
                   )}
                 </div>
-                {/* Pagination Footer - Fixed at Bottom */}
                 {approvedTotalPages > 0 && (
-                  <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
-                        <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                          {approvedPage + 1} / {approvedTotalPages}
-                        </span>
-                      </div>
-                      <div className="h-6 w-px bg-primary/20 mx-1"></div>
-                      <div className="flex items-center gap-1.5">
-                        <button 
-                          onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} 
-                          disabled={approvedPage === 0}
-                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                        >
-                          <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-                        </button>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.min(approvedTotalPages, 5) }, (_, i) => {
-                            let pageNum;
-                            if (approvedTotalPages <= 5) {
-                              pageNum = i;
-                            } else if (approvedPage < 3) {
-                              pageNum = i;
-                            } else if (approvedPage > approvedTotalPages - 4) {
-                              pageNum = approvedTotalPages - 5 + i;
-                            } else {
-                              pageNum = approvedPage - 2 + i;
-                            }
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => setApprovedPage(pageNum)}
-                                className={`size-9 rounded-full font-black text-xs transition-all ${
-                                  approvedPage === pageNum 
-                                  ? 'bg-primary text-white shadow-md' 
-                                  : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
-                                }`}
-                              >
-                                {pageNum + 1}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <button 
-                          onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} 
-                          disabled={approvedPage >= approvedTotalPages - 1}
-                          className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                        >
-                          <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <PaginationFooter
+                    currentPage={approvedPage}
+                    totalPages={approvedTotalPages}
+                    totalElements={approvedTotalElements}
+                    pageSize={approvedPageSize}
+                    onPageChange={setApprovedPage}
+                    currentCount={approvedSubscriptions.length}
+                    asTableFooter
+                  />
                 )}
               </div>
             </div>
@@ -782,51 +734,16 @@ const Plans: React.FC = () => {
                 })}
               </div>
             )}
-            {/* Mobile Pagination */}
             {approvedTotalPages > 0 && (
-              <div className="mb-24 px-4">
-                <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-slate-200 dark:border-slate-800 max-w-md mx-auto">
-                  <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl shrink-0 border border-slate-200 dark:border-slate-700">
-                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                      {approvedPage + 1} / {approvedTotalPages}
-                    </span>
-                  </div>
-                  <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setApprovedPage((p) => Math.max(0, p - 1))} 
-                      disabled={approvedPage === 0}
-                      className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span>
-                    </button>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setApprovedPage(approvedPage)}
-                        className="size-10 rounded-xl font-black text-sm bg-primary text-white shadow-md active:scale-95 transition-all"
-                      >
-                        {approvedPage + 1}
-                      </button>
-                    </div>
-                    <button 
-                      onClick={() => setApprovedPage((p) => Math.min(approvedTotalPages - 1, p + 1))} 
-                      disabled={approvedPage >= approvedTotalPages - 1}
-                      className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <PaginationFooter
+                currentPage={approvedPage}
+                totalPages={approvedTotalPages}
+                totalElements={approvedTotalElements}
+                pageSize={approvedPageSize}
+                onPageChange={setApprovedPage}
+                currentCount={approvedSubscriptions.length}
+              />
             )}
-            <PaginationFooter
-              currentPage={approvedPage}
-              totalPages={approvedTotalPages}
-              totalElements={approvedTotalElements}
-              pageSize={approvedPageSize}
-              onPageChange={setApprovedPage}
-              currentCount={approvedSubscriptions.length}
-            />
           </div>
         </div>
       )}

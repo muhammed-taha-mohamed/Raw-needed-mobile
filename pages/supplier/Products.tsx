@@ -9,6 +9,8 @@ import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
 import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
+import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
+import { APP_LOGO } from '../../constants';
 
 interface SupplierProfile {
   id: string;
@@ -788,9 +790,7 @@ const Products: React.FC = () => {
                       {product.image ? (
                         <img src={product.image} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" alt={product.name} />
                       ) : (
-                        <div className="size-full flex items-center justify-center text-slate-200">
-                           <span className="material-symbols-outlined text-3xl">image</span>
-                        </div>
+                        <img src={APP_LOGO} alt="" className="size-full object-contain p-2" />
                       )}
                       <div className="absolute top-2 left-2">
                          <div className={`size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${product.inStock ? 'bg-emerald-500' : 'bg-red-500'} shadow-sm`}></div>
@@ -1013,33 +1013,18 @@ const Products: React.FC = () => {
                   </div>
                 )}
                 <form onSubmit={handleSubmit} id="productForm" className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.name}</label>
-                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className={MODAL_INPUT_CLASS} placeholder={t.products.namePlaceholder} />
-                  </div>
+                  <FloatingLabelInput required type="text" label={t.products.name} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.products.namePlaceholder} />
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.products.origin}</label>
                       <Dropdown options={getCountryOptions(lang)} value={formData.origin} onChange={(v) => setFormData({...formData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName={MODAL_DROPDOWN_TRIGGER_CLASS} />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الكمية' : 'Stock Quantity'}</label>
-                      <input required type="number" min="0" value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} className={MODAL_INPUT_CLASS} />
-                    </div>
+                    <FloatingLabelInput required type="number" min={0} label={lang === 'ar' ? 'الكمية' : 'Stock Quantity'} value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.unit}</label>
-                      <input type="text" value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} className={MODAL_INPUT_CLASS} placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.productionDate}</label>
-                      <input type="date" value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} className={MODAL_INPUT_CLASS} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.expirationDate}</label>
-                      <input type="date" value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} className={MODAL_INPUT_CLASS} />
-                    </div>
+                    <FloatingLabelInput type="text" label={t.products.unit} value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
+                    <FloatingLabelInput type="date" label={t.products.productionDate} value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} />
+                    <FloatingLabelInput type="date" label={t.products.expirationDate} value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
@@ -1066,77 +1051,23 @@ const Products: React.FC = () => {
                             {lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}
                           </label>
                           <div className="grid grid-cols-3 gap-2">
-                            <input
-                              type="text"
-                              value={extraFieldValues.dimensions_length || ''}
-                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))}
-                              placeholder={lang === 'ar' ? 'طول' : 'Length'}
-                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
-                            />
-                            <input
-                              type="text"
-                              value={extraFieldValues.dimensions_width || ''}
-                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))}
-                              placeholder={lang === 'ar' ? 'عرض' : 'Width'}
-                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
-                            />
-                            <input
-                              type="text"
-                              value={extraFieldValues.dimensions_height || ''}
-                              onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))}
-                              placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
-                              className={`${MODAL_INPUT_CLASS} px-3 py-2 text-xs`}
-                            />
+                            <FloatingLabelInput type="text" label={lang === 'ar' ? 'طول' : 'Length'} value={extraFieldValues.dimensions_length || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_length: e.target.value }))} className="px-3 py-2 text-xs" />
+                            <FloatingLabelInput type="text" label={lang === 'ar' ? 'عرض' : 'Width'} value={extraFieldValues.dimensions_width || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_width: e.target.value }))} className="px-3 py-2 text-xs" />
+                            <FloatingLabelInput type="text" label={lang === 'ar' ? 'ارتفاع' : 'Height'} value={extraFieldValues.dimensions_height || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, dimensions_height: e.target.value }))} className="px-3 py-2 text-xs" />
                           </div>
                         </div>
                       )}
                       {categoryExtraFields.some(field => field.key === 'note') && (
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
-                          <textarea
-                            value={extraFieldValues.note || ''}
-                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, note: e.target.value }))}
-                            rows={3}
-                            className={MODAL_TEXTAREA_CLASS}
-                            placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
-                          />
-                        </div>
+                        <FloatingLabelTextarea value={extraFieldValues.note || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, note: e.target.value }))} rows={3} label={lang === 'ar' ? 'ملاحظة' : 'Note'} placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'} />
                       )}
                       {categoryExtraFields.some(field => field.key === 'serviceName') && (
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
-                          <input
-                            type="text"
-                            value={extraFieldValues.serviceName || ''}
-                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, serviceName: e.target.value }))}
-                            placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
-                            className={MODAL_INPUT_CLASS}
-                          />
-                        </div>
+                        <FloatingLabelInput type="text" label={lang === 'ar' ? 'اسم الخدمة' : 'Service Name'} value={extraFieldValues.serviceName || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, serviceName: e.target.value }))} placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'} />
                       )}
                       {categoryExtraFields.some(field => field.key === 'colorCount') && (
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
-                          <input
-                            type="text"
-                            value={extraFieldValues.colorCount || ''}
-                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))}
-                            placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
-                            className={MODAL_INPUT_CLASS}
-                          />
-                        </div>
+                        <FloatingLabelInput type="text" label={lang === 'ar' ? 'عدد الألوان' : 'Color Count'} value={extraFieldValues.colorCount || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, colorCount: e.target.value }))} placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'} />
                       )}
                       {categoryExtraFields.some(field => field.key === 'paperSize') && (
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
-                          <input
-                            type="text"
-                            value={extraFieldValues.paperSize || ''}
-                            onChange={(e) => setExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))}
-                            placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
-                            className={MODAL_INPUT_CLASS}
-                          />
-                        </div>
+                        <FloatingLabelInput type="text" label={lang === 'ar' ? 'حجم الورق' : 'Paper Size'} value={extraFieldValues.paperSize || ''} onChange={(e) => setExtraFieldValues(prev => ({ ...prev, paperSize: e.target.value }))} placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'} />
                       )}
                     </div>
                   )}

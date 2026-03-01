@@ -9,7 +9,7 @@ export const translations = {
     },
     nav: {
       dashboard: 'Dashboard',
-      subscription: 'Subscription Management',
+      subscription: 'Subscriptions',
       plans: 'Plans',
       categories: 'Categories',
       approvals: 'Approvals',
@@ -49,7 +49,8 @@ export const translations = {
       successMessage: 'Message sent',
       successClose: 'Ticket closed successfully',
       adminTitle: 'Complaints Management',
-      adminSubtitle: 'Review and respond to user issues and feedback.'
+      adminSubtitle: 'Review and respond to user issues and feedback.',
+      autoReply: 'Thank you for contacting us - we will respond as soon as possible to resolve your issue.'
     },
     ads: {
       title: 'Global Promotions',
@@ -493,7 +494,7 @@ export const translations = {
     },
     nav: {
       dashboard: 'لوحة القيادة',
-      subscription: 'إدارة الاشتراك',
+      subscription: 'الاشتراكات',
       plans: 'الخطط',
       categories: 'الفئات',
       approvals: 'الموافقات',
@@ -533,7 +534,8 @@ export const translations = {
       successMessage: 'تم إرسال الرسالة',
       successClose: 'تم إغلاق التذكرة بنجاح',
       adminTitle: 'إدارة الشكاوى',
-      adminSubtitle: 'مراجعة والرد على مشاكل المستخدمين ومقترحاتهم.'
+      adminSubtitle: 'مراجعة والرد على مشاكل المستخدمين ومقترحاتهم.',
+      autoReply: 'شكراً لتواصلك معنا - سيتم الرد عليك في أقرب وقت لحل مشكلتك.'
     },
     ads: {
       title: 'العروض والإعلانات',

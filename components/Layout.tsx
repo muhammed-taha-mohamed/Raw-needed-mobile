@@ -90,10 +90,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     if (isAdmin) {
       return [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'grid_view', path: '/' },
-        { name: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', icon: 'loyalty', path: '/plans' },
+        { name: lang === 'ar' ? 'الاشتراكات' : 'Subscriptions', icon: 'loyalty', path: '/plans' },
         { name: lang === 'ar' ? 'ادارة الاعلانات' : 'Ad Management', icon: 'campaign', path: '/ad-packages' },
         { name: lang === 'ar' ? 'الفئات' : 'Categories', icon: 'category', path: '/categories' },
-        { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
+        { name: lang === 'ar' ? 'الموردين' : 'Suppliers', icon: 'store', path: '/suppliers' },
+        { name: lang === 'ar' ? 'العملاء' : 'Customers', icon: 'group', path: '/customers' },
         ...(role === 'SUPER_ADMIN'
           ? [{ name: lang === 'ar' ? 'إدارة المسؤولين' : 'Admin Management', icon: 'admin_panel_settings', path: '/admin-management' }]
           : []),
@@ -149,8 +150,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'الخطط' : 'Plans', icon: 'loyalty', path: '/plans' },
-        { name: lang === 'ar' ? 'الإعلانات' : 'Ads', icon: 'campaign', path: '/ad-packages' },
-        { name: lang === 'ar' ? 'المستخدمين' : 'Users', icon: 'group', path: '/users' },
+        { name: lang === 'ar' ? 'الموردين' : 'Suppliers', icon: 'store', path: '/suppliers' },
+        { name: lang === 'ar' ? 'العملاء' : 'Customers', icon: 'group', path: '/customers' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else if (isSupplier) {
@@ -210,10 +211,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     else if (path === '/cart') info = { title: lang === 'ar' ? 'عربة الطلبات' : 'Procurement Cart', subtitle: lang === 'ar' ? 'راجع المواد قبل الإرسال.' : 'Review items before sending.' };
     else if (path === '/special-offers') info = { title: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', subtitle: lang === 'ar' ? 'عروض خاصة من الموردين' : 'Special offers from suppliers' };
     else if (path === '/ad-packages') info = { title: lang === 'ar' ? 'ادارة الاعلانات' : 'Ad Management', subtitle: lang === 'ar' ? 'إدارة باقات الإعلانات وسعر عرض أولاً' : 'Manage ad packages and featured price' };
-    else if (path === '/plans') info = { title: lang === 'ar' ? 'ادارة الاشتراكات' : 'Subscription Management', subtitle: lang === 'ar' ? 'إدارة خطط الاشتراك والأسعار' : 'Manage subscription plans and pricing' };
+    else if (path === '/plans') info = { title: lang === 'ar' ? 'الاشتراكات' : 'Subscriptions', subtitle: lang === 'ar' ? 'إدارة خطط الاشتراك والأسعار' : 'Manage subscription plans and pricing' };
     else if (path === '/categories') info = { title: lang === 'ar' ? 'الفئات' : 'Categories', subtitle: lang === 'ar' ? 'إدارة الفئات والتصنيفات' : 'Manage categories and classifications' };
     else if (path === '/approvals') info = { title: lang === 'ar' ? 'الموافقات' : 'Approvals', subtitle: lang === 'ar' ? 'مراجعة وموافقة على الطلبات' : 'Review and approve requests' };
     else if (path === '/users') info = { title: lang === 'ar' ? 'المستخدمين' : 'Users', subtitle: lang === 'ar' ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users' };
+    else if (path === '/suppliers') info = { title: lang === 'ar' ? 'الموردين' : 'Suppliers', subtitle: lang === 'ar' ? 'عرض وإدارة الموردين' : 'View and manage suppliers' };
+    else if (path === '/customers') info = { title: lang === 'ar' ? 'العملاء' : 'Customers', subtitle: lang === 'ar' ? 'عرض وإدارة العملاء' : 'View and manage customers' };
     else if (path === '/admin-management') info = { title: lang === 'ar' ? 'إدارة المسؤولين' : 'Admin Management', subtitle: lang === 'ar' ? 'إضافة ومتابعة حسابات الإدارة' : 'Create and monitor admin accounts' };
     else if (path === '/advertisements') info = { title: lang === 'ar' ? 'الإعلانات' : 'Advertisements', subtitle: lang === 'ar' ? 'إدارة الإعلانات والعروض الترويجية' : 'Manage advertisements and promotions' };
 
@@ -294,7 +297,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                   className={({ isActive }) => `
                     flex items-center ${isSidebarCollapsed ? 'lg:justify-center' : 'gap-4'} px-4 py-3 rounded-2xl transition-all duration-300 relative group ${isSidebarCollapsed ? 'lg:overflow-visible' : ''}
                     ${isActive && !item.disabled
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                      ? 'bg-primary/10 text-primary'
                       : item.disabled
                         ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed opacity-50 grayscale'
                         : 'text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'}

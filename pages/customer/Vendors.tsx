@@ -551,44 +551,6 @@ const Vendors: React.FC = () => {
         ))}
       </div>
 
-      {/* Mobile Pagination - Visible Above Bottom Nav */}
-      {totalElements > 0 && (
-        <div className="md:hidden mb-24 px-4">
-          <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-slate-200 dark:border-slate-800 max-w-md mx-auto">
-            <div className="px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl shrink-0 border border-slate-200 dark:border-slate-700">
-              <span className="text-xs font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                {currentPage + 1} / {totalPages}
-              </span>
-            </div>
-            <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)} 
-                disabled={currentPage === 0 || isLoading}
-                className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-              >
-                <span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span>
-              </button>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handlePageChange(currentPage)}
-                  className="size-10 rounded-xl font-black text-sm bg-primary text-white shadow-md active:scale-95 transition-all"
-                >
-                  {currentPage + 1}
-                </button>
-              </div>
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)} 
-                disabled={currentPage >= totalPages - 1 || isLoading}
-                className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
-              >
-                <span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Desktop Table View - Fixed Size with Scroll */}
       <div className="hidden md:block mb-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
@@ -610,10 +572,10 @@ const Vendors: React.FC = () => {
               </div>
             </div>
             {/* Scrollable Table Container */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
-                <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
-                  <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
+                  <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                     <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
                     <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
                     <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
@@ -683,55 +645,33 @@ const Vendors: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            {/* Pagination Footer - Fixed at Bottom */}
-            {totalElements > 0 && (
-              <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
-                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                      {currentPage + 1} / {totalPages}
-                    </span>
-                  </div>
-                  <div className="h-6 w-px bg-primary/20 mx-1"></div>
-                  <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => handlePageChange(currentPage - 1)} 
-                      disabled={currentPage === 0 || isLoading}
-                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-                    </button>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handlePageChange(currentPage)}
-                        className="size-9 rounded-full font-black text-[12px] bg-primary text-white shadow-md active:scale-95 transition-all"
-                      >
-                        {currentPage + 1}
-                      </button>
-                    </div>
-                    <button 
-                      onClick={() => handlePageChange(currentPage + 1)} 
-                      disabled={currentPage >= totalPages - 1 || isLoading}
-                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {totalPages > 0 && (
+              <PaginationFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                currentCount={suppliers.length}
+                asTableFooter
+              />
             )}
           </div>
         </div>
       </div>
 
-      <PaginationFooter
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-        currentCount={suppliers.length}
-      />
+      <div className="md:hidden">
+        {totalPages > 0 && (
+          <PaginationFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            currentCount={suppliers.length}
+          />
+        )}
+      </div>
 
       {/* Vendor Details Modal - opens from details button so content is fully visible */}
       {detailsModalVendor && (

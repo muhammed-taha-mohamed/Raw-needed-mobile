@@ -252,41 +252,31 @@ const AdminManagement: React.FC = () => {
 
   return (
     <div className="w-full py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display min-h-screen pb-40">
-      <div className="fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6 md:hidden">
-        <div className="w-full flex flex-col items-end pointer-events-auto">
+      {/* Floating Add button — خارج الجدول، يظهر على الموبايل والديسكتوب */}
+      <div className="fixed bottom-32 md:bottom-8 left-0 right-0 md:left-auto md:right-6 rtl:md:right-auto rtl:md:left-6 z-[180] pointer-events-none px-6 md:px-0">
+        <div className="w-full md:w-auto flex flex-col items-end pointer-events-auto">
           <button
             onClick={openAddModal}
-            className="size-14 rounded-full bg-primary text-white shadow-[0_15px_35px_rgba(0,154,167,0.4)] flex items-center justify-center active:scale-90 transition-all border-2 border-white/20 group hover:bg-slate-900"
+            className="size-14 rounded-full bg-primary text-white shadow-[0_15px_35px_rgba(0,154,167,0.4)] md:shadow-xl flex items-center justify-center active:scale-90 transition-all border-2 border-white/20 md:border-primary/30 group hover:bg-primary/90"
+            title={lang === 'ar' ? 'إضافة مسؤول' : 'Add Admin'}
           >
-            <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">admin_panel_settings</span>
+            <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">person_add</span>
           </button>
         </div>
       </div>
 
       <div className="hidden md:block mb-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
-          <div className="bg-primary/10 dark:bg-primary/5 border-b-2 border-primary/20 px-6 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-black text-slate-700 dark:text-slate-300">
-              {lang === 'ar' ? 'إدارة المسؤولين' : 'Admin Management'}
-            </h2>
-            <button
-              onClick={openAddModal}
-              className="flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow-md shadow-primary/20 font-black transition-all active:scale-95 text-xs"
-            >
-              <span className="material-symbols-outlined text-base">person_add</span>
-              {lang === 'ar' ? 'إضافة مسؤول' : 'Add Admin'}
-            </button>
-          </div>
-          <div className="h-[90vh] flex flex-col">
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden flex flex-col h-[90vh]">
+          <div className="flex flex-col min-h-0 flex-1">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               {isLoading && admins.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40"><div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-slate-400 font-black text-xs">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p></div>
               ) : admins.length === 0 ? (
                 <div className="py-40 px-4"><EmptyState title={lang === 'ar' ? 'لا يوجد مسؤولين' : 'No admin accounts found'} /></div>
               ) : (
                 <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
-                  <thead className="sticky top-0 z-10 bg-primary/10 dark:bg-primary/5">
-                    <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400 border-b-2 border-primary/20">
+                  <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
+                    <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
                       <th className="px-6 py-4">{lang === 'ar' ? 'المسؤول' : 'Admin'}</th>
                       <th className="px-6 py-4">{lang === 'ar' ? 'البريد' : 'Email'}</th>
                       <th className="px-6 py-4">{lang === 'ar' ? 'الدور' : 'Role'}</th>
@@ -340,6 +330,17 @@ const AdminManagement: React.FC = () => {
                 </table>
               )}
             </div>
+            {totalPages > 0 && (
+              <PaginationFooter
+                currentPage={page}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                currentCount={admins.length}
+                asTableFooter
+              />
+            )}
           </div>
         </div>
       </div>
@@ -395,7 +396,7 @@ const AdminManagement: React.FC = () => {
                           <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'تفاصيل المسؤول' : 'Admin Details'}</h3>
                           <button onClick={() => setExpandedAdminId(null)} className="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors"><span className="material-symbols-outlined text-xl">close</span></button>
                         </div>
-                        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar flex-1">
+                        <div className="max-h-[90vh] overflow-y-auto custom-scrollbar flex-1">
                           <div className="space-y-0 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700"><span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الدور' : 'Role'}</span><span className="text-xs font-black text-primary">{roleLabel(admin.role)}</span></div>
                             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700"><span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'الهاتف' : 'Phone'}</span><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{admin.phoneNumber || '-'}</span></div>
@@ -412,14 +413,18 @@ const AdminManagement: React.FC = () => {
         )}
       </div>
 
-      <PaginationFooter
-        currentPage={page}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-        currentCount={admins.length}
-      />
+      <div className="md:hidden">
+        {totalPages > 0 && (
+          <PaginationFooter
+            currentPage={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            currentCount={admins.length}
+          />
+        )}
+      </div>
 
       {isModalOpen && (
         <div className={`fixed inset-0 z-[600] ${MODAL_OVERLAY_BASE_CLASS}`} onClick={() => setIsModalOpen(false)}>

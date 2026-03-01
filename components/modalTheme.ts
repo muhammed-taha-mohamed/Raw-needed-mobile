@@ -12,3 +12,6 @@ export const MODAL_TEXTAREA_CLASS =
 
 export const MODAL_DROPDOWN_TRIGGER_CLASS =
   'w-full min-h-[44px] px-4 py-3 rounded-2xl border-2 border-primary/20 bg-slate-50/50 dark:bg-slate-800/50 text-sm font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start';
+
+/** Re-export for forms: use FloatingLabelInput / FloatingLabelTextarea for floating-label style (label moves up on focus). */
+export { default as FloatingLabelInput, FloatingLabelTextarea } from './FloatingLabelInput';

@@ -56,8 +56,8 @@ const Register: React.FC = () => {
   });
 
   useEffect(() => {
-    if (step === 3) fetchCategories();
-  }, [step]);
+    if (step === 3 && formData.role === 'SUPPLIER_OWNER') fetchCategories();
+  }, [step, formData.role]);
 
   const fetchCategories = async () => {
     setFetchingData(true);
@@ -169,16 +169,14 @@ const Register: React.FC = () => {
       );
     }
     if (step === 3) {
-      const basicValid = !!formData.categoryId;
+      const orgValid =
+        formData.organizationName.trim() !== '' &&
+        formData.organizationCRN.trim() !== '' &&
+        !!crnPreview;
       if (formData.role === 'SUPPLIER_OWNER') {
-        return (
-          basicValid &&
-          formData.organizationName.trim() !== '' &&
-          formData.organizationCRN.trim() !== '' &&
-          !!crnPreview
-        );
+        return !!formData.categoryId && orgValid;
       }
-      return basicValid;
+      return orgValid;
     }
     return false;
   };
@@ -307,8 +305,12 @@ const Register: React.FC = () => {
                 <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({...formData, organizationCRN: e.target.value})} placeholder={t.register.orgCRNPlaceholder} required />
                 <div onClick={() => crnInputRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${crnPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>{crnPreview ? <img src={crnPreview} className="size-full object-contain p-2" alt="CRN" /> : <><span className="material-symbols-outlined text-2xl text-white/50 mb-1">cloud_upload</span><span className="text-[10px] font-black text-white/60  ">{t.register.orgCRNImage}</span></>}</div>
                 <input type="file" ref={crnInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'crn')} />
-                <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={handleCategoryChange} placeholder={t.register.selectCategory} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white pl-5 pr-12 rtl:pl-12 rtl:pr-5 font-bold text-[16px] md:text-sm shadow-lg focus:ring-4 focus:ring-white/20 transition-all cursor-pointer text-start" />
-                {formData.categoryId && subCategories.length > 0 && <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">{subCategories.map(s => <button key={s.id} type="button" onClick={() => toggleSubCategory(s.id)} className={`px-3 py-2 rounded-full border-0 text-[10px] font-black transition-all text-center leading-tight shadow-sm ${formData.subCategoryIds.includes(s.id) ? 'bg-white dark:bg-primary text-[#20a7b2] dark:text-white' : 'bg-white/10 dark:bg-white/5 text-white/70'}`}>{lang === 'ar' ? s.arabicName : s.name}</button>)}</div>}
+                {formData.role === 'SUPPLIER_OWNER' && (
+                  <>
+                    <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={handleCategoryChange} placeholder={t.register.selectCategory} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white pl-5 pr-12 rtl:pl-12 rtl:pr-5 font-bold text-[16px] md:text-sm shadow-lg focus:ring-4 focus:ring-white/20 transition-all cursor-pointer text-start" />
+                    {formData.categoryId && subCategories.length > 0 && <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">{subCategories.map(s => <button key={s.id} type="button" onClick={() => toggleSubCategory(s.id)} className={`px-3 py-2 rounded-full border-0 text-[10px] font-black transition-all text-center leading-tight shadow-sm ${formData.subCategoryIds.includes(s.id) ? 'bg-white dark:bg-primary text-[#20a7b2] dark:text-white' : 'bg-white/10 dark:bg-white/5 text-white/70'}`}>{lang === 'ar' ? s.arabicName : s.name}</button>)}</div>}
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -213,7 +213,8 @@ const Profile: React.FC = () => {
       const payload = { 
         ...formData, 
         profileImage: finalImageUrl,
-        categoryId: formData.categoryId || null
+        categoryId: userRole.includes('SUPPLIER') ? (formData.categoryId || null) : null,
+        subCategoryIds: userRole.includes('SUPPLIER') ? formData.subCategoryIds : []
       };
 
       await api.patch(`/api/v1/user/${userId}`, payload);
@@ -459,7 +460,7 @@ const Profile: React.FC = () => {
                 <Dropdown options={[{ value: 'EN', label: 'English' }, { value: 'AR', label: 'Arabic' }]} value={formData.languagePreference} onChange={(v) => setFormData({...formData, languagePreference: v})} placeholder={t.profileExtra.languagePreference} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[46px] border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-3 text-sm font-bold text-slate-900 dark:text-white text-start" />
               </div>
 
-              {!isAdminRole && (
+              {!isAdminRole && userRole.includes('SUPPLIER') && (
                 <>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-500">{t.profileExtra.businessCategoryLabel}</label>
@@ -502,15 +503,18 @@ const Profile: React.FC = () => {
                       <div className="space-y-2 text-xs font-bold text-slate-600 dark:text-slate-300">
                         <div className="flex items-center gap-2"><span className="material-symbols-outlined text-base">corporate_fare</span><span>{profile?.organizationName || '-'}</span></div>
                         <div className="flex items-center gap-2"><span className="material-symbols-outlined text-base">badge</span><span>{profile?.organizationCRN || '-'}</span></div>
-                        <div className="flex items-center gap-2"><span className="material-symbols-outlined text-base">category</span><span>{profile?.category ? (lang === 'ar' ? profile.category.arabicName : profile.category.name) : '-'}</span></div>
+                        {userRole.includes('SUPPLIER') && (
+                          <div className="flex items-center gap-2"><span className="material-symbols-outlined text-base">category</span><span className="text-primary font-black">{profile?.category ? (lang === 'ar' ? profile.category.arabicName : profile.category.name) : '-'}</span></div>
+                        )}
                         <div className="flex items-center gap-2"><span className="material-symbols-outlined text-base">workspace_premium</span><span>{profile?.subscription?.planName || (lang === 'ar' ? 'لا توجد باقة' : 'No Plan')}</span></div>
                       </div>
                     </div>
+                    {userRole.includes('SUPPLIER') && (
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
                       <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">{t.profileExtra.specializations}</h3>
                       <div className="flex flex-wrap gap-2">
                         {profile?.subCategories?.map((sub) => (
-                          <span key={sub.id} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          <span key={sub.id} className="text-primary font-bold text-[11px]">
                             {lang === 'ar' ? sub.arabicName : sub.name}
                           </span>
                         ))}
@@ -519,6 +523,7 @@ const Profile: React.FC = () => {
                         )}
                       </div>
                     </div>
+                    )}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'الباقة' : 'Plan'}</h3>
