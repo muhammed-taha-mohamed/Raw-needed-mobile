@@ -13,7 +13,7 @@ export const PLAN_FEATURE_LABELS: Record<string, { en: string; ar: string; planT
   // Customer Features
   CUSTOMER_PRIVATE_ORDERS: { en: 'Clients Special Orders', ar: 'طلبات العملاء الخاصة', planType: 'CUSTOMER' },
   CUSTOMER_RAW_MATERIALS_ADVANCE: { en: 'Raw Materials Advance', ar: 'سلفة الخامات', planType: 'CUSTOMER' },
-  CUSTOMER_VIEW_SUPPLIER_OFFERS: { en: 'View Supplier Special Offers', ar: 'ظهور العروض الخاصة للموردين', planType: 'CUSTOMER' },
+  CUSTOMER_VIEW_SUPPLIER_OFFERS: { en: 'View Distributor Special Offers', ar: 'ظهور العروض الخاصة للموزعين', planType: 'CUSTOMER' },
   CUSTOMER_ADVANCED_REPORTS: { en: 'Advanced Reports', ar: 'التقارير المتقدمة', planType: 'CUSTOMER' },
 };
 

@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { APP_LOGO } from '../../constants';
 import { UserSubscription, Category, SubCategory, Advertisement } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface ProfileData {
   id: string;
@@ -454,9 +455,33 @@ const Profile: React.FC = () => {
             <h2 className="text-lg font-black text-slate-900 dark:text-white mb-6">{t.profile.editProfile}</h2>
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.profile.namePlaceholder} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-white ${lang === 'ar' ? 'text-right' : 'text-left'}`} required />
-                <input type="text" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder={t.profile.fullNamePlaceholder} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-white ${lang === 'ar' ? 'text-right' : 'text-left'}`} required />
-                <input type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.profile.phonePlaceholder} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-900 dark:text-white ${lang === 'ar' ? 'text-right' : 'text-left'}`} required />
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.profile.namePlaceholder}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder={t.profile.namePlaceholder}
+                  isRtl={lang === 'ar'}
+                />
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.profile.fullNamePlaceholder}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder={t.profile.fullNamePlaceholder}
+                  isRtl={lang === 'ar'}
+                />
+                <FloatingLabelInput
+                  required
+                  type="tel"
+                  label={t.profile.phonePlaceholder}
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  placeholder={t.profile.phonePlaceholder}
+                  isRtl={lang === 'ar'}
+                />
                 <Dropdown options={[{ value: 'EN', label: 'English' }, { value: 'AR', label: 'Arabic' }]} value={formData.languagePreference} onChange={(v) => setFormData({...formData, languagePreference: v})} placeholder={t.profileExtra.languagePreference} isRtl={lang === 'ar'} triggerClassName="w-full min-h-[46px] border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 px-3 text-sm font-bold text-slate-900 dark:text-white text-start" />
               </div>
 
@@ -573,9 +598,30 @@ const Profile: React.FC = () => {
                       {lang === 'ar' ? 'تعديل كلمة المرور' : 'Change Password'}
                     </h3>
                     <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <input type="password" value={changePasswordForm.oldPassword} onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, oldPassword: e.target.value }))} placeholder={lang === 'ar' ? 'كلمة المرور الحالية' : 'Old Password'} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold ${lang === 'ar' ? 'text-right' : 'text-left'}`} />
-                      <input type="password" value={changePasswordForm.newPassword} onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} placeholder={lang === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold ${lang === 'ar' ? 'text-right' : 'text-left'}`} />
-                      <input type="password" value={changePasswordForm.confirmNewPassword} onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, confirmNewPassword: e.target.value }))} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold ${lang === 'ar' ? 'text-right' : 'text-left'}`} />
+                      <FloatingLabelInput
+                        type="password"
+                        label={lang === 'ar' ? 'كلمة المرور الحالية' : 'Old Password'}
+                        value={changePasswordForm.oldPassword}
+                        onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, oldPassword: e.target.value }))}
+                        placeholder={lang === 'ar' ? 'كلمة المرور الحالية' : 'Old Password'}
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        type="password"
+                        label={lang === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'}
+                        value={changePasswordForm.newPassword}
+                        onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder={lang === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'}
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        type="password"
+                        label={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                        value={changePasswordForm.confirmNewPassword}
+                        onChange={(e) => setChangePasswordForm((prev) => ({ ...prev, confirmNewPassword: e.target.value }))}
+                        placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                        isRtl={lang === 'ar'}
+                      />
                       <div className="md:col-span-3">
                         <button type="submit" disabled={isChangingPassword} className="w-full md:w-auto px-8 h-10 rounded-lg bg-primary text-white text-xs font-black transition-all active:scale-95 disabled:opacity-50">
                           {isChangingPassword ? (lang === 'ar' ? 'جارٍ التحديث...' : 'Updating...') : (lang === 'ar' ? 'تحديث كلمة المرور' : 'Update Password')}

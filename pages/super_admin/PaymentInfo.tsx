@@ -5,6 +5,7 @@ import { PaymentInfo as PaymentInfoType, PaymentType } from '../../types';
 import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
 import EmptyState from '../../components/EmptyState';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 const PaymentInfo: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -251,70 +252,60 @@ const PaymentInfo: React.FC = () => {
                   {error}
                 </div>
               )}
-              <div>
-                <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'رقم التحويل' : 'Transfer number'} *</label>
-                <input
-                  type="text"
-                  value={formData.transferNumber}
-                  onChange={(e) => setFormData({ ...formData, transferNumber: e.target.value })}
-                  placeholder={t.paymentInfo.transferNumberPlaceholder}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'رقم الحساب' : 'Account number'}</label>
-                <input
-                  type="text"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  placeholder={t.paymentInfo.accountNumberPlaceholder}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                  disabled={isSubmitting}
-                />
-              </div>
+              <FloatingLabelInput
+                required
+                type="text"
+                label={lang === 'ar' ? 'رقم التحويل' : 'Transfer number'}
+                value={formData.transferNumber}
+                onChange={(e) => setFormData({ ...formData, transferNumber: e.target.value })}
+                placeholder={lang === 'ar' ? 'رقم التحويل' : 'Transfer number'}
+                disabled={isSubmitting}
+                isRtl={lang === 'ar'}
+              />
+              <FloatingLabelInput
+                type="text"
+                label={lang === 'ar' ? 'رقم الحساب' : 'Account number'}
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                placeholder={lang === 'ar' ? 'رقم الحساب' : 'Account number'}
+                disabled={isSubmitting}
+                isRtl={lang === 'ar'}
+              />
               <div>
                 <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'نوع الدفع' : 'Payment type'}</label>
                 <Dropdown options={[{ value: 'BANK_ACCOUNT', label: lang === 'ar' ? 'حساب بنكي' : 'Bank Account' }, { value: 'ELECTRONIC_WALLET', label: lang === 'ar' ? 'محفظة إلكترونية' : 'Electronic Wallet' }]} value={formData.paymentType} onChange={(v) => setFormData({ ...formData, paymentType: v as PaymentType })} placeholder={lang === 'ar' ? 'نوع الدفع' : 'Payment type'} showClear={false} isRtl={lang === 'ar'} disabled={isSubmitting} triggerClassName="w-full min-h-[48px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none cursor-pointer text-start disabled:opacity-50 disabled:cursor-not-allowed pl-4 pr-10 rtl:pl-10 rtl:pr-4" />
               </div>
               {formData.paymentType === 'BANK_ACCOUNT' && (
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'اسم البنك' : 'Bank name'}</label>
-                  <input
-                    type="text"
-                    value={formData.bankName}
-                    onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                    placeholder={t.paymentInfo.bankNamePlaceholder}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <FloatingLabelInput
+                  type="text"
+                  label={lang === 'ar' ? 'اسم البنك' : 'Bank name'}
+                  value={formData.bankName}
+                  onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                  placeholder={lang === 'ar' ? 'اسم البنك' : 'Bank name'}
+                  disabled={isSubmitting}
+                  isRtl={lang === 'ar'}
+                />
               )}
               {formData.paymentType === 'ELECTRONIC_WALLET' && (
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'مزود المحفظة' : 'Wallet provider'}</label>
-                  <input
-                    type="text"
-                    value={formData.walletProvider}
-                    onChange={(e) => setFormData({ ...formData, walletProvider: e.target.value })}
-                    placeholder={t.paymentInfo.walletProviderPlaceholder}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              )}
-              <div>
-                <label className="text-[11px] font-bold text-slate-500    px-1 block mb-1.5">{lang === 'ar' ? 'اسم صاحب الحساب' : 'Account holder name'}</label>
-                <input
+                <FloatingLabelInput
                   type="text"
-                  value={formData.accountHolderName}
-                  onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                  placeholder={t.paymentInfo.accountHolderPlaceholder}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+                  label={lang === 'ar' ? 'مزود المحفظة' : 'Wallet provider'}
+                  value={formData.walletProvider}
+                  onChange={(e) => setFormData({ ...formData, walletProvider: e.target.value })}
+                  placeholder={lang === 'ar' ? 'مزود المحفظة' : 'Wallet provider'}
                   disabled={isSubmitting}
+                  isRtl={lang === 'ar'}
                 />
-              </div>
+              )}
+              <FloatingLabelInput
+                type="text"
+                label={lang === 'ar' ? 'اسم صاحب الحساب' : 'Account holder name'}
+                value={formData.accountHolderName}
+                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                placeholder={lang === 'ar' ? 'اسم صاحب الحساب' : 'Account holder name'}
+                disabled={isSubmitting}
+                isRtl={lang === 'ar'}
+              />
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"

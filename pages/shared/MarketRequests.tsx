@@ -7,7 +7,8 @@ import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
 import EmptyState from '../../components/EmptyState';
 import PaginationFooter from '../../components/PaginationFooter';
 import { useToast } from '../../contexts/ToastContext';
-import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 import { PlanFeaturesEnum } from '../../types';
 import { hasFeature } from '../../utils/subscription';
 
@@ -421,44 +422,38 @@ const MarketRequests: React.FC = () => {
                     </div>
 
                     {/* Material Name */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.materialName}</label>
-                      <input
-                        required
-                        type="text"
-                        value={post.materialName}
-                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, materialName: e.target.value } : p))}
-                        className={MODAL_INPUT_CLASS}
-                        placeholder={t.marketRequests.materialName}
-                      />
-                    </div>
+                    <FloatingLabelInput
+                      required
+                      type="text"
+                      label={t.marketRequests.materialName}
+                      value={post.materialName}
+                      onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, materialName: e.target.value } : p))}
+                      placeholder={t.marketRequests.materialName}
+                      isRtl={lang === 'ar'}
+                    />
 
                     {/* Quantity & Unit */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.quantity}</label>
-                        <input
-                          required
-                          type="number"
-                          min="1"
-                          step="0.01"
-                          value={post.quantity}
-                          onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, quantity: e.target.value } : p))}
-                          className={MODAL_INPUT_CLASS}
-                          placeholder="1"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.unit}</label>
-                        <input
-                          required
-                          type="text"
-                          value={post.unit}
-                          onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, unit: e.target.value } : p))}
-                          className={MODAL_INPUT_CLASS}
-                          placeholder={lang === 'ar' ? 'مثال: كجم' : 'e.g. KG'}
-                        />
-                      </div>
+                      <FloatingLabelInput
+                        required
+                        type="number"
+                        label={t.marketRequests.quantity}
+                        min={1}
+                        step={0.01}
+                        value={post.quantity}
+                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, quantity: e.target.value } : p))}
+                        placeholder="1"
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        required
+                        type="text"
+                        label={t.marketRequests.unit}
+                        value={post.unit}
+                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, unit: e.target.value } : p))}
+                        placeholder={lang === 'ar' ? 'مثال: كجم' : 'e.g. KG'}
+                        isRtl={lang === 'ar'}
+                      />
                     </div>
 
                     {/* Target Type */}

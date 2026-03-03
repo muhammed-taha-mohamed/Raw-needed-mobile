@@ -4,6 +4,7 @@ import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
 import EmptyState from '../../components/EmptyState';
+import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -431,27 +432,22 @@ const Complaints: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-5">
-                   <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.subject}</label>
-                      <input
-                        required
-                        type="text"
-                        value={newTicket.subject}
-                        onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                        placeholder={t.complaints.subjectPlaceholder}
-                        className={`w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                      />
-                   </div>
-                   <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.description}</label>
-                      <textarea
-                        required
-                        value={newTicket.description}
-                        onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                        placeholder={t.complaints.descriptionPlaceholder}
-                        className={`w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner min-h-[120px] text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'text-right' : 'text-left'}`}
-                      />
-                   </div>
+                   <FloatingLabelInput
+                     required
+                     type="text"
+                     label={t.complaints.subjectPlaceholder}
+                     value={newTicket.subject}
+                     onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                     placeholder={t.complaints.subjectPlaceholder}
+                     isRtl={lang === 'ar'}
+                   />
+                   <FloatingLabelTextarea
+                     required
+                     label={t.complaints.descriptionPlaceholder}
+                     value={newTicket.description}
+                     onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                     placeholder={t.complaints.descriptionPlaceholder}
+                   />
                    <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.image}</label>
                       {!preview ? (

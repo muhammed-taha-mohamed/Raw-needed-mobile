@@ -400,7 +400,7 @@ const CustomerDashboard: React.FC = () => {
           {!loadingStats && stats?.mostRequestedSupplier && (
             <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 rounded-[2rem] border border-primary/20 dark:border-primary/30 shadow-sm p-6 transition-all hover:shadow-lg cursor-pointer" onClick={() => navigate('/vendors')}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'أكثر مورد طلب منه' : 'Most Requested Supplier'}</h3>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'أكثر موزع طلباً' : 'Most Requested Distributor'}</h3>
                 <span className="material-symbols-outlined text-primary text-xl">star</span>
               </div>
               <div className="flex items-center gap-3 mb-4">

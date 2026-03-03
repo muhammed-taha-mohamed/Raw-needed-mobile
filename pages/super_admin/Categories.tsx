@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
 import EmptyState from '../../components/EmptyState';
 import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 const Categories: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -554,29 +555,25 @@ const Categories: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="addCatForm" onSubmit={handleAddCategory} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameEn}</label>
-                  <input
-                    type="text"
-                    value={newCat.name}
-                    onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
-                    placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
-                    required
-                    className={MODAL_INPUT_CLASS}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameAr}</label>
-                  <input
-                    type="text"
-                    value={newCat.arabicName}
-                    onChange={(e) => setNewCat({ ...newCat, arabicName: e.target.value })}
-                    placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
-                    required
-                    dir="rtl"
-                    className={`${MODAL_INPUT_CLASS} text-right`}
-                  />
-                </div>
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.categories.nameEn}
+                  value={newCat.name}
+                  onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
+                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
+                />
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.categories.nameAr}
+                  value={newCat.arabicName}
+                  onChange={(e) => setNewCat({ ...newCat, arabicName: e.target.value })}
+                  placeholder={lang === 'ar' ? t.categories.nameArPlaceholder : t.categories.nameEnPlaceholder}
+                  className="text-right"
+                  isRtl={lang === 'ar'}
+                  dir="rtl"
+                />
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 space-y-3">
                   <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
                     {lang === 'ar' ? 'بيانات إضافية للمنتج (حسب الفئة)' : 'Category-specific product extra fields'}
@@ -691,29 +688,25 @@ const Categories: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="addSubForm" onSubmit={handleAddSubCategory} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameEn}</label>
-                  <input
-                    type="text"
-                    value={newSub.name}
-                    onChange={(e) => setNewSub({ ...newSub, name: e.target.value })}
-                    placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
-                    required
-                    className={MODAL_INPUT_CLASS}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.categories.nameAr}</label>
-                  <input
-                    type="text"
-                    value={newSub.arabicName}
-                    onChange={(e) => setNewSub({ ...newSub, arabicName: e.target.value })}
-                    placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
-                    required
-                    dir="rtl"
-                    className={`${MODAL_INPUT_CLASS} text-right`}
-                  />
-                </div>
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.categories.nameEn}
+                  value={newSub.name}
+                  onChange={(e) => setNewSub({ ...newSub, name: e.target.value })}
+                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
+                />
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.categories.nameAr}
+                  value={newSub.arabicName}
+                  onChange={(e) => setNewSub({ ...newSub, arabicName: e.target.value })}
+                  placeholder={lang === 'ar' ? t.categories.subNameArPlaceholder : t.categories.subNameEnPlaceholder}
+                  className="text-right"
+                  isRtl={lang === 'ar'}
+                  dir="rtl"
+                />
               </form>
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">

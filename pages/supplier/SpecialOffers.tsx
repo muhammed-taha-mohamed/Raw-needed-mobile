@@ -8,7 +8,8 @@ import { useToast } from '../../contexts/ToastContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
-import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface SpecialOffer {
   id: string;
@@ -337,39 +338,33 @@ const SpecialOffers: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    step="0.1"
-                    value={formData.discountPercentage}
-                    onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
-                    required
-                    className={MODAL_INPUT_CLASS}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
-                    className={MODAL_INPUT_CLASS}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
-                    className={MODAL_INPUT_CLASS}
-                  />
-                </div>
+                <FloatingLabelInput
+                  required
+                  type="number"
+                  label={lang === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}
+                  min={1}
+                  max={100}
+                  step={0.1}
+                  value={formData.discountPercentage}
+                  onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
+                  isRtl={lang === 'ar'}
+                />
+                <FloatingLabelInput
+                  required
+                  type="datetime-local"
+                  label={lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  isRtl={lang === 'ar'}
+                />
+                <FloatingLabelInput
+                  required
+                  type="datetime-local"
+                  label={lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  isRtl={lang === 'ar'}
+                />
               </form>
             </div>
             <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex gap-3">

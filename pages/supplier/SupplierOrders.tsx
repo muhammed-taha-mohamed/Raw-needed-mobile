@@ -14,6 +14,7 @@ interface SupplierResponse {
   availableQuantity: number;
   shippingInfo: string;
   phoneNumber?: string; // WhatsApp from supplier response
+  analysisCertificateUrl?: string;
 }
 
 interface RFQOffer {
@@ -78,6 +79,8 @@ const SupplierOrders: React.FC = () => {
   const [formDelivery, setFormDelivery] = useState<string>('');
   const [formAvailableQty, setFormAvailableQty] = useState<string>('');
   const [formShippingInfo, setFormShippingInfo] = useState<string>('');
+  const [formCoaUrl, setFormCoaUrl] = useState<string>('');
+  const [formCoaPreview, setFormCoaPreview] = useState<string>('');
   
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -125,6 +128,8 @@ const SupplierOrders: React.FC = () => {
     setFormDelivery(offer.supplierResponse?.estimatedDelivery || '');
     setFormAvailableQty(offer.supplierResponse?.availableQuantity?.toString() || offer.quantity.toString());
     setFormShippingInfo(offer.supplierResponse?.shippingInfo || '');
+    setFormCoaUrl(offer.supplierResponse?.analysisCertificateUrl || '');
+    setFormCoaPreview(offer.supplierResponse?.analysisCertificateUrl || '');
   };
 
   const handleCompleteOffer = async (offerId: string) => {
@@ -155,7 +160,8 @@ const SupplierOrders: React.FC = () => {
         estimatedDelivery: formDelivery,
         respondedAt: new Date().toISOString(),
         availableQuantity: parseInt(formAvailableQty),
-        shippingInfo: formShippingInfo
+        shippingInfo: formShippingInfo,
+        analysisCertificateUrl: formCoaUrl || ''
       };
 
       await api.post(`/api/v1/rfq/line/${respondingOffer.id}/respond`, payload);
@@ -807,6 +813,32 @@ const SupplierOrders: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة التحليل (صورة اختيارية)' : 'Certificate of Analysis (optional image)'}</label>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="file" accept="image/*" 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onloadend = () => setFormCoaPreview(reader.result as string);
+                        reader.readAsDataURL(file);
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        try {
+                          const url = await api.post<string>('/api/v1/image/upload', formData);
+                          setFormCoaUrl(url || '');
+                        } catch {}
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-3 text-xs font-bold"
+                    />
+                    {formCoaPreview && (
+                      <img src={formCoaPreview} alt="COA" className="size-16 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
+                    )}
+                  </div>
+                </div>
+
                 <div className="pt-6">
                   <button 
                     type="submit"
@@ -910,6 +942,12 @@ const SupplierOrders: React.FC = () => {
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'موعد التسليم:' : 'Delivery date:'} {detailsOffer.supplierResponse.estimatedDelivery}</p>
                   {!!detailsOffer.supplierResponse.shippingInfo && (
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 break-words">{lang === 'ar' ? 'معلومات الشحن:' : 'Shipping info:'} {detailsOffer.supplierResponse.shippingInfo}</p>
+                  )}
+                  {!!detailsOffer.supplierResponse.analysisCertificateUrl && (
+                    <div className="pt-2">
+                      <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'شهادة التحليل:' : 'Certificate of Analysis:'}</p>
+                      <img src={detailsOffer.supplierResponse.analysisCertificateUrl} alt="COA" className="w-full max-h-64 object-contain rounded-xl border border-slate-200 dark:border-slate-700 mt-1" />
+                    </div>
                   )}
                 </div>
               ) : (

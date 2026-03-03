@@ -121,8 +121,8 @@ const Users: React.FC = () => {
       'ADMIN': { ar: 'مسؤول', en: 'Admin' },
       'CUSTOMER_OWNER': { ar: 'عميل', en: 'Customer Owner' },
       'CUSTOMER_STAFF': { ar: 'موظف عميل', en: 'Customer Staff' },
-      'SUPPLIER_OWNER': { ar: 'مورد', en: 'Supplier Owner' },
-      'SUPPLIER_STAFF': { ar: 'موظف مورد', en: 'Supplier Staff' },
+      'SUPPLIER_OWNER': { ar: 'موزع', en: 'Distributor Owner' },
+      'SUPPLIER_STAFF': { ar: 'موظف موزع', en: 'Distributor Staff' },
     };
     return roleMap[role] || { ar: role, en: role };
   };
@@ -436,7 +436,7 @@ const Users: React.FC = () => {
                         {user.organizationCRN && (
                           <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td className="px-4 py-3 text-xs font-black text-slate-500 dark:text-slate-400 w-[140px] border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                              {lang === 'ar' ? 'رقم الترخيص' : 'CRN'}
+                              {lang === 'ar' ? 'رقم البطاقة الضريبية' : 'CRN'}
                             </td>
                             <td className="px-4 py-3">
                               <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
@@ -524,13 +524,13 @@ const Users: React.FC = () => {
                         {user.organizationCRNImage && (
                           <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                             <td className="px-4 py-3 text-xs font-black text-slate-500 dark:text-slate-400 w-[140px] border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 align-top">
-                              {lang === 'ar' ? 'صورة الترخيص' : 'CRN Image'}
+                              {lang === 'ar' ? 'صورة البطاقة الضريبية' : 'CRN Image'}
                             </td>
                             <td className="px-4 py-3">
                               <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden max-w-md">
                                 <img 
                                   src={user.organizationCRNImage} 
-                                  alt={lang === 'ar' ? 'صورة الترخيص' : 'CRN Image'} 
+                                  alt={lang === 'ar' ? 'صورة البطاقة الضريبية' : 'CRN Image'} 
                                   className="w-full h-auto max-h-64 object-contain bg-slate-50 dark:bg-slate-900"
                                 />
                               </div>
@@ -713,7 +713,7 @@ const Users: React.FC = () => {
                             )}
                             {user.organizationCRN && (
                               <div className="flex items-center justify-between px-4 py-3 border-b-2 border-slate-200 dark:border-slate-700">
-                                <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'رقم الترخيص' : 'CRN'}</span>
+                                <span className="text-xs font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'رقم البطاقة الضريبية' : 'CRN'}</span>
                                 <span className="text-sm font-bold text-slate-600 dark:text-slate-400 text-end">
                                   {user.organizationCRN}
                                 </span>

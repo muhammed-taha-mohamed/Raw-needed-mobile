@@ -40,6 +40,14 @@ const Register: React.FC = () => {
   const profileInputRef = useRef<HTMLInputElement>(null);
   const crnInputRef = useRef<HTMLInputElement>(null);
 
+  const [agreePolicy, setAgreePolicy] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [dragStartY, setDragStartY] = useState<number | null>(null);
+  const [dragTranslate, setDragTranslate] = useState(0);
+  const dragThreshold = 120;
+  const [policyLoading, setPolicyLoading] = useState(false);
+  const [policies, setPolicies] = useState<{ acceptableUse: { ar: string[]; en: string[] }; privacy: { ar: string[]; en: string[] } } | null>(null);
+
   const [formData, setFormData] = useState({
     role: '' as Role,
     name: '', 
@@ -58,6 +66,29 @@ const Register: React.FC = () => {
   useEffect(() => {
     if (step === 3 && formData.role === 'SUPPLIER_OWNER') fetchCategories();
   }, [step, formData.role]);
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      setPolicyLoading(true);
+      try {
+        const resp = await api.get<any>('/api/v1/admin/policies');
+        const data = resp?.data?.data || resp?.data || resp;
+        const acceptableUse = {
+          ar: Array.isArray(data?.acceptableUse?.ar) ? data.acceptableUse.ar : [],
+          en: Array.isArray(data?.acceptableUse?.en) ? data.acceptableUse.en : [],
+        };
+        const privacy = {
+          ar: Array.isArray(data?.privacy?.ar) ? data.privacy.ar : [],
+          en: Array.isArray(data?.privacy?.en) ? data.privacy.en : [],
+        };
+        setPolicies({ acceptableUse, privacy });
+      } catch {
+        setPolicies(null);
+      } finally {
+        setPolicyLoading(false);
+      }
+    };
+    fetchPolicies();
+  }, []);
 
   const fetchCategories = async () => {
     setFetchingData(true);
@@ -174,9 +205,9 @@ const Register: React.FC = () => {
         formData.organizationCRN.trim() !== '' &&
         !!crnPreview;
       if (formData.role === 'SUPPLIER_OWNER') {
-        return !!formData.categoryId && orgValid;
+        return !!formData.categoryId && orgValid && agreePolicy;
       }
-      return orgValid;
+      return orgValid && agreePolicy;
     }
     return false;
   };
@@ -311,6 +342,20 @@ const Register: React.FC = () => {
                     {formData.categoryId && subCategories.length > 0 && <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">{subCategories.map(s => <button key={s.id} type="button" onClick={() => toggleSubCategory(s.id)} className={`px-3 py-2 rounded-full border-0 text-[10px] font-black transition-all text-center leading-tight shadow-sm ${formData.subCategoryIds.includes(s.id) ? 'bg-white dark:bg-primary text-[#20a7b2] dark:text-white' : 'bg-white/10 dark:bg-white/5 text-white/70'}`}>{lang === 'ar' ? s.arabicName : s.name}</button>)}</div>}
                   </>
                 )}
+                <label className="flex items-start gap-3 bg-white/10 dark:bg-slate-800/40 rounded-2xl p-3 border border-white/20">
+                  <input
+                    type="checkbox"
+                    checked={agreePolicy}
+                    onChange={(e) => setAgreePolicy(e.target.checked)}
+                    className="mt-1 size-4 rounded border-white/40 bg-transparent text-primary focus:ring-0"
+                  />
+                  <span className="text-[11px] font-bold text-white/80">
+                    {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+                    <button type="button" onClick={() => setShowPolicy(true)} className="underline font-black text-white">
+                      {lang === 'ar' ? 'سياسة الاستخدام والخصوصية' : 'Terms & Privacy Policy'}
+                    </button>
+                  </span>
+                </label>
               </div>
             )}
           </div>
@@ -325,6 +370,100 @@ const Register: React.FC = () => {
           <div className="text-center"><p className="text-white/60 text-xs font-bold">{t.registerExtra.alreadyHaveAccount} <Link to="/login" className="text-white font-black hover:underline ml-2 ">{t.registerExtra.loginLink}</Link></p></div>
         </div>
       </div>
+      {showPolicy && (
+        <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm md:flex md:items-center md:justify-center">
+          <style>{`
+            @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            @keyframes sheetDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+          `}</style>
+          <div 
+            className="absolute inset-x-0 bottom-0 md:static md:w-[92%] md:max-w-3xl md:max-h-[80vh] overflow-hidden rounded-t-3xl md:rounded-3xl bg-white dark:bg-slate-900 border-t border-white/20 dark:border-slate-700 md:border md:shadow-2xl"
+            style={{ transform: `translateY(${dragTranslate}px)`, animation: dragTranslate === 0 ? 'sheetUp 300ms cubic-bezier(0.16, 1, 0.3, 1)' : undefined }}
+            onMouseDown={(e) => { setDragStartY(e.clientY); }}
+            onMouseMove={(e) => { if (dragStartY !== null) { const dy = Math.max(0, e.clientY - dragStartY); setDragTranslate(dy); } }}
+            onMouseUp={() => { if (dragTranslate > dragThreshold) { setShowPolicy(false); } setDragStartY(null); setDragTranslate(0); }}
+            onTouchStart={(e) => { setDragStartY(e.touches[0].clientY); }}
+            onTouchMove={(e) => { if (dragStartY !== null) { const dy = Math.max(0, e.touches[0].clientY - dragStartY); setDragTranslate(dy); } }}
+            onTouchEnd={() => { if (dragTranslate > dragThreshold) { setShowPolicy(false); } setDragStartY(null); setDragTranslate(0); }}
+          >
+            <div className="md:hidden flex items-center justify-center py-2">
+              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+            </div>
+            <div className="flex items-center justify-between px-4 pt-2 pb-4 md:p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-[#20a7b2]/10 to-transparent">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                {lang === 'ar' ? 'سياسة الاستخدام والخصوصية' : 'Terms of Use & Privacy Policy'}
+              </h2>
+              <button onClick={() => setShowPolicy(false)} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto md:max-h-[70vh] space-y-6 text-sm leading-6 font-bold">
+              <section className="rounded-2xl p-4 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/60 dark:bg-emerald-900/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400">verified_user</span>
+                  <h3 className="text-base font-black text-emerald-700 dark:text-emerald-300">
+                    {lang === 'ar' ? 'الاستخدام المقبول' : 'Acceptable Use'}
+                  </h3>
+                </div>
+                <div className="pl-1 space-y-1 text-slate-700 dark:text-slate-300">
+                  {policyLoading ? (
+                    <div className="text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</div>
+                  ) : (policies?.acceptableUse[(lang === 'ar') ? 'ar' : 'en']?.length
+                      ? policies!.acceptableUse[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
+                      : (
+                        <>
+                          <p>{lang === 'ar' ? 'عدم إساءة استخدام المنصة أو محاولة اختراقها.' : 'Do not misuse or attempt to compromise the platform.'}</p>
+                          <p>{lang === 'ar' ? 'الالتزام بالقوانين المحلية والدولية.' : 'Comply with local and international laws.'}</p>
+                          <p>{lang === 'ar' ? 'التقديم بمعلومات صحيحة ومحدثة.' : 'Provide accurate and up-to-date information.'}</p>
+                        </>
+                      )
+                    )}
+                </div>
+              </section>
+              <section className="rounded-2xl p-4 border border-sky-100 dark:border-sky-900/30 bg-sky-50/60 dark:bg-sky-900/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-sky-600 dark:text-sky-400">lock</span>
+                  <h3 className="text-base font-black text-sky-700 dark:text-sky-300">
+                    {lang === 'ar' ? 'الخصوصية والبيانات' : 'Privacy & Data'}
+                  </h3>
+                </div>
+                <div className="pl-1 space-y-1 text-slate-700 dark:text-slate-300">
+                  {policyLoading ? (
+                    <div className="text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</div>
+                  ) : (policies?.privacy[(lang === 'ar') ? 'ar' : 'en']?.length
+                      ? policies!.privacy[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
+                      : (
+                        <>
+                          <p>{lang === 'ar' ? 'نستخدم بياناتك لتقديم الخدمات وحمايتها.' : 'We use your data to deliver and protect the services.'}</p>
+                          <p>{lang === 'ar' ? 'لن نبيع بياناتك لطرف ثالث.' : 'We do not sell your data to third parties.'}</p>
+                          <p>{lang === 'ar' ? 'يمكنك طلب حذف بياناتك وفقًا للقانون.' : 'You may request data deletion subject to applicable law.'}</p>
+                        </>
+                      )
+                    )}
+                </div>
+              </section>
+              <section className="rounded-2xl p-4 border border-amber-100 dark:border-amber-900/30 bg-amber-50/60 dark:bg-amber-900/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-amber-600 dark:text-amber-400">update</span>
+                  <h3 className="text-base font-black text-amber-700 dark:text-amber-300">
+                    {lang === 'ar' ? 'التحديثات' : 'Updates'}
+                  </h3>
+                </div>
+                <p className="text-slate-700 dark:text-slate-300">
+                  {lang === 'ar'
+                    ? 'قد نقوم بتحديث هذه السياسة من وقت لآخر. استمرارك في الاستخدام يعني الموافقة على أي تحديثات.'
+                    : 'We may update this policy from time to time. Continued use constitutes acceptance of any updates.'}
+                </p>
+              </section>
+            </div>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end bg-white dark:bg-slate-900">
+              <button onClick={() => setShowPolicy(false)} className="px-5 h-10 rounded-xl bg-primary text-white text-xs font-black">
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

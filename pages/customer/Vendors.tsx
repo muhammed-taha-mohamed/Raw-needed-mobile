@@ -7,6 +7,7 @@ import { Category, CategoryExtraField, SubCategory } from '../../types';
 import Dropdown from '../../components/Dropdown';
 import { getCountryOptions, getCountryName } from '../../utils/countries';
 import EmptyState from '../../components/EmptyState';
+import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
 import PaginationFooter from '../../components/PaginationFooter';
 
 interface Supplier {
@@ -576,7 +577,7 @@ const Vendors: React.FC = () => {
               <table dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`w-full border-collapse bg-white dark:bg-slate-800 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
                 <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
                   <tr className="text-[12px] font-black text-slate-600 dark:text-slate-400">
-                    <th className="px-6 py-4">{lang === 'ar' ? 'المورد' : 'Supplier'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'الموزع' : 'Distributor'}</th>
                     <th className="px-6 py-4">{lang === 'ar' ? 'المنظمة' : 'Organization'}</th>
                     <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'القطاع' : 'Vertical'}</th>
                     <th className="px-6 py-4 hidden lg:table-cell">{lang === 'ar' ? 'التواصل' : 'Contact'}</th>
@@ -739,7 +740,7 @@ const Vendors: React.FC = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="size-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-lg">badge</span></div>
-                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'السجل' : 'CRN'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.organizationCRN || '---'}</p></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البطاقة الضريبية' : 'CRN'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.organizationCRN || '---'}</p></div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="size-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-lg">call</span></div>
@@ -839,13 +840,25 @@ const Vendors: React.FC = () => {
                            <button type="button" onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
                          </div>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                           <div className="sm:col-span-2 space-y-1.5">
-                             <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم المنتج' : 'Product Name'}</label>
-                             <input type="text" value={prodSearchName} onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white" placeholder="..." />
-                           </div>
-                           <div className="space-y-1.5">
-                            <Dropdown label={t.products.category} options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={prodSearchCat} onChange={setProdSearchCat} placeholder={lang === 'ar' ? 'الفئات' : 'Categories'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
-                           </div>
+                          <div className="sm:col-span-2">
+                            <FloatingLabelInput
+                              type="text"
+                              label={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
+                              value={prodSearchName}
+                              onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }}
+                              placeholder={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
+                              isRtl={lang === 'ar'}
+                            />
+                          </div>
+                          <FloatingLabelDropdown
+                            label={t.products.category}
+                            options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                            value={prodSearchCat}
+                            onChange={setProdSearchCat}
+                            placeholder={lang === 'ar' ? 'الفئات' : 'Categories'}
+                            isRtl={lang === 'ar'}
+                            showClear
+                          />
                            <div className="space-y-1.5">
                              <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
                            </div>
@@ -1041,16 +1054,15 @@ const Vendors: React.FC = () => {
                        </div>
 
                        {/* Product Name */}
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label>
-                         <input
-                           required
-                           type="text"
-                           value={order.name}
-                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
-                           className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                         />
-                       </div>
+                       <FloatingLabelInput
+                         required
+                         type="text"
+                         label={t.manualOrder.prodName}
+                         value={order.name}
+                         onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
+                         placeholder={t.manualOrder.prodName}
+                         isRtl={lang === 'ar'}
+                       />
 
                        {/* Category & SubCategory */}
                        <div className="grid grid-cols-2 gap-4">
@@ -1110,30 +1122,28 @@ const Vendors: React.FC = () => {
                        {order.categoryExtraFields.length > 0 && (
                          <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
                            {order.categoryExtraFields.some(field => field.key === 'serviceName') && (
-                             <div className="space-y-1.5">
-                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}</label>
-                               <input
-                                 type="text"
-                                 value={order.extraFieldValues.serviceName || ''}
-                                 onChange={(e) => {
-                                   const val = e.target.value;
-                                   setManualOrders(prev => prev.map(o => 
-                                     o.id === order.id 
-                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, serviceName: val }, name: val }
-                                       : o
-                                   ));
-                                 }}
-                                 placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
-                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                               />
-                             </div>
+                             <FloatingLabelInput
+                               type="text"
+                               label={lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}
+                               value={order.extraFieldValues.serviceName || ''}
+                               onChange={(e) => {
+                                 const val = e.target.value;
+                                 setManualOrders(prev => prev.map(o => 
+                                   o.id === order.id 
+                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, serviceName: val }, name: val }
+                                     : o
+                                 ));
+                               }}
+                               placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
+                               isRtl={lang === 'ar'}
+                             />
                            )}
                            {order.categoryExtraFields.some(field => field.key === 'dimensions') && (
                              <div className="space-y-2">
-                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الابعاد (طول/عرض/ارتفاع)' : 'Dimensions (L/W/H)'}</label>
                                <div className="grid grid-cols-3 gap-2">
-                                 <input
+                                 <FloatingLabelInput
                                    type="text"
+                                   label={lang === 'ar' ? 'طول' : 'Length'}
                                    value={order.extraFieldValues.dimensions_length || ''}
                                    onChange={(e) => setManualOrders(prev => prev.map(o => 
                                      o.id === order.id 
@@ -1141,10 +1151,12 @@ const Vendors: React.FC = () => {
                                        : o
                                    ))}
                                    placeholder={lang === 'ar' ? 'طول' : 'Length'}
-                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                   isRtl={lang === 'ar'}
+                                   className="text-xs"
                                  />
-                                 <input
+                                 <FloatingLabelInput
                                    type="text"
+                                   label={lang === 'ar' ? 'عرض' : 'Width'}
                                    value={order.extraFieldValues.dimensions_width || ''}
                                    onChange={(e) => setManualOrders(prev => prev.map(o => 
                                      o.id === order.id 
@@ -1152,10 +1164,12 @@ const Vendors: React.FC = () => {
                                        : o
                                    ))}
                                    placeholder={lang === 'ar' ? 'عرض' : 'Width'}
-                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                   isRtl={lang === 'ar'}
+                                   className="text-xs"
                                  />
-                                 <input
+                                 <FloatingLabelInput
                                    type="text"
+                                   label={lang === 'ar' ? 'ارتفاع' : 'Height'}
                                    value={order.extraFieldValues.dimensions_height || ''}
                                    onChange={(e) => setManualOrders(prev => prev.map(o => 
                                      o.id === order.id 
@@ -1163,58 +1177,51 @@ const Vendors: React.FC = () => {
                                        : o
                                    ))}
                                    placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
-                                   className="w-full px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
+                                   isRtl={lang === 'ar'}
+                                   className="text-xs"
                                  />
                                </div>
                              </div>
                            )}
                            {order.categoryExtraFields.some(field => field.key === 'note') && (
-                             <div className="space-y-1.5">
-                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'ملاحظة' : 'Note'}</label>
-                               <textarea
-                                 value={order.extraFieldValues.note || ''}
-                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                   o.id === order.id 
-                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, note: e.target.value } }
-                                     : o
-                                 ))}
-                                 rows={3}
-                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                                 placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
-                               />
-                             </div>
+                             <FloatingLabelTextarea
+                               label={lang === 'ar' ? 'ملاحظة' : 'Note'}
+                               value={order.extraFieldValues.note || ''}
+                               onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                 o.id === order.id 
+                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, note: e.target.value } }
+                                   : o
+                               ))}
+                               placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                             />
                            )}
                            {order.categoryExtraFields.some(field => field.key === 'colorCount') && (
-                             <div className="space-y-1.5">
-                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'عدد الألوان' : 'Color Count'}</label>
-                               <input
-                                 type="text"
-                                 value={order.extraFieldValues.colorCount || ''}
-                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                   o.id === order.id 
-                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, colorCount: e.target.value } }
-                                     : o
-                                 ))}
-                                 placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
-                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                               />
-                             </div>
+                             <FloatingLabelInput
+                               type="text"
+                               label={lang === 'ar' ? 'عدد الألوان' : 'Color Count'}
+                               value={order.extraFieldValues.colorCount || ''}
+                               onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                 o.id === order.id 
+                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, colorCount: e.target.value } }
+                                   : o
+                               ))}
+                               placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
+                               isRtl={lang === 'ar'}
+                             />
                            )}
                            {order.categoryExtraFields.some(field => field.key === 'paperSize') && (
-                             <div className="space-y-1.5">
-                               <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'حجم الورق' : 'Paper Size'}</label>
-                               <input
-                                 type="text"
-                                 value={order.extraFieldValues.paperSize || ''}
-                                 onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                   o.id === order.id 
-                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, paperSize: e.target.value } }
-                                     : o
-                                 ))}
-                                 placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
-                                 className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all text-slate-900 dark:text-white"
-                               />
-                             </div>
+                             <FloatingLabelInput
+                               type="text"
+                               label={lang === 'ar' ? 'حجم الورق' : 'Paper Size'}
+                               value={order.extraFieldValues.paperSize || ''}
+                               onChange={(e) => setManualOrders(prev => prev.map(o => 
+                                 o.id === order.id 
+                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, paperSize: e.target.value } }
+                                   : o
+                               ))}
+                               placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
+                               isRtl={lang === 'ar'}
+                             />
                            )}
                          </div>
                        )}
@@ -1236,31 +1243,27 @@ const Vendors: React.FC = () => {
                              triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
                            />
                          </div>
-                         <div className="space-y-1.5">
-                           <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label>
-                           <input
-                             required
-                             type="number"
-                             min="1"
-                             value={order.quantity}
-                             onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
-                             className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                           />
-                         </div>
+                         <FloatingLabelInput
+                           required
+                           type="number"
+                           label={t.manualOrder.qty}
+                           min={1}
+                           value={order.quantity}
+                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
+                           isRtl={lang === 'ar'}
+                         />
                        </div>
 
                        {/* Unit */}
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
-                         <input
-                           required
-                           type="text"
-                           value={order.unit}
-                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
-                           placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
-                           className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                         />
-                       </div>
+                       <FloatingLabelInput
+                         required
+                         type="text"
+                         label={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                         value={order.unit}
+                         onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
+                         placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
+                         isRtl={lang === 'ar'}
+                       />
 
                        {/* Image */}
                        <div className="space-y-1.5">

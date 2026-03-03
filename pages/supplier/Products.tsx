@@ -4,12 +4,14 @@ import { useLanguage } from '../../App';
 import { api, BASE_URL } from '../../api';
 import { Category, CategoryExtraField, SubCategory, Product } from '../../types';
 import Dropdown from '../../components/Dropdown';
+import FloatingLabelDropdown from '../../components/FloatingLabelDropdown';
 import { getCountryOptions, getCountryName } from '../../utils/countries';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { useToast } from '../../contexts/ToastContext';
 import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
 import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
+import { FloatingLabelCheckbox } from '../../components/FloatingLabelControls';
 import { APP_LOGO } from '../../constants';
 
 interface SupplierProfile {
@@ -82,6 +84,8 @@ const Products: React.FC = () => {
   
   const [formData, setFormData] = useState({ 
     name: '', 
+    nameEn: '', 
+    nameAr: '', 
     origin: '', 
     inStock: true, 
     stockQuantity: '0', 
@@ -202,7 +206,9 @@ const Products: React.FC = () => {
     setEditingProduct(product); setSelectedFile(null); setImagePreview(product.image || null);
     const catId = product.category?.id || product.categoryId;
     setFormData({ 
-      name: product.name, 
+      name: product.englishName || product.name, 
+      nameEn: product.englishName || product.name, 
+      nameAr: product.arabicName || '', 
       origin: product.origin || '', 
       inStock: product.inStock, 
       stockQuantity: product.stockQuantity?.toString() || '0', 
@@ -272,6 +278,9 @@ const Products: React.FC = () => {
       }
       const payload: any = { 
         ...formData, 
+        name: (formData.nameEn || formData.name || '').trim(), 
+        englishName: (formData.nameEn || formData.name || '').trim(), 
+        arabicName: (formData.nameAr || '').trim() || null, 
         stockQuantity: parseInt(formData.stockQuantity) || 0, 
         supplierId, 
         image: finalImageUrl,
@@ -799,7 +808,7 @@ const Products: React.FC = () => {
 
                     <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
                       <div>
-                        <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white line-clamp-1 leading-tight tracking-tight">{product.name}</h4>
+                        <h4 className="text-sm md:text-base font-black text-slate-800 dark:text-white line-clamp-1 leading-tight tracking-tight">{lang === 'ar' ? (product.arabicName || product.englishName || product.name) : (product.englishName || product.arabicName || product.name)}</h4>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                            <div className="flex items-center gap-1.5 text-slate-400">
                               <span className="material-symbols-outlined text-[18px] text-primary/60">category</span>
@@ -1013,33 +1022,51 @@ const Products: React.FC = () => {
                   </div>
                 )}
                 <form onSubmit={handleSubmit} id="productForm" className="space-y-5">
-                  <FloatingLabelInput required type="text" label={t.products.name} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.products.namePlaceholder} />
+                  <FloatingLabelInput required type="text" label={lang === 'ar' ? 'اسم المنتج (إنجليزي)' : 'Product Name (English)'} value={formData.nameEn} onChange={(e) => setFormData({...formData, nameEn: e.target.value, name: e.target.value})} placeholder={t.products.namePlaceholder} />
+                  <FloatingLabelInput type="text" label={lang === 'ar' ? 'اسم المنتج (عربي)' : 'Product Name (Arabic)'} value={formData.nameAr} onChange={(e) => setFormData({...formData, nameAr: e.target.value})} placeholder={lang === 'ar' ? 'اسم المنتج بالعربية...' : 'Arabic product name...'} />
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.products.origin}</label>
-                      <Dropdown options={getCountryOptions(lang)} value={formData.origin} onChange={(v) => setFormData({...formData, origin: v})} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear={false} triggerClassName={MODAL_DROPDOWN_TRIGGER_CLASS} />
-                    </div>
-                    <FloatingLabelInput required type="number" min={0} label={lang === 'ar' ? 'الكمية' : 'Stock Quantity'} value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} />
+                    <FloatingLabelDropdown
+                      label={lang === 'ar' ? 'بلد المنشأ' : 'Origin Country'}
+                      options={getCountryOptions(lang)}
+                      value={formData.origin}
+                      onChange={(v) => setFormData({ ...formData, origin: v })}
+                      placeholder={lang === 'ar' ? 'اختر الدولة : بلد المنشأ' : 'Choose country: Origin'}
+                      isRtl={lang === 'ar'}
+                      searchable
+                      searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
+                      noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
+                      showClear={false}
+                    />
+                    <FloatingLabelInput required type="number" min={0} label={lang === 'ar' ? 'الكمية' : 'Stock Quantity'} value={formData.stockQuantity} onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})} placeholder={t.products.stockQuantityPlaceholder} className="py-3.5" />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <FloatingLabelInput type="text" label={t.products.unit} value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} placeholder={lang === 'ar' ? 'مثال: كجم، لتر' : 'e.g. kg, liter'} />
-                    <FloatingLabelInput type="date" label={t.products.productionDate} value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} />
-                    <FloatingLabelInput type="date" label={t.products.expirationDate} value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} />
+                    <FloatingLabelInput type="date" label={t.products.productionDate} value={formData.productionDate} onChange={(e) => setFormData({...formData, productionDate: e.target.value})} className="rn-date" />
+                    <FloatingLabelInput type="date" label={t.products.expirationDate} value={formData.expirationDate} onChange={(e) => setFormData({...formData, expirationDate: e.target.value})} className="rn-date" />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
-                    <Dropdown options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))} value={formData.categoryId} onChange={(catId) => {
-                      setFormData({...formData, categoryId: catId, subCategoryId: ''});
+                  <FloatingLabelDropdown
+                    label={t.products.category}
+                    options={categories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                    value={formData.categoryId}
+                    onChange={(catId) => {
+                      setFormData({ ...formData, categoryId: catId, subCategoryId: '' });
                       setCategoryExtraFields(catId ? (categories.find(c => c.id === catId)?.extraFields || []) : []);
                       setExtraFieldValues({});
                       if (catId) api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`).then(setSubCategories);
                       else setSubCategories([]);
-                    }} placeholder={t.products.selectCategory} isRtl={lang === 'ar'} triggerClassName={`flex items-center justify-between gap-2 pl-4 pr-10 rtl:pl-10 rtl:pr-4 ${MODAL_DROPDOWN_TRIGGER_CLASS}`} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
-                    <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={formData.subCategoryId} onChange={(v) => setFormData({...formData, subCategoryId: v})} placeholder={t.products.selectSubCategory} disabled={!formData.categoryId} isRtl={lang === 'ar'} triggerClassName={`flex items-center justify-between gap-2 pl-4 pr-10 rtl:pl-10 rtl:pr-4 disabled:opacity-30 disabled:cursor-not-allowed ${MODAL_DROPDOWN_TRIGGER_CLASS}`} />
-                  </div>
+                    }}
+                    placeholder={t.products.selectCategory}
+                    isRtl={lang === 'ar'}
+                  />
+                  <FloatingLabelDropdown
+                    label={t.products.subCategory}
+                    options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
+                    value={formData.subCategoryId}
+                    onChange={(v) => setFormData({ ...formData, subCategoryId: v })}
+                    placeholder={t.products.selectSubCategory}
+                    disabled={!formData.categoryId}
+                    isRtl={lang === 'ar'}
+                  />
                   {categoryExtraFields.length > 0 && (
                     <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
                       <div className="text-[11px] font-black text-slate-600 dark:text-slate-300">
@@ -1085,10 +1112,12 @@ const Products: React.FC = () => {
                     </div>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                   </div>
-                  <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                    <input type="checkbox" id="modalStock" className="size-5 rounded-md border-slate-300 text-primary focus:ring-primary" checked={formData.inStock} onChange={(e) => setFormData({...formData, inStock: e.target.checked})} />
-                    <label htmlFor="modalStock" className="text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">{t.products.stockStatus}</label>
-                  </div>
+                  <FloatingLabelCheckbox
+                    label={t.products.stockStatus}
+                    checked={formData.inStock}
+                    onChange={(checked) => setFormData({ ...formData, inStock: checked })}
+                    wrapperClassName="bg-slate-50 dark:bg-slate-800/50 rounded-2xl"
+                  />
                 </form>
               </div>
               <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0"><button form="productForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">{isProcessing ? (<div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>) : (<>{editingProduct ? t.profile.saveChanges : t.products.addProduct}<span className="material-symbols-outlined">verified</span></>)}</button></div>
@@ -1285,7 +1314,12 @@ const Products: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 154, 167, 0.2); border-radius: 10px; }
+        /* Normalize number inputs across browsers */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        /* Hide default date placeholder when empty; show on focus */
+        .rn-date::-webkit-datetime-edit { color: transparent; }
+        .rn-date:focus::-webkit-datetime-edit { color: inherit; }
       `}</style>
     </div>
   );

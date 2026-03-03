@@ -6,7 +6,8 @@ import { AdPackage, AdSettings, AdSubscription, Advertisement, AdvertisementView
 import { api } from '../../api';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
-import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
+import { MODAL_DROPDOWN_TRIGGER_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -688,16 +689,13 @@ const Advertisements: React.FC = () => {
                   <p className="text-[9px] font-black text-slate-400 px-1">16:9 recommended</p>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-500 px-1">{t.ads.text}</label>
-                  <textarea
-                    required
-                    value={formData.text}
-                    onChange={(e) => setFormData({ ...formData, text: e.target.value })}
-                    placeholder={t.ads.textPlaceholder}
-                    className={MODAL_TEXTAREA_CLASS}
-                  />
-                </div>
+                <FloatingLabelTextarea
+                  required
+                  label={t.ads.text}
+                  value={formData.text}
+                  onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                  placeholder={t.ads.textPlaceholder}
+                />
 
                 {!editingAd && isAdmin && adPackages.length > 0 && (
                   <div className="space-y-1.5">

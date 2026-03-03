@@ -25,6 +25,7 @@ import SupplierDashboard from './pages/supplier/Dashboard';
 import ViewSpecialOffers from './pages/customer/ViewSpecialOffers';
 import MyTeam from './pages/shared/MyTeam';
 import Products from './pages/supplier/Products';
+import PolicyManagement from './pages/super_admin/PolicyManagement';
 import SupplierAdPackages from './pages/supplier/AdPackages';
 import AdvancedReports from './pages/supplier/AdvancedReports';
 import Advertisements from './pages/shared/Advertisements';
@@ -206,6 +207,7 @@ const AppContent: React.FC = () => {
             <Route path="/customers" element={<Customers />} />
             <Route path="/users" element={<Navigate to="/suppliers" replace />} />
             <Route path="/ad-packages" element={<AdPackages />} />
+            <Route path="/policy-management" element={<PolicyManagement />} />
             {role === 'SUPER_ADMIN' && (
               <Route path="/admin-management" element={<AdminManagement />} />
             )}

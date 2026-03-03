@@ -255,7 +255,7 @@ const Cart: React.FC = () => {
                {/* Total Suppliers */}
                <div className="bg-slate-50/60 dark:bg-slate-800/40 rounded-[1.2rem] p-3.5 flex items-center justify-between border border-slate-100/50 dark:border-slate-700/50">
                   <div>
-                     <p className="text-[11px] font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'الموردون' : 'Suppliers'}</p>
+                     <p className="text-[11px] font-black text-slate-700 dark:text-white">{lang === 'ar' ? 'الموزعون' : 'Distributors'}</p>
                      <p className="text-[8px] font-bold text-slate-500">{lang === 'ar' ? 'المعتمدون' : 'Selected'}</p>
                   </div>
                   <div className="text-xl font-black text-slate-700 dark:text-white tabular-nums ">
@@ -267,8 +267,8 @@ const Cart: React.FC = () => {
             <div className="bg-[#f0f9fa] dark:bg-primary/5 rounded-xl p-3.5 border border-primary/10 text-center">
                <p className="text-[9px] font-bold text-primary leading-relaxed">
                   {lang === 'ar' 
-                    ? 'سيتم إرسال طلب عرض سعر (RFQ) لكل مورد لتحديد الأسعار والشحن.' 
-                    : 'An RFQ will be sent to each supplier separately to determine final pricing.'}
+                    ? 'سيتم إرسال طلب عرض سعر (RFQ) لكل موزع لتحديد الأسعار والشحن.' 
+                    : 'An RFQ will be sent to each distributor separately to determine final pricing.'}
                </p>
             </div>
 
@@ -300,7 +300,7 @@ const Cart: React.FC = () => {
               
               <div className="flex justify-between items-center px-4">
                  <div className="flex items-center gap-2 order-last rtl:order-first">
-                    <span className="text-[11px] font-black text-slate-800 dark:text-white ">{lang === 'ar' ? 'مورد' : 'Supplier'}</span>
+                    <span className="text-[11px] font-black text-slate-800 dark:text-white ">{lang === 'ar' ? 'موزع' : 'Distributor'}</span>
                     <div className="size-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                        <span className="material-symbols-outlined text-sm">store</span>
                     </div>

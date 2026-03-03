@@ -6,7 +6,8 @@ import { api } from '../../api';
 import Dropdown from '../../components/Dropdown';
 import EmptyState from '../../components/EmptyState';
 import PaginationFooter from '../../components/PaginationFooter';
-import { MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS, MODAL_TEXTAREA_CLASS } from '../../components/modalTheme';
+import { MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
 
 interface PaginatedAds {
   content: Advertisement[];
@@ -419,14 +420,13 @@ const Advertisements: React.FC = () => {
                    <p className="text-[9px] text-slate-400 font-bold px-1 italic">Optimal ratio: 16:9 (Landscape)</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 px-1   ">{t.ads.text}</label>
-                  <textarea 
-                    required value={formData.text} onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    className={MODAL_TEXTAREA_CLASS}
-                    placeholder={t.ads.textPlaceholder}
-                  />
-                </div>
+                <FloatingLabelTextarea
+                  required
+                  label={t.ads.text}
+                  value={formData.text}
+                  onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                  placeholder={t.ads.textPlaceholder}
+                />
 
                 <div className="pt-6">
                   <button 

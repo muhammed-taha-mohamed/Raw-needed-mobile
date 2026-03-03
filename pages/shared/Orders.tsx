@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
 import EmptyState from '../../components/EmptyState';
 import PaginationFooter from '../../components/PaginationFooter';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface RFQOrder {
   id: string;
@@ -29,6 +30,7 @@ interface SupplierResponse {
   availableQuantity: number;
   shippingInfo: string;
   phoneNumber?: string; 
+  analysisCertificateUrl?: string;
 }
 
 interface RFQLine {
@@ -81,6 +83,7 @@ const Orders: React.FC = () => {
   const [isLoadingLines, setIsLoadingLines] = useState(false);
   const [processingLineId, setProcessingLineId] = useState<string | null>(null);
   const [chatOrderLine, setChatOrderLine] = useState<RFQLine | null>(null);
+  const [lineSearchName, setLineSearchName] = useState('');
 
   const [orderToCancel, setOrderToCancel] = useState<RFQOrder | null>(null);
   const [lineToApprove, setLineToApprove] = useState<RFQLine | null>(null);
@@ -241,6 +244,15 @@ const Orders: React.FC = () => {
     { id: 'COMPLETED', label: lang === 'ar' ? 'طلبات مكتملة' : 'Completed' },
     { id: 'CANCELLED', label: lang === 'ar' ? 'طلبات ملغاة' : 'Cancelled' }
   ];
+
+  const filteredLines = useMemo(() => {
+    const term = lineSearchName.trim().toLowerCase();
+    if (!term) return orderLines;
+    return orderLines.filter((l) => {
+      const combinedName = `${l.productName || ''} ${(l.extraFieldValues?.serviceName || '')}`;
+      return combinedName.toLowerCase().includes(term);
+    });
+  }, [orderLines, lineSearchName]);
 
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
@@ -617,10 +629,30 @@ const Orders: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar space-y-4 bg-slate-50/20">
+                 <div className="mb-2">
+                   <div className="max-w-md">
+                     <FloatingLabelInput
+                       label={lang === 'ar' ? 'بحث باسم المنتج' : 'Search by product'}
+                       placeholder={lang === 'ar' ? 'ابحث باسم المنتج...' : 'Search product name...'}
+                       value={lineSearchName}
+                       onChange={(e) => setLineSearchName((e.target as HTMLInputElement).value)}
+                       leadingIcon="search"
+                       isRtl={lang === 'ar'}
+                     />
+                   </div>
+                   {lineSearchName && (
+                     <button
+                       onClick={() => setLineSearchName('')}
+                       className="mt-1 text-[10px] font-black text-red-500"
+                     >
+                       {lang === 'ar' ? 'مسح' : 'Clear'}
+                     </button>
+                   )}
+                 </div>
                  {isLoadingLines ? (
                    <div className="py-20 flex flex-col items-center justify-center"><div className="size-8 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin"></div></div>
                  ) : (
-                   orderLines.map((line) => (
+                   filteredLines.map((line) => (
                      <div key={line.id} className="bg-white dark:bg-slate-900 rounded-[1.8rem] p-4 border border-slate-100 dark:border-slate-800 shadow-sm">
                         <div className="flex flex-col md:flex-row gap-5">
                            <div className="flex items-center gap-4 flex-1">
@@ -641,7 +673,7 @@ const Orders: React.FC = () => {
                                      </span>
                                    )}
                                  </div>
-                                 <p className="text-[10px] md:text-xs font-bold text-slate-500">{lang === 'ar' ? 'المورد: ' : 'Supplier: '} {line.supplierOrganizationName || line.supplierName}</p>
+                                <p className="text-[10px] md:text-xs font-bold text-slate-500">{lang === 'ar' ? 'الموزع: ' : 'Distributor: '} {line.supplierOrganizationName || line.supplierName}</p>
                                 <p className="text-[10px] md:text-xs font-black text-primary mt-1">
                                   {lang === 'ar' ? 'الكمية المطلوبة: ' : 'Requested Qty: '} {line.quantity} {line.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
                                 </p>
@@ -664,9 +696,15 @@ const Orders: React.FC = () => {
                                       <div><p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'الشحن' : 'Shipping'}</p><p className="text-[10px] md:text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{line.supplierResponse.shippingCost} EGP</p></div>
                                       <div><p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'التسليم' : 'Delivery'}</p><p className="text-[10px] md:text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{formatDate(line.supplierResponse.estimatedDelivery)}</p></div>
                                    </div>
+                                   {!!line.supplierResponse.analysisCertificateUrl && (
+                                     <div className="pt-2">
+                                       <p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'شهادة التحليل:' : 'Certificate of Analysis:'}</p>
+                                       <img src={line.supplierResponse.analysisCertificateUrl} alt="COA" className="w-full max-h-40 object-contain rounded-xl border border-slate-200 dark:border-slate-700 mt-1" />
+                                     </div>
+                                   )}
                                 </div>
                               ) : (
-                                <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-700 text-center min-w-[180px] flex items-center justify-center"><p className="text-[10px] md:text-xs font-bold text-slate-400">{lang === 'ar' ? 'في انتظار رد المورد...' : 'Waiting for supplier...'}</p></div>
+                               <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-700 text-center min-w-[180px] flex items-center justify-center"><p className="text-[10px] md:text-xs font-bold text-slate-400">{lang === 'ar' ? 'في انتظار رد الموزع...' : 'Waiting for distributor...'}</p></div>
                               )}
                               
                               <div className="flex flex-col gap-2 w-[5.5rem] shrink-0">

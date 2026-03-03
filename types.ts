@@ -281,6 +281,8 @@ export interface Category {
 export interface Product {
   id: string;
   name: string;
+  englishName?: string;
+  arabicName?: string;
   origin?: string;
   supplierId: string;
   supplierName?: string;

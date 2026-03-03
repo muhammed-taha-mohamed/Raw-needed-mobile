@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import PaginationFooter from '../../components/PaginationFooter';
-import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import { MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface StaffMember {
   id: string;
@@ -74,7 +75,7 @@ const MyTeam: React.FC = () => {
   const allPossibleScreens = [
     { id: '/', name: lang === 'ar' ? 'لوحة القيادة' : 'Dashboard', icon: 'grid_view', roles: ['CUSTOMER_OWNER', 'SUPPLIER_OWNER', 'ADMIN', 'SUPER_ADMIN'] },
     { id: '/product-search', name: lang === 'ar' ? 'السوق' : 'Marketplace', icon: 'storefront', roles: ['CUSTOMER_OWNER'] },
-    { id: '/vendors', name: lang === 'ar' ? 'الموردون' : 'Vendors', icon: 'explore', roles: ['CUSTOMER_OWNER'] },
+    { id: '/vendors', name: lang === 'ar' ? 'الموزعون' : 'Distributors', icon: 'explore', roles: ['CUSTOMER_OWNER'] },
     { id: '/cart', name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', roles: ['CUSTOMER_OWNER'] },
     { id: '/orders', name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', roles: ['CUSTOMER_OWNER', 'SUPPLIER_OWNER'] },
     { id: '/market-requests', name: lang === 'ar' ? 'طلبات خاصة' : 'Special Requests', icon: 'campaign', roles: ['CUSTOMER_OWNER', 'SUPPLIER_OWNER'] },
@@ -318,7 +319,7 @@ const MyTeam: React.FC = () => {
                     {members.map((member, idx) => {
                       const getRoleLabel = (role: string) => {
                         const roleMap: Record<string, { ar: string; en: string }> = {
-                          'SUPPLIER_STAFF': { ar: 'موظف مورد', en: 'Supplier Staff' },
+                          'SUPPLIER_STAFF': { ar: 'موظف موزع', en: 'Distributor Staff' },
                         };
                         return roleMap[role] || { ar: role, en: role };
                       };
@@ -421,7 +422,7 @@ const MyTeam: React.FC = () => {
             const getRoleLabel = (role: string) => {
               const roleMap: Record<string, { ar: string; en: string }> = {
                 'CUSTOMER_STAFF': { ar: 'موظف عميل', en: 'Customer Staff' },
-                'SUPPLIER_STAFF': { ar: 'موظف مورد', en: 'Supplier Staff' },
+                'SUPPLIER_STAFF': { ar: 'موظف موزع', en: 'Distributor Staff' },
               };
               return roleMap[role] || { ar: role, en: role };
             };
@@ -752,22 +753,43 @@ const MyTeam: React.FC = () => {
                       <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.team.name}</label>
-                         <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t.team.namePlaceholder} className={MODAL_INPUT_CLASS} />
-                       </div>
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.team.email}</label>
-                         <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder={t.team.emailPlaceholder} className={MODAL_INPUT_CLASS} />
-                       </div>
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.team.phone}</label>
-                         <input required type="tel" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.team.phonePlaceholder} className={`${MODAL_INPUT_CLASS} tabular-nums`} />
-                       </div>
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.team.password}</label>
-                         <input required={!editingMember} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder} className={MODAL_INPUT_CLASS} />
-                       </div>
+                      <FloatingLabelInput
+                        required
+                        type="text"
+                        label={t.team.namePlaceholder}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder={t.team.namePlaceholder}
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        required
+                        type="email"
+                        label={t.team.emailPlaceholder}
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder={t.team.emailPlaceholder}
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        required
+                        type="tel"
+                        label={t.team.phonePlaceholder}
+                        value={formData.phoneNumber}
+                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        placeholder={t.team.phonePlaceholder}
+                        className="tabular-nums"
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        required={!editingMember}
+                        type="password"
+                        label={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={editingMember ? t.team.passwordPlaceholderEdit : t.team.passwordPlaceholder}
+                        isRtl={lang === 'ar'}
+                      />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-[11px] font-black text-slate-500 px-1">{t.team.screens}</label>
@@ -800,10 +822,10 @@ const MyTeam: React.FC = () => {
         if (!member) return null;
         
         const getRoleLabel = (role: string) => {
-          const roleMap: Record<string, { ar: string; en: string }> = {
-            'CUSTOMER_STAFF': { ar: 'موظف عميل', en: 'Customer Staff' },
-            'SUPPLIER_STAFF': { ar: 'موظف مورد', en: 'Supplier Staff' },
-          };
+        const roleMap: Record<string, { ar: string; en: string }> = {
+          'CUSTOMER_STAFF': { ar: 'موظف عميل', en: 'Customer Staff' },
+          'SUPPLIER_STAFF': { ar: 'موظف موزع', en: 'Distributor Staff' },
+        };
           return roleMap[role] || { ar: role, en: role };
         };
         

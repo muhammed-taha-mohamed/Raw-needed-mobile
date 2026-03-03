@@ -7,6 +7,7 @@ import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
 import Dropdown from '../../components/Dropdown';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface AdminUser {
   id: string;
@@ -445,18 +446,38 @@ const AdminManagement: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="adminForm" onSubmit={handleCreateOrUpdateAdmin} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الاسم' : 'Name'}</label>
-                    <input required value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} placeholder={lang === 'ar' ? 'مثال: محمد أحمد' : 'e.g. John Doe'} className={MODAL_INPUT_CLASS} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-                    <input required type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder={lang === 'ar' ? 'مثال: admin@company.com' : 'e.g. admin@company.com'} className={MODAL_INPUT_CLASS} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الهاتف' : 'Phone'}</label>
-                    <input value={formData.phoneNumber} onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))} placeholder={lang === 'ar' ? 'مثال: 01000000000' : 'e.g. 01000000000'} className={MODAL_INPUT_CLASS} />
-                  </div>
+                  <FloatingLabelInput
+                    required
+                    type="text"
+                    label={lang === 'ar' ? 'الاسم' : 'Name'}
+                    value={formData.name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
+                    isRtl={lang === 'ar'}
+                  />
+                  <FloatingLabelInput
+                    required
+                    type="email"
+                    label={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                    value={formData.email}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                    isRtl={lang === 'ar'}
+                  />
+                  <FloatingLabelInput
+                    type="tel"
+                    label={lang === 'ar' ? 'الهاتف' : 'Phone'}
+                    value={formData.phoneNumber}
+                    onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/\D+/g, '');
+                      setFormData((prev) => ({ ...prev, phoneNumber: digitsOnly }));
+                    }}
+                    placeholder={lang === 'ar' ? 'الهاتف' : 'Phone'}
+                    isRtl={lang === 'ar'}
+                    dir="ltr"
+                    inputMode="numeric"
+                    maxLength={15}
+                  />
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الدور' : 'Role'}</label>
                     <Dropdown
@@ -475,14 +496,24 @@ const AdminManagement: React.FC = () => {
                   </div>
                   {!editingAdminId && (
                     <>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'كلمة المرور' : 'Password'}</label>
-                        <input required type="password" value={formData.password} onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))} placeholder={lang === 'ar' ? '6 أحرف على الأقل' : 'At least 6 characters'} className={MODAL_INPUT_CLASS} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}</label>
-                        <input required type="password" value={formData.confirmPassword} onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))} placeholder={lang === 'ar' ? 'أعد كتابة كلمة المرور' : 'Re-enter password'} className={MODAL_INPUT_CLASS} />
-                      </div>
+                      <FloatingLabelInput
+                        required
+                        type="password"
+                        label={lang === 'ar' ? 'كلمة المرور' : 'Password'}
+                        value={formData.password}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                        placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'}
+                        isRtl={lang === 'ar'}
+                      />
+                      <FloatingLabelInput
+                        required
+                        type="password"
+                        label={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                        isRtl={lang === 'ar'}
+                      />
                     </>
                   )}
                 </div>

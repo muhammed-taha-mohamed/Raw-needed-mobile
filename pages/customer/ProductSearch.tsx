@@ -10,10 +10,13 @@ import EmptyState from '../../components/EmptyState';
 import PaginationFooter from '../../components/PaginationFooter';
 import { clearSubscriptionCache } from '../../utils/subscription';
 import { APP_LOGO } from '../../constants';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface Product {
   id: string;
   name: string;
+  englishName?: string;
+  arabicName?: string;
   origin: string;
   image: string;
   inStock: boolean;
@@ -92,6 +95,13 @@ const ProductSearch: React.FC = () => {
   const [localQtys, setLocalQtys] = useState<Record<string, number>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>({});
+  const [bulkQty, setBulkQty] = useState<number>(1);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [showBulkSheet, setShowBulkSheet] = useState(false);
+  const [bulkAdding, setBulkAdding] = useState(false);
+  // removed logs
+  // logs removed
 
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [showBuySearchesFromApi, setShowBuySearchesFromApi] = useState(false);
@@ -148,6 +158,10 @@ const ProductSearch: React.FC = () => {
     fetchSuppliersList();
     fetchCart();
     fetchMySubscription();
+    try {
+      const saved = localStorage.getItem('bulkAddLogs');
+      if (saved) setBulkLogs(JSON.parse(saved));
+    } catch {}
 
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -404,6 +418,67 @@ const ProductSearch: React.FC = () => {
     setLocalQtys(prev => ({ ...prev, [productId]: validQty }));
   };
 
+  const showBulkUI = (searchName || '').trim().length > 0 && !selectedCat && !selectedSub && !selectedSupplier;
+  const selectedIds = Object.keys(selectedMap).filter(id => selectedMap[id]);
+  const selectedProducts = results.filter(r => selectedMap[r.id]);
+  const insufficient = selectedProducts.filter(p => !(p.inStock && p.stockQuantity >= bulkQty));
+
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedMap(prev => ({ ...prev, [id]: checked }));
+  };
+  const selectAllOnPage = () => {
+    const map: Record<string, boolean> = {};
+    results.forEach(p => { map[p.id] = true; });
+    setSelectedMap(map);
+  };
+  const clearSelection = () => setSelectedMap({});
+
+  const addBulkToCart = async () => {
+    try {
+      setBulkAdding(true);
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.userInfo?.id || userData?.id;
+      if (!userId) {
+        setToast({ message: lang === 'ar' ? 'يرجى تسجيل الدخول' : 'Please login', type: 'error' });
+        return;
+      }
+      if (bulkQty < 1 || selectedIds.length === 0) {
+        setToast({ message: lang === 'ar' ? 'اختر عناصر وحدد كمية صحيحة' : 'Select items and a valid quantity', type: 'error' });
+        return;
+      }
+      const allowed = selectedProducts.filter(p => p.inStock && p.stockQuantity >= bulkQty);
+      // Prefer bulk API; fall back to per-item if not available
+      let bulkOk = false;
+      try {
+        await api.post('/api/v1/cart/add-items', {
+          userId,
+          items: allowed.map(p => ({ productId: p.id, quantity: bulkQty })),
+        });
+        bulkOk = true;
+      } catch (_) {
+        bulkOk = false;
+      }
+      if (!bulkOk) {
+        const promises = allowed.map(p =>
+          api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${p.id}&quantity=${bulkQty}`, {})
+        );
+        await Promise.allSettled(promises);
+      }
+      await fetchCart();
+      const added = allowed.length;
+      const skipped = selectedProducts.length - added;
+      setToast({ message: lang === 'ar' ? `تمت إضافة ${added} عنصر${lang==='ar'?'':'(s)'} للعربة` : `Added ${added} item(s) to cart`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+      clearSelection();
+      setShowBulkConfirm(false);
+    } catch {
+      setToast({ message: lang === 'ar' ? 'فشلت الإضافة الجماعية' : 'Bulk add failed', type: 'error' });
+    } finally {
+      setBulkAdding(false);
+    }
+  };
+
   const resetFilters = () => {
     setSelectedCat('');
     setSelectedSub('');
@@ -495,7 +570,7 @@ const ProductSearch: React.FC = () => {
     // Validate all orders have supplier selected
     const ordersWithoutSupplier = manualOrders.filter(order => !order.supplierId);
     if (ordersWithoutSupplier.length > 0) {
-      setToast({ message: lang === 'ar' ? 'يرجى اختيار المورد لجميع الطلبات' : 'Please select a supplier for all orders', type: 'error' });
+      setToast({ message: lang === 'ar' ? 'يرجى اختيار الموزع لجميع الطلبات' : 'Please select a distributor for all orders', type: 'error' });
       return;
     }
 
@@ -596,14 +671,13 @@ const ProductSearch: React.FC = () => {
             <Dropdown options={subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={selectedSub} onChange={setSelectedSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!selectedCat} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
           </div>
           <div className="min-w-[160px] space-y-1">
-            <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'المورد' : 'Supplier'}</label>
-            <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+            <label className="text-[10px] font-black text-slate-500 px-1 block">{lang === 'ar' ? 'الموزع' : 'Distributor'}</label>
+            <Dropdown options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموزعين' : 'Distributors'} isRtl={lang === 'ar'} showClear={true} triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
           </div>
-          {/* Temporarily hidden country filter */}
-          {/* <div className="min-w-[180px] flex-1 space-y-1">
+          <div className="min-w-[180px] flex-1 space-y-1">
             <label className="text-[10px] font-black text-slate-500 px-1 block">{t.products.origin}</label>
             <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white" />
-          </div> */}
+          </div>
           <button
             type="button"
             onClick={resetFilters}
@@ -795,6 +869,29 @@ const ProductSearch: React.FC = () => {
         </div>
       )}
 
+      {/* Bulk toolbar (name-only search) – desktop/tablet */}
+      {showBulkUI && (
+        <div className="hidden md:flex items-center gap-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+          <button type="button" onClick={selectAllOnPage} className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-black shadow">
+            {lang === 'ar' ? 'تحديد الكل' : 'Select All'}
+          </button>
+          <button type="button" onClick={clearSelection} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black">
+            {lang === 'ar' ? 'مسح' : 'Clear'}
+          </button>
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'الكمية لكل عنصر' : 'Qty per item'}</label>
+            <input type="number" min={1} value={bulkQty} onChange={(e) => setBulkQty(Math.max(1, parseInt(e.target.value) || 1))} className="w-20 px-3 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-black" />
+          </div>
+          <div className="ms-auto flex items-center gap-2 md:gap-3">
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'المحدد:' : 'Selected:'} <b className="tabular-nums">{selectedIds.length}</b></span>
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'الإجمالي:' : 'Total:'} <b className="tabular-nums">{selectedIds.length * Math.max(1, bulkQty)}</b></span>
+            <button type="button" disabled={selectedIds.length === 0} onClick={() => setShowBulkConfirm(true)} className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black disabled:opacity-40">
+              {lang === 'ar' ? 'إضافة العناصر المختارة' : 'Add Selected'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <div className="min-h-[400px]">
         {isLoading ? (
@@ -819,6 +916,17 @@ const ProductSearch: React.FC = () => {
                       className={`group relative rounded-3xl p-4 md:p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] border transition-all duration-300 bg-gradient-to-br from-white to-slate-50/60 dark:from-slate-900 dark:to-slate-950 flex gap-4 md:gap-5 items-center hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(15,23,42,0.25)] ${isInCart ? 'border-primary/60 ring-2 ring-primary/10' : 'border-slate-100 dark:border-slate-800'}`}
                       style={{ animationDelay: `${idx * 20}ms` }}
                     >
+                      {showBulkUI && (
+                        <div className="absolute top-3 right-3 rtl:right-auto rtl:left-3">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedMap[product.id]}
+                            onChange={(e) => toggleSelect(product.id, e.target.checked)}
+                            className="size-5 rounded border-primary text-primary"
+                            title={lang === 'ar' ? 'تحديد' : 'Select'}
+                          />
+                        </div>
+                      )}
                       {/* Product Image - compact badge style */}
                       <div className="relative size-20 md:size-24 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 shadow-inner border border-slate-100/70 dark:border-slate-700/70">
                         {product.image ? (
@@ -843,7 +951,7 @@ const ProductSearch: React.FC = () => {
                       <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
                         <div>
                           <h4 className="text-sm md:text-base font-black text-slate-900 dark:text-white line-clamp-1 leading-tight">
-                            {product.name}
+                            {lang === 'ar' ? (product.arabicName || product.englishName || product.name) : (product.englishName || product.arabicName || product.name)}
                           </h4>
 
                           {/* Metadata Row */}
@@ -867,6 +975,12 @@ const ProductSearch: React.FC = () => {
                                 <span className="text-[11px] font-bold">{product.unit}</span>
                               </div>
                             )}
+                            <div className="flex items-center gap-1.5 text-slate-400">
+                              <span className="material-symbols-outlined text-[18px] text-primary/60">inventory_2</span>
+                              <span className="text-[11px] font-bold">{lang === 'ar' ? 'متوفر:' : 'Available:'}</span>
+                              <span className="text-[11px] font-bold tabular-nums">{product.stockQuantity}</span>
+                              <span className="text-[11px] font-bold">{product.unit || (lang === 'ar' ? 'وحدة' : 'Units')}</span>
+                            </div>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
@@ -882,23 +996,11 @@ const ProductSearch: React.FC = () => {
 
                           <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-slate-400">
                             <span className="material-symbols-outlined text-[14px] text-primary/40 shrink-0">store</span>
-                            <span className="truncate">{product.supplierName || 'Supplier'}</span>
+                            <span className="truncate">{product.supplierName || (lang === 'ar' ? 'موزع' : 'Distributor')}</span>
                           </div>
                         </div>
 
                         <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
-                          {/* Single Line Stock Quantity Display */}
-                          <div className="flex items-center gap-1 text-primary">
-                            <span className="text-[11px] font-black">{lang === 'ar' ? 'متوفر :' : 'Available :'}</span>
-                            <span className="text-lg font-black tabular-nums">{product.stockQuantity}</span>
-                            {product.unit && (
-                              <span className="text-[11px] font-black">{product.unit}</span>
-                            )}
-                            {!product.unit && (
-                              <span className="text-[11px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>
-                            )}
-                          </div>
-
                           {/* Action Area */}
                           <div className="flex items-center gap-2">
                             {isInCart ? (
@@ -998,6 +1100,15 @@ const ProductSearch: React.FC = () => {
       {/* Floating Action Buttons Area — mobile only */}
       <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6 md:hidden">
         <div className="w-full flex flex-col items-end gap-3 pointer-events-auto">
+          {showBulkUI && (
+            <button
+              onClick={() => setShowBulkSheet(true)}
+              className="size-14 rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/30 flex items-center justify-center active:scale-90 transition-all border border-white/20"
+              title={lang === 'ar' ? 'إضافة جماعية' : 'Bulk Add'}
+            >
+              <span className="material-symbols-outlined text-2xl">playlist_add</span>
+            </button>
+          )}
           <button
             onClick={openManualModal}
             className="size-14 rounded-full bg-primary/10 text-primary shadow-2xl shadow-primary/20 flex items-center justify-center active:scale-90 transition-all border border-primary/30"
@@ -1040,25 +1151,27 @@ const ProductSearch: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Dropdown label={lang === 'ar' ? 'المورد' : 'Supplier'} options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموردين' : 'Suppliers'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+                    <Dropdown label={lang === 'ar' ? 'الموزع' : 'Distributor'} options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))} value={selectedSupplier} onChange={setSelectedSupplier} placeholder={lang === 'ar' ? 'الموزعين' : 'Distributors'} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
 
-                  {/* Temporarily hidden country filter */}
-                  {/* <div className="space-y-1.5">
+                  <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
                       <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
-                  </div> */}
+                  </div>
                 </div>
 
                 <div className="mt-6 space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'اسم المادة' : 'Product Search'}</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-lg">search</span>
-                    <input
-                      type="text" value={searchName} onChange={(e) => setSearchName(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm md:text-base font-bold outline-none focus:border-primary transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                      placeholder={t.productSearch.searchLabel}
-                    />
+                    <div className="pl-8">
+                      <FloatingLabelInput
+                        label={t.productSearch.searchLabel}
+                        placeholder={t.productSearch.searchLabel}
+                        value={searchName}
+                        onChange={(e) => setSearchName((e.target as HTMLInputElement).value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1165,7 +1278,7 @@ const ProductSearch: React.FC = () => {
                               return o;
                             }));
                           }}
-                          placeholder={lang === 'ar' ? 'اختر المورد من القائمة' : 'Select a Supplier'}
+                          placeholder={lang === 'ar' ? 'اختر الموزع من القائمة' : 'Select a Distributor'}
                           isRtl={lang === 'ar'}
                           triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
                         />
@@ -1340,17 +1453,15 @@ const ProductSearch: React.FC = () => {
                       )}
 
                       {/* Product Name */}
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.prodName}</label>
-                        <input
-                          required
-                          type="text"
-                          value={order.name}
-                          onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                          placeholder={t.manualOrder.prodNamePlaceholder}
-                        />
-                      </div>
+                      <FloatingLabelInput
+                        required
+                        type="text"
+                        label={t.manualOrder.prodName}
+                        value={order.name}
+                        onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
+                        placeholder={t.manualOrder.prodName}
+                        isRtl={lang === 'ar'}
+                      />
 
                       {/* Origin & Quantity */}
                       <div className="grid grid-cols-2 gap-4">
@@ -1369,31 +1480,27 @@ const ProductSearch: React.FC = () => {
                             triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.qty}</label>
-                          <input
-                            required
-                            type="number"
-                            min="1"
-                            value={order.quantity}
-                            onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white"
-                          />
-                        </div>
+                        <FloatingLabelInput
+                          required
+                          type="number"
+                          label={t.manualOrder.qty}
+                          min={1}
+                          value={order.quantity as any}
+                          onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
+                          isRtl={lang === 'ar'}
+                        />
                       </div>
 
                       {/* Unit */}
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'الوحدة' : 'Unit'}</label>
-                        <input
-                          required
-                          type="text"
-                          value={order.unit}
-                          onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
-                          placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm md:text-base font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                        />
-                      </div>
+                      <FloatingLabelInput
+                        required
+                        type="text"
+                        label={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                        value={order.unit}
+                        onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
+                        placeholder={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                        isRtl={lang === 'ar'}
+                      />
 
                       {/* Image */}
                       <div className="space-y-1.5">
@@ -1456,6 +1563,77 @@ const ProductSearch: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Bulk confirm modal */}
+      {showBulkConfirm && (
+        <div className="fixed inset-0 z-[350] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => {!bulkAdding && setShowBulkConfirm(false)}}>
+          <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[90vh] overflow-y-auto border-t border-x md:border border-slate-200 dark:border-slate-700 p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'تأكيد الإضافة الجماعية' : 'Confirm Bulk Add'}</h3>
+              <button onClick={() => !bulkAdding && setShowBulkConfirm(false)} disabled={bulkAdding} className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center disabled:opacity-50"><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <div className="space-y-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+              <p>{lang === 'ar' ? 'العناصر المحددة' : 'Selected items'}: <b>{selectedProducts.length}</b></p>
+              <p>{lang === 'ar' ? 'الكمية لكل عنصر' : 'Qty per item'}: <b className="tabular-nums">{bulkQty}</b></p>
+              {insufficient.length > 0 && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+                  {lang === 'ar'
+                    ? `سيتم تخطي ${insufficient.length} عنصر بسبب عدم توفر الكمية المطلوبة.`
+                    : `${insufficient.length} item(s) will be skipped due to insufficient stock.`}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end gap-3">
+              <button onClick={() => setShowBulkConfirm(false)} disabled={bulkAdding} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-black disabled:opacity-50">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</button>
+              <button onClick={addBulkToCart} disabled={bulkAdding} className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-black disabled:opacity-50 flex items-center gap-2">
+                {bulkAdding ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> : null}
+                {lang === 'ar' ? 'تأكيد الإضافة' : 'Confirm Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk sheet — mobile only */}
+      {showBulkSheet && (
+        <div className="fixed inset-0 z-[340] md:hidden flex items-end justify-center bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowBulkSheet(false)}>
+          <div className="w-full bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl border-t border-slate-200 dark:border-slate-800 p-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-5 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="pt-1 pb-3 flex justify-center">
+              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'إضافة جماعية' : 'Bulk Add'}</h3>
+              <button onClick={() => setShowBulkSheet(false)} className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <button onClick={selectAllOnPage} className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-black">{lang === 'ar' ? 'تحديد الكل' : 'Select All'}</button>
+                <button onClick={clearSelection} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'الكمية لكل عنصر' : 'Qty per item'}</label>
+                <input type="number" min={1} value={bulkQty} onChange={(e) => setBulkQty(Math.max(1, parseInt(e.target.value) || 1))} className="w-20 px-3 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-black" />
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'المحدد:' : 'Selected:'} <b className="tabular-nums">{selectedIds.length}</b></span>
+                <span className="text-[11px] font-black text-slate-600 dark:text-slate-300">{lang === 'ar' ? 'الإجمالي:' : 'Total:'} <b className="tabular-nums">{selectedIds.length * Math.max(1, bulkQty)}</b></span>
+              </div>
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => { setShowBulkSheet(false); setShowBulkConfirm(true); }}
+                className="w-full h-12 rounded-2xl bg-emerald-600 text-white text-sm font-black disabled:opacity-40"
+              >
+                {lang === 'ar' ? 'إضافة العناصر المختارة' : 'Add Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logs removed */}
 
       <PaginationFooter
         currentPage={page}

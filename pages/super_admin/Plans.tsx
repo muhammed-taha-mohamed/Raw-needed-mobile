@@ -152,7 +152,7 @@ const Plans: React.FC = () => {
         };
       case 'SUPPLIER':
         return {
-          label: lang === 'ar' ? 'موردين' : 'Suppliers',
+          label: lang === 'ar' ? 'موزعين' : 'Distributors',
           classes: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800'
         };
       default:

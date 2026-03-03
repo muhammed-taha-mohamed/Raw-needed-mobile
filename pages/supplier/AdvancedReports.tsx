@@ -161,7 +161,7 @@ const AdvancedReports: React.FC = () => {
       DELIVERED: { ar: 'تم التسليم', en: 'Delivered' },
       DRAFT: { ar: 'مسودة', en: 'Draft' },
       EXPIRED: { ar: 'منتهي', en: 'Expired' },
-      WAITING_SUPPLIER_RESPONSE: { ar: 'بانتظار رد المورد', en: 'Waiting Supplier Response' }
+      WAITING_SUPPLIER_RESPONSE: { ar: 'بانتظار رد الموزع', en: 'Waiting Distributor Response' }
     };
     if (map[status]) return lang === 'ar' ? map[status].ar : map[status].en;
     if (!status) return '-';

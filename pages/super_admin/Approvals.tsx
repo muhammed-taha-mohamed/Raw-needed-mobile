@@ -568,7 +568,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedUser.organizationName || 'N/A'}</p>
                       </div>
                       <div className="space-y-1">
-                         <p className="text-[11px] font-black text-slate-400  ">{lang === 'ar' ? 'رقم السجل' : 'CRN Number'}</p>
+                         <p className="text-[11px] font-black text-slate-400  ">{lang === 'ar' ? 'رقم البطاقة الضريبية' : 'CRN Number'}</p>
                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{selectedUser.organizationCRN || 'N/A'}</p>
                       </div>
                       <div className="space-y-1">
@@ -601,7 +601,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                    {/* Document Preview */}
                    {selectedUser.organizationCRNImage && (
                      <div className="space-y-4">
-                        <p className="text-[12px] font-black text-slate-400   px-1">{lang === 'ar' ? 'شهادة السجل التجاري' : 'Registration Certificate'}</p>
+                        <p className="text-[12px] font-black text-slate-400   px-1">{lang === 'ar' ? 'شهادة البطاقة الضريبية' : 'Registration Certificate'}</p>
                         <div 
                           onClick={() => setSelectedReceipt(selectedUser.organizationCRNImage)}
                           className="relative group cursor-pointer overflow-hidden rounded-3xl border-2 border-primary/10 shadow-lg h-40"

@@ -151,10 +151,10 @@ const ViewSpecialOffers: React.FC = () => {
     return (
       <FeatureUpgradePrompt
         lang={lang}
-        featureLabel={lang === 'ar' ? 'عروض الموردين الخاصة' : 'Supplier Special Offers'}
+        featureLabel={lang === 'ar' ? 'عروض الموزعين الخاصة' : 'Distributor Special Offers'}
         description={lang === 'ar'
-          ? 'العروض الخاصة للموردين غير متاحة في باقتك الحالية. قم بترقية الباقة لعرض كل العروض والاستفادة منها.'
-          : 'Supplier special offers are not available in your current plan. Upgrade to access and benefit from all offers.'}
+          ? 'العروض الخاصة للموزعين غير متاحة في باقتك الحالية. قم بترقية الباقة لعرض كل العروض والاستفادة منها.'
+          : 'Distributor special offers are not available in your current plan. Upgrade to access and benefit from all offers.'}
         onUpgrade={() => navigate('/subscription')}
       />
     );

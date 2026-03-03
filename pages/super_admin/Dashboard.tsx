@@ -15,6 +15,8 @@ import {
   Cell,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
 } from 'recharts';
 
 // ——— Types (match backend AdminDashboardOverviewDto) ———
@@ -128,8 +130,8 @@ const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
   ADMIN: { ar: 'مدير', en: 'Admin' },
   CUSTOMER_OWNER: { ar: 'عميل (مالك)', en: 'Customer Owner' },
   CUSTOMER_STAFF: { ar: 'موظف عميل', en: 'Customer Staff' },
-  SUPPLIER_OWNER: { ar: 'مورد (مالك)', en: 'Supplier Owner' },
-  SUPPLIER_STAFF: { ar: 'موظف مورد', en: 'Supplier Staff' },
+  SUPPLIER_OWNER: { ar: 'موزع (مالك)', en: 'Distributor Owner' },
+  SUPPLIER_STAFF: { ar: 'موظف موزع', en: 'Distributor Staff' },
 };
 
 const CHART_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
@@ -223,6 +225,16 @@ const Dashboard: React.FC = () => {
   const subscriptionsChartData =
     charts?.subscriptionsOverTime?.map((p) => ({ name: p.label, subscriptions: p.value })) ?? [];
   const revenueChartData = charts?.revenueOverTime?.map((p) => ({ name: p.label, revenue: p.value })) ?? [];
+  const areaChartData = (() => {
+    const map = new Map<string, { name: string; orders: number; subscriptions: number }>();
+    ordersChartData.forEach((o) => map.set(o.name, { name: o.name, orders: o.orders, subscriptions: 0 }));
+    subscriptionsChartData.forEach((s) => {
+      const e = map.get(s.name) ?? { name: s.name, orders: 0, subscriptions: 0 };
+      e.subscriptions = s.subscriptions;
+      map.set(s.name, e);
+    });
+    return Array.from(map.values());
+  })();
   const ordersPieData =
     charts?.ordersByStatus
       ?.filter((s) => s.value > 0)
@@ -231,6 +243,16 @@ const Dashboard: React.FC = () => {
     charts?.usersByRole
       ?.filter((s) => s.value > 0)
       .map((s, i) => ({ ...s, name: roleLabel(s.name), color: CHART_COLORS[i % CHART_COLORS.length] })) ?? [];
+  const ordersTotal = ordersPieData.reduce((a, b) => a + (b.value || 0), 0);
+  const usersTotal = usersPieData.reduce((a, b) => a + (b.value || 0), 0);
+  const ordersLegend = ordersPieData.map((s) => ({
+    ...s,
+    percent: ordersTotal ? Math.round((s.value / ordersTotal) * 100) : 0,
+  }));
+  const usersLegend = usersPieData.map((s) => ({
+    ...s,
+    percent: usersTotal ? Math.round((s.value / usersTotal) * 100) : 0,
+  }));
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
@@ -289,7 +311,7 @@ const Dashboard: React.FC = () => {
                 {lang === 'ar' ? 'المستخدمون' : 'Users'}
               </p>
               <p className="text-xs text-white/70 mt-0.5">
-                {userStats?.totalSuppliers ?? 0} {lang === 'ar' ? 'مورد' : 'suppliers'} ·{' '}
+                {userStats?.totalSuppliers ?? 0} {lang === 'ar' ? 'موزع' : 'distributors'} ·{' '}
                 {userStats?.totalCustomers ?? 0} {lang === 'ar' ? 'عميل' : 'customers'}
               </p>
             </div>
@@ -451,48 +473,87 @@ const Dashboard: React.FC = () => {
 
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">
-                {lang === 'ar' ? 'الطلبات خلال 12 شهراً' : 'Orders (Last 12 Months)'}
+                {lang === 'ar' ? 'الطلبات والاشتراكات (آخر 6 أشهر)' : 'Orders & Subscriptions (Last 6 Months)'}
               </h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={ordersChartData}>
+                  <AreaChart data={areaChartData}>
+                    <defs>
+                      <linearGradient id="colorOrdersAdmin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.35}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorSubsAdmin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-slate-500" />
-                    <YAxis tick={{ fontSize: 11 }} className="fill-slate-500" />
+                    <YAxis tick={{ fontSize: 11 }} className="fill-slate-500" allowDecimals={false} />
                     <Tooltip
                       contentStyle={{
-                        borderRadius: '12px',
-                        border: '1px solid var(--slate-200)',
-                        backgroundColor: 'var(--slate-50)',
+                        borderRadius: '14px',
+                        border: 'none',
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                        backgroundColor: '#0f172a',
+                        color: '#fff',
+                        fontWeight: 900,
                       }}
                     />
-                    <Line type="monotone" dataKey="orders" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1' }} name={lang === 'ar' ? 'طلبات' : 'Orders'} />
-                  </LineChart>
+                    <Area
+                      type="monotone"
+                      dataKey="orders"
+                      stroke="#6366f1"
+                      strokeWidth={3}
+                      fill="url(#colorOrdersAdmin)"
+                      animationDuration={1800}
+                      name={lang === 'ar' ? 'طلبات' : 'Orders'}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="subscriptions"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fill="url(#colorSubsAdmin)"
+                      animationDuration={1800}
+                      name={lang === 'ar' ? 'اشتراكات' : 'Subscriptions'}
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">
-                {lang === 'ar' ? 'إيراد الاشتراكات (12 شهراً)' : 'Subscription Revenue (Last 12 Months)'}
+                {lang === 'ar' ? 'إيراد الاشتراكات (آخر 6 أشهر)' : 'Subscription Revenue (Last 6 Months)'}
               </h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueChartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                  <BarChart data={revenueChartData} barSize={40}>
+                    <defs>
+                      <linearGradient id="colorRevenueAdmin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.85}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.25}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-slate-500" />
-                    <YAxis tick={{ fontSize: 11 }} className="fill-slate-500" />
+                    <YAxis tick={{ fontSize: 11 }} className="fill-slate-500" allowDecimals={false} />
                     <Tooltip
                       contentStyle={{
-                        borderRadius: '12px',
-                        border: '1px solid var(--slate-200)',
-                        backgroundColor: 'var(--slate-50)',
+                        borderRadius: '14px',
+                        border: 'none',
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                        backgroundColor: '#0f172a',
+                        color: '#fff',
+                        fontWeight: 900,
                       }}
                       formatter={(value: number) => [formatCurrency(value) + ' EGP', lang === 'ar' ? 'إيراد' : 'Revenue']}
                     />
-                    <Bar dataKey="revenue" fill="#22c55e" radius={[6, 6, 0, 0]} name={lang === 'ar' ? 'إيراد' : 'Revenue'} />
+                    <Bar dataKey="revenue" fill="url(#colorRevenueAdmin)" radius={[10, 10, 4, 4]} name={lang === 'ar' ? 'إيراد' : 'Revenue'} animationDuration={1800} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -500,11 +561,23 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">
                 {lang === 'ar' ? 'الطلبات حسب الحالة' : 'Orders by Status'}
               </h3>
-              <div className="h-72 flex justify-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="order-2 md:order-1 space-y-3">
+                  {ordersPieData.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block size-2 rounded-full" style={{ backgroundColor: s.color }}></span>
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{s.name}</span>
+                      </div>
+                      <span className="text-sm font-black tabular-nums" style={{ color: s.color }}>{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-72 flex justify-center order-1 md:order-2">
                 {ordersPieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -514,8 +587,13 @@ const Dashboard: React.FC = () => {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={90}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        innerRadius="60%"
+                        outerRadius={95}
+                        paddingAngle={6}
+                        cornerRadius={8}
+                        isAnimationActive
+                        animationDuration={1200}
+                        labelLine={false}
                       >
                         {ordersPieData.map((_, index) => (
                           <Cell key={index} fill={ordersPieData[index].color} />
@@ -527,14 +605,44 @@ const Dashboard: React.FC = () => {
                 ) : (
                   <p className="text-slate-400 self-center">{lang === 'ar' ? 'لا توجد بيانات' : 'No data'}</p>
                 )}
+                <div className="pointer-events-none absolute self-center justify-self-center flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-black tabular-nums">{ordersTotal}</div>
+                    <div className="text-[10px] font-black text-slate-400">{lang === 'ar' ? 'إجمالي' : 'Total'}</div>
+                  </div>
+                </div>
+                </div>
               </div>
+              {ordersLegend.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                  {ordersLegend.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-lg px-2.5 py-1.5">
+                      <span className="inline-block size-2 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-xs font-black text-slate-600 dark:text-slate-300">{item.name}</span>
+                      <span className="text-xs font-black tabular-nums" style={{ color: item.color }}>{item.percent}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">
                 {lang === 'ar' ? 'المستخدمون حسب الدور' : 'Users by Role'}
               </h3>
-              <div className="h-72 flex justify-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="order-2 md:order-1 space-y-3">
+                  {usersPieData.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block size-2 rounded-full" style={{ backgroundColor: s.color }}></span>
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{s.name}</span>
+                      </div>
+                      <span className="text-sm font-black tabular-nums" style={{ color: s.color }}>{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-72 flex justify-center order-1 md:order-2">
                 {usersPieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -544,8 +652,13 @@ const Dashboard: React.FC = () => {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={90}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        innerRadius="60%"
+                        outerRadius={95}
+                        paddingAngle={6}
+                        cornerRadius={8}
+                        isAnimationActive
+                        animationDuration={1200}
+                        labelLine={false}
                       >
                         {usersPieData.map((_, index) => (
                           <Cell key={index} fill={usersPieData[index].color} />
@@ -557,7 +670,25 @@ const Dashboard: React.FC = () => {
                 ) : (
                   <p className="text-slate-400 self-center">{lang === 'ar' ? 'لا توجد بيانات' : 'No data'}</p>
                 )}
+                <div className="pointer-events-none absolute self-center justify-self-center flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-black tabular-nums">{usersTotal}</div>
+                    <div className="text-[10px] font-black text-slate-400">{lang === 'ar' ? 'إجمالي' : 'Total'}</div>
+                  </div>
+                </div>
+                </div>
               </div>
+              {usersLegend.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                  {usersLegend.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700 rounded-lg px-2.5 py-1.5">
+                      <span className="inline-block size-2 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-xs font-black text-slate-600 dark:text-slate-300">{item.name}</span>
+                      <span className="text-xs font-black tabular-nums" style={{ color: item.color }}>{item.percent}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

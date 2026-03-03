@@ -66,9 +66,9 @@ export interface UserDetailsResponse {
 }
 
 const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
-  SUPPLIER_OWNER: { ar: 'مورد', en: 'Supplier' },
+  SUPPLIER_OWNER: { ar: 'موزع', en: 'Distributor' },
   CUSTOMER_OWNER: { ar: 'عميل', en: 'Customer' },
-  SUPPLIER_STAFF: { ar: 'موظف مورد', en: 'Supplier Staff' },
+  SUPPLIER_STAFF: { ar: 'موظف موزع', en: 'Distributor Staff' },
   CUSTOMER_STAFF: { ar: 'موظف عميل', en: 'Customer Staff' },
 };
 
@@ -457,7 +457,7 @@ const AdminOwnersList: React.FC<AdminOwnersListProps> = ({
                     {detailsData.supplierStats && (
                       <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                         <div className="px-4 py-3 bg-primary/5 dark:bg-primary/10 border-b border-slate-200 dark:border-slate-700">
-                          <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'تقرير المورد' : 'Supplier Report'}</span>
+                          <span className="text-sm font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'تقرير الموزع' : 'Distributor Report'}</span>
                         </div>
                         <div className="p-4 space-y-4">
                           <div className="grid grid-cols-2 gap-3">
