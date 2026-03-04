@@ -40,6 +40,8 @@ interface Product {
 interface CartItem {
   id: string;
   name: string;
+  englishName?: string | null;
+  arabicName?: string | null;
   quantity: number;
 }
 
@@ -428,6 +430,8 @@ const Vendors: React.FC = () => {
         return {
           id: null,
           name: productName,
+          englishName: order.name,
+          arabicName: null,
           origin: order.origin,
           supplierId: viewingSupplier.id,
           supplierName: viewingSupplier.organizationName || viewingSupplier.name,

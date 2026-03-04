@@ -13,7 +13,7 @@ const InputGroup = ({ label, icon, lang, ...props }: any) => (
     <span className={`material-symbols-outlined absolute ${lang === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors text-xl`}>
       {icon}
     </span>
-    <input 
+    <input
       {...props}
       className={`w-full rounded-full border-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-12 text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium ${lang === 'ar' ? 'pr-12 pl-6 text-right' : 'pl-12 pr-6 text-left'} focus:ring-4 focus:ring-white/20 transition-all shadow-lg font-bold`}
     />
@@ -23,11 +23,12 @@ const InputGroup = ({ label, icon, lang, ...props }: any) => (
 const Register: React.FC = () => {
   const { lang, setLang, t, isDarkMode, toggleDarkMode } = useApp();
   const navigate = useNavigate();
-  
+  const [toolsOpen, setToolsOpen] = useState(false);
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [fetchingData, setFetchingData] = useState(false);
@@ -50,7 +51,7 @@ const Register: React.FC = () => {
 
   const [formData, setFormData] = useState({
     role: '' as Role,
-    name: '', 
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -105,7 +106,7 @@ const Register: React.FC = () => {
   const handleCategoryChange = async (catId: string) => {
     setFormData(prev => ({ ...prev, categoryId: catId, subCategoryIds: [] }));
     if (!catId) return;
-    
+
     setFetchingData(true);
     try {
       const data = await api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${catId}`);
@@ -122,8 +123,8 @@ const Register: React.FC = () => {
       const exists = prev.subCategoryIds.includes(subId);
       return {
         ...prev,
-        subCategoryIds: exists 
-          ? prev.subCategoryIds.filter(id => id !== subId) 
+        subCategoryIds: exists
+          ? prev.subCategoryIds.filter(id => id !== subId)
           : [...prev.subCategoryIds, subId]
       };
     });
@@ -233,43 +234,58 @@ const Register: React.FC = () => {
       {/* Floating Auth Header */}
       <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none">
         <div className="pointer-events-auto">
-          <Link 
-            to="/" 
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
+          <button
+            onClick={() => navigate('/')}
+            className="size-11 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm transition-all active:scale-90 hover:border-primary"
+            title={lang === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to landing'}
           >
-            <span className="material-symbols-outlined text-lg">home</span>
-          </Link>
+            <span className="material-symbols-outlined text-lg rtl-flip">arrow_back</span>
+          </button>
         </div>
-        <div className="flex gap-2 pointer-events-auto">
-          <button 
-            onClick={toggleDarkMode}
-            className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-          >
-            <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60 "
-          >
-            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
-          </button>
+        <div className="pointer-events-auto relative">
+          {toolsOpen && <div className="fixed inset-0 z-[190]" onClick={() => setToolsOpen(false)} />}
+          <div className="relative z-[200]">
+            <button
+              onClick={() => setToolsOpen(!toolsOpen)}
+              className="h-10 px-3 rounded-full bg-primary/10 text-primary border border-primary/20 text-[11px] font-black shadow-sm active:scale-95 flex items-center gap-1"
+              aria-label="Tools"
+            >
+              <span className="material-symbols-outlined text-sm">{toolsOpen ? 'close' : 'apps'}</span>
+              {lang === 'ar' ? 'أدوات' : 'Tools'}
+            </button>
+            <div className={`absolute ${lang === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 flex flex-col gap-2 transition-all ${toolsOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+              <button
+                onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+                className="h-9 px-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black shadow-lg"
+              >
+                {lang === 'ar' ? 'EN' : 'AR'}
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="h-9 px-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black shadow-lg flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+                {lang === 'ar' ? 'الوضع' : 'Theme'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Left (mobile: top) - Image / Branding */}
       <div className={`flex-none h-[45vh] md:h-full md:w-1/2 md:min-h-screen bg-white dark:bg-slate-900 relative overflow-hidden shadow-2xl z-10 animate-slide-down md:animate-none md:animate-fade-up border-b-4 md:border-b-0 border-white/10 dark:border-primary/20 rounded-b-[4rem] md:rounded-none ${lang === 'ar' ? 'md:order-2 md:border-l-4' : 'md:order-1 md:border-r-4'}`}>
         <div className="absolute inset-0 flex items-center justify-center">
-          <img 
-            src={APP_LOGO} 
+          <img
+            src={APP_LOGO}
             className="w-full h-full min-w-full min-h-full object-cover object-center opacity-100 dark:invert dark:hue-rotate-180 dark:brightness-125 transition-all duration-700"
             alt="Hero"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#20a7b2]/40 dark:from-slate-950/20 via-transparent to-transparent"></div>
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
-           {[1, 2, 3].map(s => (
-             <div key={s} className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-primary' : 'w-4 bg-slate-200 dark:bg-slate-700'}`}></div>
-           ))}
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-primary' : 'w-4 bg-slate-200 dark:bg-slate-700'}`}></div>
+          ))}
         </div>
       </div>
 
@@ -277,11 +293,11 @@ const Register: React.FC = () => {
       <div className={`flex-1 flex flex-col justify-center px-8 sm:px-12 py-8 md:py-12 overflow-y-auto no-scrollbar animate-fade-up md:w-1/2 ${lang === 'ar' ? 'md:order-1' : 'md:order-2'}`} style={{ animationDelay: '0.4s' }}>
         <div className="max-w-md mx-auto w-full space-y-8">
           <div className="text-center">
-             <h2 className="text-3xl font-black text-white ">
-               {step === 1 ? t.registerExtra.step1Title : 
-                step === 2 ? t.registerExtra.step2Title : 
-                t.registerExtra.step3Title}
-             </h2>
+            <h2 className="text-3xl font-black text-white ">
+              {step === 1 ? t.registerExtra.step1Title :
+                step === 2 ? t.registerExtra.step2Title :
+                  t.registerExtra.step3Title}
+            </h2>
           </div>
 
           {error && <div className="p-4 rounded-2xl bg-red-500/20 border border-red-500/30 text-white text-xs font-bold text-center animate-in shake">{error}</div>}
@@ -291,8 +307,8 @@ const Register: React.FC = () => {
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <p className="text-white/80 font-bold text-center text-sm">{t.register.roleTitle}</p>
                 <div className="grid grid-cols-1 gap-3">
-                  <button onClick={() => setFormData({...formData, role: 'CUSTOMER_OWNER'})} className={`group flex items-center gap-4 p-5 rounded-3xl transition-all ${formData.role === 'CUSTOMER_OWNER' ? 'bg-white dark:bg-slate-800 shadow-2xl ring-4 ring-white/20 dark:ring-white/5' : 'bg-white/10 text-white hover:bg-white/20'}`}><div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${formData.role === 'CUSTOMER_OWNER' ? 'bg-[#20a7b2] text-white shadow-md' : 'bg-white/20 text-white'}`}><span className="material-symbols-outlined text-2xl">shopping_basket</span></div><div className="text-left rtl:text-right"><p className={`font-black text-sm ${formData.role === 'CUSTOMER_OWNER' ? 'text-[#20a7b2] dark:text-primary' : 'text-white'}`}>{t.register.customer}</p><p className={`text-[10px] font-bold ${formData.role === 'CUSTOMER_OWNER' ? 'text-slate-400 dark:text-slate-500' : 'text-white/60'}`}>{t.register.customerDesc}</p></div></button>
-                  <button onClick={() => setFormData({...formData, role: 'SUPPLIER_OWNER'})} className={`group flex items-center gap-4 p-5 rounded-3xl transition-all ${formData.role === 'SUPPLIER_OWNER' ? 'bg-white dark:bg-slate-800 shadow-2xl ring-4 ring-white/20 dark:ring-white/5' : 'bg-white/10 text-white hover:bg-white/20'}`}><div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${formData.role === 'SUPPLIER_OWNER' ? 'bg-[#20a7b2] text-white shadow-md' : 'bg-white/20 text-white'}`}><span className="material-symbols-outlined text-2xl">factory</span></div><div className="text-left rtl:text-right"><p className={`font-black text-sm ${formData.role === 'SUPPLIER_OWNER' ? 'text-[#20a7b2] dark:text-primary' : 'text-white'}`}>{t.register.supplier}</p><p className={`text-[10px] font-bold ${formData.role === 'SUPPLIER_OWNER' ? 'text-slate-400 dark:text-slate-500' : 'text-white/60'}`}>{t.register.supplierDesc}</p></div></button>
+                  <button onClick={() => setFormData({ ...formData, role: 'CUSTOMER_OWNER' })} className={`group flex items-center gap-4 p-5 rounded-3xl transition-all ${formData.role === 'CUSTOMER_OWNER' ? 'bg-white dark:bg-slate-800 shadow-2xl ring-4 ring-white/20 dark:ring-white/5' : 'bg-white/10 text-white hover:bg-white/20'}`}><div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${formData.role === 'CUSTOMER_OWNER' ? 'bg-[#20a7b2] text-white shadow-md' : 'bg-white/20 text-white'}`}><span className="material-symbols-outlined text-2xl">shopping_basket</span></div><div className="text-left rtl:text-right"><p className={`font-black text-sm ${formData.role === 'CUSTOMER_OWNER' ? 'text-[#20a7b2] dark:text-primary' : 'text-white'}`}>{t.register.customer}</p><p className={`text-[10px] font-bold ${formData.role === 'CUSTOMER_OWNER' ? 'text-slate-400 dark:text-slate-500' : 'text-white/60'}`}>{t.register.customerDesc}</p></div></button>
+                  <button onClick={() => setFormData({ ...formData, role: 'SUPPLIER_OWNER' })} className={`group flex items-center gap-4 p-5 rounded-3xl transition-all ${formData.role === 'SUPPLIER_OWNER' ? 'bg-white dark:bg-slate-800 shadow-2xl ring-4 ring-white/20 dark:ring-white/5' : 'bg-white/10 text-white hover:bg-white/20'}`}><div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${formData.role === 'SUPPLIER_OWNER' ? 'bg-[#20a7b2] text-white shadow-md' : 'bg-white/20 text-white'}`}><span className="material-symbols-outlined text-2xl">factory</span></div><div className="text-left rtl:text-right"><p className={`font-black text-sm ${formData.role === 'SUPPLIER_OWNER' ? 'text-[#20a7b2] dark:text-primary' : 'text-white'}`}>{t.register.supplier}</p><p className={`text-[10px] font-bold ${formData.role === 'SUPPLIER_OWNER' ? 'text-slate-400 dark:text-slate-500' : 'text-white/60'}`}>{t.register.supplierDesc}</p></div></button>
                 </div>
               </div>
             )}
@@ -304,10 +320,10 @@ const Register: React.FC = () => {
                   <input type="file" ref={profileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'profile')} />
                 </div>
                 <div className="space-y-4">
-                  <InputGroup icon="person" type="text" lang={lang} value={formData.name} onChange={(e: any) => setFormData({...formData, name: e.target.value})} placeholder={t.registerExtra.fullNamePlaceholder} required />
-                  <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({...formData, phoneNumber: e.target.value})} placeholder={t.register.phonePlaceholder} required />
+                  <InputGroup icon="person" type="text" lang={lang} value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} placeholder={t.registerExtra.fullNamePlaceholder} required />
+                  <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder={t.register.phonePlaceholder} required />
                   <div className="space-y-1">
-                    <InputGroup icon="mail" type="email" lang={lang} value={formData.email} onChange={(e: any) => setFormData({...formData, email: e.target.value})} placeholder={t.register.emailPlaceholder} required />
+                    <InputGroup icon="mail" type="email" lang={lang} value={formData.email} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} placeholder={t.register.emailPlaceholder} required />
                     {formData.email.length > 0 && !isEmailValid(formData.email) && (
                       <p className="text-[10px] text-red-300 font-bold px-4 animate-in fade-in slide-in-from-top-1">
                         {t.registerExtra.invalidEmail}
@@ -315,11 +331,11 @@ const Register: React.FC = () => {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <InputGroup icon="lock" type="password" lang={lang} value={formData.password} onChange={(e: any) => setFormData({...formData, password: e.target.value})} placeholder={t.register.passwordPlaceholder} required minLength={6} />
+                    <InputGroup icon="lock" type="password" lang={lang} value={formData.password} onChange={(e: any) => setFormData({ ...formData, password: e.target.value })} placeholder={t.register.passwordPlaceholder} required minLength={6} />
                     <p className="text-[10px] text-white/60 px-4">{t.registerExtra.passwordHint}</p>
                   </div>
                   <div className="space-y-1">
-                    <InputGroup icon="lock_reset" type="password" lang={lang} value={formData.confirmPassword} onChange={(e: any) => setFormData({...formData, confirmPassword: e.target.value})} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} required minLength={6} />
+                    <InputGroup icon="lock_reset" type="password" lang={lang} value={formData.confirmPassword} onChange={(e: any) => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} required minLength={6} />
                     {formData.confirmPassword.length > 0 && formData.confirmPassword !== formData.password && (
                       <p className="text-[10px] text-red-300 font-bold px-4 animate-in fade-in slide-in-from-top-1">
                         {lang === 'ar' ? 'كلمة المرور غير متطابقة' : 'Passwords do not match'}
@@ -332,8 +348,8 @@ const Register: React.FC = () => {
 
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500 pb-4">
-                <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({...formData, organizationName: e.target.value})} placeholder={t.register.orgNamePlaceholder} required />
-                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({...formData, organizationCRN: e.target.value})} placeholder={t.register.orgCRNPlaceholder} required />
+                <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({ ...formData, organizationName: e.target.value })} placeholder={t.register.orgNamePlaceholder} required />
+                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({ ...formData, organizationCRN: e.target.value })} placeholder={t.register.orgCRNPlaceholder} required />
                 <div onClick={() => crnInputRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${crnPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>{crnPreview ? <img src={crnPreview} className="size-full object-contain p-2" alt="CRN" /> : <><span className="material-symbols-outlined text-2xl text-white/50 mb-1">cloud_upload</span><span className="text-[10px] font-black text-white/60  ">{t.register.orgCRNImage}</span></>}</div>
                 <input type="file" ref={crnInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'crn')} />
                 {formData.role === 'SUPPLIER_OWNER' && (
@@ -376,7 +392,7 @@ const Register: React.FC = () => {
             @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
             @keyframes sheetDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
           `}</style>
-          <div 
+          <div
             className="absolute inset-x-0 bottom-0 md:static md:w-[92%] md:max-w-3xl md:max-h-[80vh] overflow-hidden rounded-t-3xl md:rounded-3xl bg-white dark:bg-slate-900 border-t border-white/20 dark:border-slate-700 md:border md:shadow-2xl"
             style={{ transform: `translateY(${dragTranslate}px)`, animation: dragTranslate === 0 ? 'sheetUp 300ms cubic-bezier(0.16, 1, 0.3, 1)' : undefined }}
             onMouseDown={(e) => { setDragStartY(e.clientY); }}
@@ -409,15 +425,15 @@ const Register: React.FC = () => {
                   {policyLoading ? (
                     <div className="text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</div>
                   ) : (policies?.acceptableUse[(lang === 'ar') ? 'ar' : 'en']?.length
-                      ? policies!.acceptableUse[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
-                      : (
-                        <>
-                          <p>{lang === 'ar' ? 'عدم إساءة استخدام المنصة أو محاولة اختراقها.' : 'Do not misuse or attempt to compromise the platform.'}</p>
-                          <p>{lang === 'ar' ? 'الالتزام بالقوانين المحلية والدولية.' : 'Comply with local and international laws.'}</p>
-                          <p>{lang === 'ar' ? 'التقديم بمعلومات صحيحة ومحدثة.' : 'Provide accurate and up-to-date information.'}</p>
-                        </>
-                      )
-                    )}
+                    ? policies!.acceptableUse[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
+                    : (
+                      <>
+                        <p>{lang === 'ar' ? 'عدم إساءة استخدام المنصة أو محاولة اختراقها.' : 'Do not misuse or attempt to compromise the platform.'}</p>
+                        <p>{lang === 'ar' ? 'الالتزام بالقوانين المحلية والدولية.' : 'Comply with local and international laws.'}</p>
+                        <p>{lang === 'ar' ? 'التقديم بمعلومات صحيحة ومحدثة.' : 'Provide accurate and up-to-date information.'}</p>
+                      </>
+                    )
+                  )}
                 </div>
               </section>
               <section className="rounded-2xl p-4 border border-sky-100 dark:border-sky-900/30 bg-sky-50/60 dark:bg-sky-900/10">
@@ -431,15 +447,15 @@ const Register: React.FC = () => {
                   {policyLoading ? (
                     <div className="text-[11px]">{lang === 'ar' ? 'جاري التحميل...' : 'Loading...'}</div>
                   ) : (policies?.privacy[(lang === 'ar') ? 'ar' : 'en']?.length
-                      ? policies!.privacy[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
-                      : (
-                        <>
-                          <p>{lang === 'ar' ? 'نستخدم بياناتك لتقديم الخدمات وحمايتها.' : 'We use your data to deliver and protect the services.'}</p>
-                          <p>{lang === 'ar' ? 'لن نبيع بياناتك لطرف ثالث.' : 'We do not sell your data to third parties.'}</p>
-                          <p>{lang === 'ar' ? 'يمكنك طلب حذف بياناتك وفقًا للقانون.' : 'You may request data deletion subject to applicable law.'}</p>
-                        </>
-                      )
-                    )}
+                    ? policies!.privacy[(lang === 'ar') ? 'ar' : 'en'].map((item, idx) => <p key={idx}>{item}</p>)
+                    : (
+                      <>
+                        <p>{lang === 'ar' ? 'نستخدم بياناتك لتقديم الخدمات وحمايتها.' : 'We use your data to deliver and protect the services.'}</p>
+                        <p>{lang === 'ar' ? 'لن نبيع بياناتك لطرف ثالث.' : 'We do not sell your data to third parties.'}</p>
+                        <p>{lang === 'ar' ? 'يمكنك طلب حذف بياناتك وفقًا للقانون.' : 'You may request data deletion subject to applicable law.'}</p>
+                      </>
+                    )
+                  )}
                 </div>
               </section>
               <section className="rounded-2xl p-4 border border-amber-100 dark:border-amber-900/30 bg-amber-50/60 dark:bg-amber-900/10">

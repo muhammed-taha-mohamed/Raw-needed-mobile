@@ -22,6 +22,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const [pendingCounts, setPendingCounts] = useState<{ pendingSubscriptions: number; pendingAdSubscriptions: number; pendingAddSearches: number } | null>(null);
 
   const notifRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -31,8 +33,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     }
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (notifRef.current && !notifRef.current.contains(target)) {
         setShowNotifications(false);
+      }
+      if (settingsRef.current && !settingsRef.current.contains(target)) {
+        setShowSettings(false);
       }
     };
 
@@ -169,7 +175,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'السوق' : 'Market', icon: 'storefront', path: '/product-search' },
         { name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', path: '/cart' },
-      { name: lang === 'ar' ? 'الموزعون' : 'Distributors', icon: 'explore', path: '/vendors' },
+        { name: lang === 'ar' ? 'الموزعون' : 'Distributors', icon: 'explore', path: '/vendors' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else {
@@ -337,66 +343,50 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
             </div>
           </div>
 
-          {/* Fixed Bottom Buttons */}
+          {/* Fixed Bottom Settings */}
           <div className={`shrink-0 sticky bottom-0 border-t border-primary/30 dark:border-slate-800 bg-white dark:bg-slate-900 ${isSidebarCollapsed ? 'lg:px-2 lg:overflow-visible' : 'px-2'} pt-4 pb-4 overflow-visible`}>
-            <div className="space-y-2">
+            <div className="relative" ref={settingsRef}>
               <button
-                onClick={toggleDarkMode}
-                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200`}
-                title={isSidebarCollapsed ? (lang === 'ar' ? 'المظهر' : 'Appearance') : undefined}
+                onClick={() => setShowSettings((v) => !v)}
+                className={`w-full flex items-center transition-all duration-300 rounded-2xl group ${isSidebarCollapsed ? 'lg:justify-center' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200`}
+                title={isSidebarCollapsed ? (lang === 'ar' ? 'الإعدادات' : 'Settings') : undefined}
               >
-                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">
-                  {isDarkMode ? 'light_mode' : 'dark_mode'}
-                </span>
+                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">settings</span>
                 {!isSidebarCollapsed && (
                   <div className="flex-1 flex justify-between items-center">
-                    <span className="text-[12px] font-bold">{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
-                    <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md ">
+                    <span className="text-[12px] font-bold">{lang === 'ar' ? 'الإعدادات' : 'Settings'}</span>
+                  </div>
+                )}
+              </button>
+              {showSettings && (
+                <div className={`absolute ${lang === 'ar' ? 'left-2' : 'right-2'} bottom-16 z-[500] w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 slide-in-from-bottom-2`}>
+                  <button
+                    onClick={() => { toggleDarkMode(); setShowSettings(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/5 text-slate-600 dark:text-slate-300"
+                  >
+                    <span className="material-symbols-outlined text-slate-400">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+                    <span className="text-[12px] font-bold flex-1 text-start">{lang === 'ar' ? 'المظهر' : 'Appearance'}</span>
+                    <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md">
                       {isDarkMode ? (lang === 'ar' ? 'نهاري' : 'Light') : (lang === 'ar' ? 'ليلي' : 'Dark')}
                     </span>
-                  </div>
-                )}
-                {isSidebarCollapsed && (
-                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
-                    {lang === 'ar' ? 'المظهر' : 'Appearance'}
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center lg:overflow-visible' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-primary hover:bg-primary/5 text-slate-700 dark:text-slate-200`}
-                title={isSidebarCollapsed ? (lang === 'ar' ? 'اللغة' : 'Language') : undefined}
-              >
-                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">language</span>
-                {!isSidebarCollapsed && (
-                  <div className="flex-1 flex justify-between items-center">
-                    <span className="text-[12px] font-bold">{lang === 'ar' ? 'اللغة' : 'Language'}</span>
+                  </button>
+                  <button
+                    onClick={() => { setLang(lang === 'ar' ? 'en' : 'ar'); setShowSettings(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-primary/5 text-slate-600 dark:text-slate-300"
+                  >
+                    <span className="material-symbols-outlined text-slate-400">language</span>
+                    <span className="text-[12px] font-bold flex-1 text-start">{lang === 'ar' ? 'اللغة' : 'Language'}</span>
                     <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md ">{lang === 'ar' ? 'English' : 'العربية'}</span>
-                  </div>
-                )}
-                {isSidebarCollapsed && (
-                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
-                    {lang === 'ar' ? 'اللغة' : 'Language'}
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className={`w-full flex items-center transition-all duration-300 rounded-2xl group relative ${isSidebarCollapsed ? 'lg:justify-center lg:overflow-visible' : 'gap-4'} px-4 py-3 border border-primary/30 hover:border-red-100 hover:bg-red-50/30 text-slate-700 dark:text-slate-200 hover:text-red-500`}
-              >
-                <span className="material-symbols-outlined rtl-flip text-slate-400 group-hover:text-red-500">logout</span>
-                {!isSidebarCollapsed && (
-                  <span className="text-[12px] font-black">{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
-                )}
-                {isSidebarCollapsed && (
-                  <div className={`hidden lg:group-hover:flex absolute ${lang === 'ar' ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-[500] whitespace-nowrap px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-2xl pointer-events-none items-center animate-in fade-in zoom-in-95 duration-200`}>
-                    {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-[-4px]' : 'left-[-4px]'} w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ${lang === 'ar' ? 'border-l-[4px] border-l-slate-900 dark:border-l-slate-800' : 'border-r-[4px] border-r-slate-900 dark:border-r-slate-800'}`}></div>
-                  </div>
-                )}
-              </button>
+                  </button>
+                  <button
+                    onClick={() => { setShowSettings(false); setShowLogoutModal(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-red-50/30 text-slate-600 dark:text-slate-300 hover:text-red-500"
+                  >
+                    <span className="material-symbols-outlined rtl-flip text-slate-400">logout</span>
+                    <span className="text-[12px] font-bold flex-1 text-start">{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -417,7 +407,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                 {lang === 'ar' ? (isSidebarCollapsed ? 'chevron_left' : 'chevron_right') : (isSidebarCollapsed ? 'chevron_right' : 'chevron_left')}
               </span>
             </button>
-            
+
             <button
               onClick={() => navigate('/')}
               className="size-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary transition-all active:scale-90 shadow-sm shrink-0"
@@ -470,13 +460,13 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         {showLogoutModal && (
           <div className="fixed inset-0 z-[250] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 p-0 md:p-4">
             <div className="w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border-t border-x md:border border-slate-200 dark:border-slate-700 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
-              
+
               {/* Drag Handle - Mobile Only */}
               <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
                 const startY = e.touches[0].clientY;
                 const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
                 if (!modal) return;
-                
+
                 const handleMove = (moveEvent: TouchEvent) => {
                   const currentY = moveEvent.touches[0].clientY;
                   const diff = currentY - startY;
@@ -485,7 +475,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                     modal.style.transition = 'none';
                   }
                 };
-                
+
                 const handleEnd = () => {
                   const finalY = modal.getBoundingClientRect().top;
                   if (finalY > window.innerHeight * 0.3) {
@@ -497,7 +487,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                   document.removeEventListener('touchmove', handleMove);
                   document.removeEventListener('touchend', handleEnd);
                 };
-                
+
                 document.addEventListener('touchmove', handleMove);
                 document.addEventListener('touchend', handleEnd);
               }}>

@@ -9,6 +9,8 @@ import EmptyState from '../../components/EmptyState';
 interface CartItem {
   id: string;
   name: string;
+  englishName?: string | null;
+  arabicName?: string | null;
   origin: string;
   supplierId: string;
   supplierName: string;
@@ -130,6 +132,8 @@ const Cart: React.FC = () => {
         items: cart.items.map(item => ({
           id: item.id,
           name: item.name,
+          englishName: item.englishName ?? null,
+          arabicName: item.arabicName ?? null,
           origin: item.origin,
           supplierId: item.supplierId,
           supplierName: item.supplierName,

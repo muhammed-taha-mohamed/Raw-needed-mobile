@@ -5,6 +5,7 @@ import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
 import EmptyState from '../../components/EmptyState';
 import PaginationFooter from '../../components/PaginationFooter';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 interface SupplierResponse {
   price: number;
@@ -78,9 +79,9 @@ const SupplierOrders: React.FC = () => {
   const [formShipping, setFormShipping] = useState<string>('0');
   const [formDelivery, setFormDelivery] = useState<string>('');
   const [formAvailableQty, setFormAvailableQty] = useState<string>('');
-  const [formShippingInfo, setFormShippingInfo] = useState<string>('');
   const [formCoaUrl, setFormCoaUrl] = useState<string>('');
   const [formCoaPreview, setFormCoaPreview] = useState<string>('');
+  const coaFileInputRef = useRef<HTMLInputElement>(null);
   
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -127,7 +128,6 @@ const SupplierOrders: React.FC = () => {
     setFormShipping(offer.supplierResponse?.shippingCost?.toString() || '0');
     setFormDelivery(offer.supplierResponse?.estimatedDelivery || '');
     setFormAvailableQty(offer.supplierResponse?.availableQuantity?.toString() || offer.quantity.toString());
-    setFormShippingInfo(offer.supplierResponse?.shippingInfo || '');
     setFormCoaUrl(offer.supplierResponse?.analysisCertificateUrl || '');
     setFormCoaPreview(offer.supplierResponse?.analysisCertificateUrl || '');
   };
@@ -160,7 +160,6 @@ const SupplierOrders: React.FC = () => {
         estimatedDelivery: formDelivery,
         respondedAt: new Date().toISOString(),
         availableQuantity: parseInt(formAvailableQty),
-        shippingInfo: formShippingInfo,
         analysisCertificateUrl: formCoaUrl || ''
       };
 
@@ -688,7 +687,7 @@ const SupplierOrders: React.FC = () => {
       />
 
       {respondingOffer && (
-        <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
             
             {/* Drag Handle - Mobile Only */}
@@ -748,95 +747,101 @@ const SupplierOrders: React.FC = () => {
               <form onSubmit={handleSubmitResponse} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'سعر الوحدة' : 'Unit Price'}</label>
-                    <div className="relative group">
-                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">EGP</span>
-                       <input 
-                         type="number" required step="0.01" min="0.01"
-                         value={formPrice} onChange={(e) => setFormPrice(e.target.value)}
-                         className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-black text-lg focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none tabular-nums shadow-inner"
-                         placeholder="0.00"
-                       />
-                    </div>
+                    <FloatingLabelInput
+                      type="number"
+                      required
+                      step="0.01"
+                      min={0.01}
+                      label={lang === 'ar' ? 'سعر الوحدة' : 'Unit Price'}
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(e.target.value)}
+                      isRtl={lang === 'ar'}
+                      className="tabular-nums"
+                      leadingIcon="payments"
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'تكلفة الشحن' : 'Shipping Cost'}</label>
-                    <div className="relative group">
-                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">EGP</span>
-                       <input 
-                         type="number" required step="0.01" min="0"
-                         value={formShipping} onChange={(e) => setFormShipping(e.target.value)}
-                         className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-black text-lg focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none tabular-nums shadow-inner"
-                         placeholder="0.00"
-                       />
-                    </div>
+                    <FloatingLabelInput
+                      type="number"
+                      required
+                      step="0.01"
+                      min={0}
+                      label={lang === 'ar' ? 'تكلفة الشحن' : 'Shipping Cost'}
+                      value={formShipping}
+                      onChange={(e) => setFormShipping(e.target.value)}
+                      isRtl={lang === 'ar'}
+                      className="tabular-nums"
+                      leadingIcon="local_shipping"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'الكمية المتوفرة' : 'Available Quantity'}</label>
-                    <div className="relative group">
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors">inventory</span>
-                      <input 
-                        type="number" required min="1"
-                        value={formAvailableQty} onChange={(e) => setFormAvailableQty(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner"
-                        placeholder={t.orders.quantityPlaceholder}
-                      />
-                    </div>
+                    <FloatingLabelInput
+                      type="number"
+                      required
+                      min={1}
+                      label={lang === 'ar' ? 'الكمية المتوفرة' : 'Available Quantity'}
+                      value={formAvailableQty}
+                      onChange={(e) => setFormAvailableQty(e.target.value)}
+                      isRtl={lang === 'ar'}
+                      leadingIcon="inventory"
+                      placeholder={t.orders.quantityPlaceholder}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'تاريخ التسليم المتوقع' : 'Estimated Delivery Date'}</label>
-                    <div className="relative group">
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors">calendar_today</span>
-                      <input 
-                        type="date" required min={new Date().toISOString().split('T')[0]}
-                        value={formDelivery} onChange={(e) => setFormDelivery(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</label>
-                  <div className="relative group">
-                    <span className="material-symbols-outlined absolute left-4 top-4 text-slate-300 group-focus-within:text-primary transition-colors">local_shipping</span>
-                    <textarea 
-                      value={formShippingInfo} onChange={(e) => setFormShippingInfo(e.target.value)}
-                      className="w-full pl-12 pr-6 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary focus:bg-white dark:focus:bg-slate-900 transition-all outline-none shadow-inner min-h-[100px]"
-                      placeholder={lang === 'ar' ? 'مثال: الشحن عبر البريد السريع أو الاستلام من المخزن...' : 'e.g. Shipping via express courier or warehouse pickup...'}
+                    <FloatingLabelInput
+                      type="date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      label={lang === 'ar' ? 'تاريخ التسليم المتوقع' : 'Estimated Delivery Date'}
+                      value={formDelivery}
+                      onChange={(e) => setFormDelivery(e.target.value)}
+                      className="rn-date"
+                      isRtl={lang === 'ar'}
                     />
                   </div>
                 </div>
 
+                {/* Shipping information removed as requested */}
+
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة التحليل (صورة اختيارية)' : 'Certificate of Analysis (optional image)'}</label>
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="file" accept="image/*" 
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onloadend = () => setFormCoaPreview(reader.result as string);
-                        reader.readAsDataURL(file);
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        try {
-                          const url = await api.post<string>('/api/v1/image/upload', formData);
-                          setFormCoaUrl(url || '');
-                        } catch {}
-                      }}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-3 text-xs font-bold"
-                    />
-                    {formCoaPreview && (
-                      <img src={formCoaPreview} alt="COA" className="size-16 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
+                  <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'شهادة التحليل (صورة اختيارية)' : 'Certificate of Analysis (optional image)'}</label>
+                  <div
+                    onClick={() => coaFileInputRef.current?.click()}
+                    className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${formCoaPreview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}
+                  >
+                    {formCoaPreview ? (
+                      <img src={formCoaPreview} className="size-full object-cover" alt="COA Preview" />
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                        <span className="text-[9px] font-black text-slate-400">{lang === 'ar' ? 'اضغط لرفع الصورة' : 'Click to upload'}</span>
+                      </>
                     )}
                   </div>
+                  <input
+                    ref={coaFileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onloadend = () => setFormCoaPreview(reader.result as string);
+                      reader.readAsDataURL(file);
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      try {
+                        const url = await api.post<string>('/api/v1/image/upload', formData);
+                        setFormCoaUrl(url || '');
+                      } catch {}
+                    }}
+                  />
                 </div>
 
                 <div className="pt-6">
@@ -863,7 +868,7 @@ const SupplierOrders: React.FC = () => {
       )}
 
       {detailsOffer && (
-        <div className="fixed inset-0 z-[170] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
               const startY = e.touches[0].clientY;

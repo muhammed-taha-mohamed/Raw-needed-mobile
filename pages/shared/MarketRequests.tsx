@@ -36,6 +36,7 @@ const MarketRequests: React.FC = () => {
   const [posts, setPosts] = useState<MarketPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'mine' | 'create'>('all');
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -50,6 +51,7 @@ const MarketRequests: React.FC = () => {
     quantity: string;
     unit: string;
     targetType: 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH';
+    imported: boolean | null;
     image: string;
     file: File | null;
     preview: string | null;
@@ -106,7 +108,8 @@ const MarketRequests: React.FC = () => {
     materialName: '',
     quantity: '',
     unit: '',
-    targetType: 'SUPPLIERS',
+    targetType: 'SUPPLIERS', // default; removed BOTH from creation
+    imported: null,
     image: '',
     file: null,
     preview: null
@@ -157,31 +160,52 @@ const MarketRequests: React.FC = () => {
 
     setIsSubmittingPost(true);
     try {
-      // Process all posts and upload images
-      const postsData = await Promise.all(marketPosts.map(async (post) => {
+      if (editingPostId) {
+        const post = marketPosts[0];
         let imageUrl = '';
         if (post.file) {
           const formData = new FormData();
           formData.append('file', post.file);
           imageUrl = await api.post<string>('/api/v1/image/upload', formData);
         }
-
-        return {
+        const payload = {
           materialName: post.materialName.trim(),
           quantity: Number(post.quantity),
           unit: post.unit.trim(),
           targetType: post.targetType,
-          image: imageUrl || post.image.trim() || null,
+          imported: post.imported,
+          image: imageUrl || post.image.trim() || null
         };
-      }));
-
-      // Send all posts sequentially
-      for (const postData of postsData) {
-        await api.post('/api/v1/clients-special-orders', postData);
+        await api.put(`/api/v1/clients-special-orders/${editingPostId}`, payload);
+      } else {
+        // Process all posts and upload images for creation
+        const postsData = await Promise.all(marketPosts.map(async (post) => {
+          let imageUrl = '';
+          if (post.file) {
+            const formData = new FormData();
+            formData.append('file', post.file);
+            imageUrl = await api.post<string>('/api/v1/image/upload', formData);
+          }
+  
+          return {
+            materialName: post.materialName.trim(),
+            quantity: Number(post.quantity),
+            unit: post.unit.trim(),
+            targetType: post.targetType,
+            imported: post.imported,
+            image: imageUrl || post.image.trim() || null,
+          };
+        }));
+  
+        // Send all posts sequentially
+        for (const postData of postsData) {
+          await api.post('/api/v1/clients-special-orders', postData);
+        }
       }
 
       showToast(t.marketRequests.postSuccess, 'success');
       setIsCreateModalOpen(false);
+      setEditingPostId(null);
       resetCreatePostForm();
       setActiveTab('mine');
       setCurrentPage(0);
@@ -309,26 +333,65 @@ const MarketRequests: React.FC = () => {
               {visiblePosts.map((post, idx) => (
                 <div key={post.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col animate-in zoom-in-95" style={{ animationDelay: `${idx * 40}ms` }}>
                   <div className="p-4 md:p-5 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="size-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shrink-0">
-                        {post.image ? (
-                          <img src={post.image} alt={post.materialName} className="size-full object-cover" />
-                        ) : (
-                          <div className="size-full flex items-center justify-center text-slate-400">
-                            <span className="material-symbols-outlined">inventory_2</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white break-words">{post.materialName}</h3>
-                        <div className="mt-1 flex flex-wrap gap-1.5">
-                          <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black border border-primary/20">
-                            {targetTypeLabel(post.targetType)}
-                          </span>
-                          <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black border border-slate-200 dark:border-slate-700">
-                            {(post.offers?.length || 0)} {t.marketRequests.offers}
-                          </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="size-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shrink-0">
+                          {post.image ? (
+                            <img src={post.image} alt={post.materialName} className="size-full object-cover" />
+                          ) : (
+                            <div className="size-full flex items-center justify-center text-slate-400">
+                              <span className="material-symbols-outlined">inventory_2</span>
+                            </div>
+                          )}
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white break-words">{post.materialName}</h3>
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black border border-primary/20">
+                              {targetTypeLabel(post.targetType)}
+                            </span>
+                            {post.createdById && (
+                              <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black border border-slate-200 dark:border-slate-700">
+                                {(post.offers?.length || 0)} {t.marketRequests.offers}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Actions: edit/delete for my posts */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingPostId(post.id);
+                            setMarketPosts([{
+                              id: `edit-${post.id}`,
+                              materialName: post.materialName,
+                              quantity: String(post.quantity || ''),
+                              unit: post.unit || '',
+                              targetType: (post as any).targetType || 'SUPPLIERS',
+                              imported: (post as any).imported ?? null,
+                              image: post.image || '',
+                              file: null,
+                              preview: post.image || null
+                            }]);
+                            setIsCreateModalOpen(true);
+                          }}
+                          className="size-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-primary hover:border-primary transition-all flex items-center justify-center"
+                          title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm(lang === 'ar' ? 'تأكيد حذف الطلب؟' : 'Delete this request?')) return;
+                            await api.delete(`/api/v1/clients-special-orders/${post.id}`);
+                            await fetchData(currentPage, activeTab, pageSize);
+                          }}
+                          className="size-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 hover:border-red-300 transition-all flex items-center justify-center"
+                          title={lang === 'ar' ? 'حذف' : 'Delete'}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
                       </div>
                     </div>
 
@@ -428,7 +491,6 @@ const MarketRequests: React.FC = () => {
                       label={t.marketRequests.materialName}
                       value={post.materialName}
                       onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, materialName: e.target.value } : p))}
-                      placeholder={t.marketRequests.materialName}
                       isRtl={lang === 'ar'}
                     />
 
@@ -442,7 +504,6 @@ const MarketRequests: React.FC = () => {
                         step={0.01}
                         value={post.quantity}
                         onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, quantity: e.target.value } : p))}
-                        placeholder="1"
                         isRtl={lang === 'ar'}
                       />
                       <FloatingLabelInput
@@ -451,23 +512,57 @@ const MarketRequests: React.FC = () => {
                         label={t.marketRequests.unit}
                         value={post.unit}
                         onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, unit: e.target.value } : p))}
-                        placeholder={lang === 'ar' ? 'مثال: كجم' : 'e.g. KG'}
                         isRtl={lang === 'ar'}
                       />
+                    </div>
+
+                    {/* Local vs Imported */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع المصدر' : 'Origin Type'}</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, imported: false } : p))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.imported === false ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'محلي' : 'Local'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, imported: true } : p))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.imported === true ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'مستورد' : 'Imported'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Target Type */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.target}</label>
-                      <select
-                        value={post.targetType}
-                        onChange={(e) => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: e.target.value as 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH' } : p))}
-                        className={MODAL_DROPDOWN_TRIGGER_CLASS}
-                      >
-                        <option value="SUPPLIERS">{t.marketRequests.suppliersOnly}</option>
-                        <option value="CUSTOMERS">{t.marketRequests.customersOnly}</option>
-                        <option value="BOTH">{t.marketRequests.both}</option>
-                      </select>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: 'SUPPLIERS' } : p))}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${post.targetType === 'SUPPLIERS' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {t.marketRequests.suppliersOnly}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: 'CUSTOMERS' } : p))}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${post.targetType === 'CUSTOMERS' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {t.marketRequests.customersOnly}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: 'BOTH' } : p))}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${post.targetType === 'BOTH' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {t.marketRequests.both}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Image Upload */}
