@@ -16,18 +16,23 @@ interface Notification {
 
 interface PaginatedNotifications {
   content: Notification[];
-  last: boolean;
-  totalPages: number;
-  totalElements: number;
 }
 
 const RecentNotifications: React.FC = () => {
   const { lang } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [isLast, setIsLast] = useState(true);
+  
+  const getOwnerUserId = (): string | null => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) return null;
+      const u = JSON.parse(raw);
+      return u?.userInfo?.ownerId || u?.ownerId || u?.userInfo?.id || u?.id || null;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     fetchInitial();
@@ -36,10 +41,9 @@ const RecentNotifications: React.FC = () => {
   const fetchInitial = async () => {
     setLoading(true);
     try {
-      const response = await api.get<PaginatedNotifications>(`/api/v1/notifications/all?page=0&size=10`);
+      // Fetch first 20 notifications only (list not pages)
+      const response = await api.get<PaginatedNotifications>(`/api/v1/notifications/all?page=0&size=20`);
       setNotifications(response.content || []);
-      setIsLast(response.last);
-      setPage(0);
     } catch (err) {
       console.error("Failed to load notifications", err);
     } finally {
@@ -47,19 +51,15 @@ const RecentNotifications: React.FC = () => {
     }
   };
 
-  const loadMore = async () => {
-    if (loadingMore || isLast) return;
-    setLoadingMore(true);
+  const markAllAsRead = async () => {
     try {
-      const nextPage = page + 1;
-      const response = await api.get<PaginatedNotifications>(`/api/v1/notifications/all?page=${nextPage}&size=10`);
-      setNotifications(prev => [...prev, ...(response.content || [])]);
-      setIsLast(response.last);
-      setPage(nextPage);
+      const userId = getOwnerUserId();
+      if (!userId) return;
+      await api.patch(`/api/v1/notifications/user/${encodeURIComponent(userId)}/mark-all-read`, {});
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      window.dispatchEvent(new CustomEvent('notificationRead'));
     } catch (err) {
-      console.error("Failed to load more notifications", err);
-    } finally {
-      setLoadingMore(false);
+      console.error("Failed to mark all notifications as read", err);
     }
   };
 
@@ -94,12 +94,23 @@ const RecentNotifications: React.FC = () => {
             {lang === 'ar' ? 'أحدث الأخبار والتنبيهات' : 'Latest News & Updates'}
           </h3>
         </div>
-        <button 
-          onClick={fetchInitial}
-          className="size-8 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-slate-400 hover:text-primary transition-all flex items-center justify-center border border-transparent hover:border-slate-100 shadow-sm active:rotate-180 duration-500"
-        >
-          <span className="material-symbols-outlined text-lg">refresh</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={markAllAsRead}
+            className="size-8 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-slate-400 hover:text-primary transition-all flex items-center justify-center border border-transparent hover:border-slate-100 shadow-sm"
+            title={lang === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'}
+            aria-label={lang === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'}
+          >
+            <span className="material-symbols-outlined text-lg">done_all</span>
+          </button>
+          <button 
+            onClick={fetchInitial}
+            className="size-8 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-slate-400 hover:text-primary transition-all flex items-center justify-center border border-transparent hover:border-slate-100 shadow-sm active:rotate-180 duration-500"
+            title={lang === 'ar' ? 'تحديث' : 'Refresh'}
+          >
+            <span className="material-symbols-outlined text-lg">refresh</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
@@ -151,25 +162,6 @@ const RecentNotifications: React.FC = () => {
                 </div>
               </div>
             ))}
-            
-            {!isLast && (
-              <div className="pt-2 pb-4">
-                <button 
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-primary/20 text-primary hover:bg-primary/5 font-black text-[10px] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loadingMore ? (
-                    <div className="size-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-base">expand_more</span>
-                      {lang === 'ar' ? 'عرض المزيد' : 'View More'}
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>

@@ -88,7 +88,7 @@ const Vendors: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
+
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -116,12 +116,13 @@ const Vendors: React.FC = () => {
   const [prodSearchSub, setProdSearchSub] = useState('');
   const [catalogSubCategories, setCatalogSubCategories] = useState<SubCategory[]>([]);
   const [showCatalogFilters, setShowCatalogFilters] = useState(false);
-  
+
   // Manual Order States - Multiple Orders Support
   interface ManualOrderItem {
     id: string; // unique id for each order item
     name: string;
     origin: string;
+    imported: boolean | null;
     quantity: number;
     unit: string;
     categoryId: string;
@@ -144,7 +145,7 @@ const Vendors: React.FC = () => {
   useEffect(() => {
     fetchCategories();
     fetchCart();
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       if (catalogFilterRef.current && !catalogFilterRef.current.contains(event.target as Node)) {
         setShowCatalogFilters(false);
@@ -235,14 +236,14 @@ const Vendors: React.FC = () => {
       const mapping: Record<string, number> = {};
       data.items.forEach(item => { mapping[item.id] = item.quantity; });
       setCartItems(mapping);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const fetchCategories = async () => {
     try {
       const data = await api.get<Category[]>('/api/v1/category/all');
       setCategories(data || []);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const fetchSuppliers = async (page: number) => {
@@ -279,7 +280,7 @@ const Vendors: React.FC = () => {
       const qtys: Record<string, number> = {};
       response.content.forEach(p => { if (!cartItems[p.id]) qtys[p.id] = 1; });
       setLocalQtys(prev => ({ ...prev, ...qtys }));
-    } catch (err) {} finally {
+    } catch (err) { } finally {
       setIsProductsLoading(false);
     }
   };
@@ -295,7 +296,7 @@ const Vendors: React.FC = () => {
       await api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${productId}&quantity=${qty}`, {});
       await fetchCart();
       setToast({ message: lang === 'ar' ? 'تم تحديث العربة' : 'Cart updated', type: 'success' });
-    } catch (e) {} finally { setProcessingId(null); }
+    } catch (e) { } finally { setProcessingId(null); }
   };
 
   const updateLocalQty = (id: string, delta: number) => {
@@ -335,6 +336,7 @@ const Vendors: React.FC = () => {
     id: `order-${Date.now()}-${Math.random()}`,
     name: '',
     origin: '',
+    imported: null,
     quantity: 1,
     unit: '',
     categoryId: '',
@@ -351,8 +353,8 @@ const Vendors: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setManualOrders(prev => prev.map(order => 
-          order.id === orderId 
+        setManualOrders(prev => prev.map(order =>
+          order.id === orderId
             ? { ...order, file, preview: reader.result as string }
             : order
         ));
@@ -376,7 +378,7 @@ const Vendors: React.FC = () => {
     setIsManualModalOpen(true);
   };
 
-  const buildManualExtraFieldValues = (extraFields: CategoryExtraField[], extraFieldValues: Record<string, string>) => {
+  const buildManualExtraFieldValues = (extraFields: CategoryExtraField[], extraFieldValues: Record<string, string>, importedFlag?: boolean | null) => {
     const values: Record<string, string> = {};
     if (extraFields.some(f => f.key === 'dimensions')) {
       const length = (extraFieldValues.dimensions_length || '').trim();
@@ -401,6 +403,9 @@ const Vendors: React.FC = () => {
     if (extraFields.some(f => f.key === 'paperSize')) {
       const v = (extraFieldValues.paperSize || '').trim();
       if (v) values.paperSize = v;
+    }
+    if (importedFlag !== undefined && importedFlag !== null) {
+      values.originType = importedFlag ? 'IMPORTED' : 'LOCAL';
     }
     return values;
   };
@@ -441,7 +446,7 @@ const Vendors: React.FC = () => {
           image: imageUrl || null,
           categoryId: order.categoryId || null,
           subCategoryId: order.subCategoryId || null,
-          extraFieldValues: buildManualExtraFieldValues(order.categoryExtraFields, order.extraFieldValues)
+          extraFieldValues: buildManualExtraFieldValues(order.categoryExtraFields, order.extraFieldValues, order.imported)
         };
       }));
 
@@ -497,18 +502,18 @@ const Vendors: React.FC = () => {
 
   return (
     <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
+
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
-           {toast.message}
+          {toast.message}
         </div>
       )}
 
       {/* Mobile Cards View */}
       <div className="md:hidden space-y-4 mb-6">
         {suppliers.map((vendor, idx) => (
-          <div 
-            key={vendor.id} 
+          <div
+            key={vendor.id}
             className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
@@ -534,14 +539,14 @@ const Vendors: React.FC = () => {
             </div>
             {/* CTAs: Catalog + Details buttons */}
             <div className="px-5 pb-5 flex gap-3">
-              <button 
-                onClick={() => openProducts(vendor)} 
+              <button
+                onClick={() => openProducts(vendor)}
                 className="flex-1 py-3 rounded-xl bg-primary/10 dark:bg-primary/5 text-primary border-2 border-primary/20 hover:bg-primary/15 dark:hover:bg-primary/10 font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">inventory_2</span>
                 {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
               </button>
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setDetailsModalVendor(vendor);
@@ -565,13 +570,13 @@ const Vendors: React.FC = () => {
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-lg text-primary">filter_list</span>
                 <div className="flex-1 max-w-xs">
-                  <Dropdown 
-                    options={categories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))} 
-                    value={selectedCategoryId} 
-                    onChange={(v) => { setSelectedCategoryId(v); setCurrentPage(0); }} 
-                    placeholder={lang === 'ar' ? 'جميع الفئات' : 'All Categories'} 
-                    isRtl={lang === 'ar'} 
-                    triggerClassName="w-full min-h-[40px] flex items-center justify-between gap-2 py-2 rounded-xl border-2 border-primary/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm cursor-pointer text-start pl-3 pr-9 rtl:pl-9 rtl:pr-3" 
+                  <Dropdown
+                    options={categories.map(cat => ({ value: cat.id, label: lang === 'ar' ? (cat.arabicName || '') : (cat.name || '') }))}
+                    value={selectedCategoryId}
+                    onChange={(v) => { setSelectedCategoryId(v); setCurrentPage(0); }}
+                    placeholder={lang === 'ar' ? 'جميع الفئات' : 'All Categories'}
+                    isRtl={lang === 'ar'}
+                    triggerClassName="w-full min-h-[40px] flex items-center justify-between gap-2 py-2 rounded-xl border-2 border-primary/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-sm text-sm cursor-pointer text-start pl-3 pr-9 rtl:pl-9 rtl:pr-3"
                   />
                 </div>
               </div>
@@ -608,7 +613,7 @@ const Vendors: React.FC = () => {
                             </div>
                             <div className="min-w-0">
                               <p className="font-black text-slate-800 dark:text-white text-sm truncate leading-none">{vendor.organizationName || vendor.name}</p>
-                              <p className="text-[11px] font-bold text-slate-400 mt-1.5 truncate max-w-[120px]">{vendor.email}</p> 
+                              <p className="text-[11px] font-bold text-slate-400 mt-1.5 truncate max-w-[120px]">{vendor.email}</p>
                             </div>
                           </div>
                         </td>
@@ -628,7 +633,7 @@ const Vendors: React.FC = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className={`flex items-center gap-3 ${lang === 'ar' ? 'justify-start' : 'justify-end'}`}>
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDetailsModalVendor(vendor);
@@ -790,538 +795,558 @@ const Vendors: React.FC = () => {
           className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => closeProductsModal()}
         >
-           <div
-             className="w-full md:w-[90%] md:max-w-5xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[90vh] md:h-[90vh] relative"
-             onClick={(e) => e.stopPropagation()}
-           >
-              {/* Drag handle - mobile: swipe down to close */}
-              <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
-                const startY = e.touches[0].clientY;
-                const modal = e.currentTarget.parentElement as HTMLElement;
-                if (!modal) return;
-                const handleMove = (moveEvent: TouchEvent) => {
-                  const currentY = moveEvent.touches[0].clientY;
-                  const diff = currentY - startY;
-                  if (diff > 0) {
-                    modal.style.transform = `translateY(${diff}px)`;
-                    modal.style.transition = 'none';
-                  }
-                };
-                const handleEnd = () => {
-                  const finalY = modal.getBoundingClientRect().top;
-                  if (finalY > window.innerHeight * 0.3) {
-                    closeProductsModal();
-                  } else {
-                    modal.style.transform = '';
-                    modal.style.transition = '';
-                  }
-                  document.removeEventListener('touchmove', handleMove);
-                  document.removeEventListener('touchend', handleEnd);
-                };
-                document.addEventListener('touchmove', handleMove);
-                document.addEventListener('touchend', handleEnd);
-              }}>
-                <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
-              </div>
-              <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">storefront</span></div>
-                    <div>
-                       <h3 className="text-lg font-black text-slate-900 dark:text-white leading-none">{viewingSupplier.organizationName || viewingSupplier.name}</h3>
-                       <p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? 'كتالوج المواد الخام' : 'Vendor Product Catalog'}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <div className="relative" ref={catalogFilterRef}>
-                     <button type="button" onClick={(e) => { e.stopPropagation(); setShowCatalogFilters(!showCatalogFilters); }} className={`size-10 rounded-xl flex items-center justify-center transition-all border active:scale-90 shrink-0 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-primary/40'}`} aria-label={lang === 'ar' ? 'تصفية' : 'Filter'}>
-                       <span className="material-symbols-outlined text-xl">tune</span>
-                       {activeCatalogFiltersCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white size-4 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900">{activeCatalogFiltersCount}</span>}
-                     </button>
-                     {showCatalogFilters && (
-                       <div className={`absolute top-full mt-3 z-[260] w-[320px] sm:w-[380px] max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-primary/10 p-6 animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
-                         <div className="flex justify-between items-center mb-6">
-                           <h3 className="text-xs font-black text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
-                           <button type="button" onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
-                         </div>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="sm:col-span-2">
-                            <FloatingLabelInput
-                              type="text"
-                              label={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
-                              value={prodSearchName}
-                              onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }}
-                              placeholder={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
-                              isRtl={lang === 'ar'}
-                            />
-                          </div>
-                          <FloatingLabelDropdown
-                            label={t.products.category}
-                            options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
-                            value={prodSearchCat}
-                            onChange={setProdSearchCat}
-                            placeholder={lang === 'ar' ? 'الفئات' : 'Categories'}
-                            isRtl={lang === 'ar'}
-                            showClear
-                          />
-                           <div className="space-y-1.5">
-                             <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
-                           </div>
-                           <div className="sm:col-span-2 space-y-1.5">
-                             <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
-                             <Dropdown options={getCountryOptions(lang)} value={prodSearchOrigin} onChange={(v) => { setProdSearchOrigin(v); setProductsPage(0); }} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white cursor-pointer text-start" />
-                           </div>
-                         </div>
-                         <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`} />
-                       </div>
-                     )}
-                   </div>
-                   <button
-                     type="button"
-                     onClick={(e) => { e.stopPropagation(); closeProductsModal(); }}
-                     className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90 shrink-0"
-                   >
-                     <span className="material-symbols-outlined">close</span>
-                   </button>
-                 </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-slate-50/20 relative">
-                 {isProductsLoading ? (
-                    <div className="py-20 flex flex-col items-center justify-center"><div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-[11px] font-black text-slate-400 animate-pulse">Syncing Catalog...</p></div>
-                 ) : supplierProducts.length === 0 ? (
-                    <EmptyState title={t.productSearch.empty} subtitle={t.productSearch.refine} />
-                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-24">
-                       {supplierProducts.map((p, idx) => {
-                          const isInCart = !!cartItems[p.id];
-                          const cartQty = cartItems[p.id] || 0;
-                          return (
-                            <div key={p.id} className={`group relative bg-white dark:bg-slate-900 rounded-[1.8rem] p-3 md:p-4 shadow-sm border transition-all duration-300 ${isInCart ? 'border-primary/40 bg-primary/5' : 'border-slate-100 dark:border-slate-800'} animate-in fade-in slide-in-from-bottom-2 flex gap-4 items-center h-full`} style={{ animationDelay: `${idx * 20}ms` }}>
-                               <div className="relative size-24 md:size-28 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 shadow-inner">
-                                  {p.image ? <img src={p.image} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" alt={p.name} /> : <div className="size-full flex items-center justify-center text-slate-200"><span className="material-symbols-outlined text-3xl">inventory_2</span></div>}
-                                  <div className="absolute top-1.5 left-1.5"><div className={`size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${p.inStock ? 'bg-emerald-500' : 'bg-red-500'} shadow-sm`}></div></div>
-                               </div>
-                               <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
-                                  <div>
-                                    <h4 className="text-sm font-black text-slate-800 dark:text-white line-clamp-1 leading-tight ">{p.name}</h4>
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-                                       <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">category</span><span className="text-[10px] font-bold   truncate max-w-[120px]">{lang === 'ar' ? p.category?.arabicName : p.category?.name}</span></div>
-                                       <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">public</span><span className="text-[10px] font-bold   tabular-nums">{getCountryName(p.origin, lang)}</span></div>
-                                       {p.unit && (
-                                         <div className="flex items-center gap-1.5 text-slate-400">
-                                           <span className="material-symbols-outlined text-[16px] text-primary/60">straighten</span>
-                                           <span className="text-[10px] font-bold">{p.unit}</span>
-                                         </div>
-                                       )}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-                                      <div className="flex items-center gap-1 text-slate-400">
-                                        <span className="material-symbols-outlined text-[14px] text-primary/60">calendar_today</span>
-                                        <span className="text-[9px] font-bold">{lang === 'ar' ? 'إنتاج:' : 'Prod:'} {p.productionDate ? formatDate(p.productionDate) : 'N/A'}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1 text-slate-400">
-                                        <span className="material-symbols-outlined text-[14px] text-primary/60">event_available</span>
-                                        <span className="text-[9px] font-bold">{lang === 'ar' ? 'انتهاء:' : 'Exp:'} {p.expirationDate ? formatDate(p.expirationDate) : 'N/A'}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="mt-3 flex items-center justify-between gap-2">
-                                     <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black">{p.unit}</span> : <span className="text-[9px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
-                                     <div className="flex items-center gap-2">
-                                        {isInCart ? (
-                                          <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20">
-                                            <button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
-                                              <span className="material-symbols-outlined text-xs">remove</span>
-                                            </button>
-                                            <div className="flex items-center gap-1 px-1">
-                                              <input
-                                                type="number"
-                                                min="1"
-                                                value={cartQty}
-                                                onChange={(e) => {
-                                                  const val = parseInt(e.target.value) || 1;
-                                                  handleAddToCart(p.id, Math.max(1, val));
-                                                }}
-                                                onBlur={(e) => {
-                                                  const val = parseInt(e.target.value) || 1;
-                                                  handleAddToCart(p.id, Math.max(1, val));
-                                                }}
-                                                disabled={processingId === p.id}
-                                                className="w-10 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-center bg-transparent border-none outline-none focus:ring-0 disabled:opacity-30"
-                                              />
-                                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
-                                                {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
-                                              </span>
-                                            </div>
-                                            <button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
-                                              <span className="material-symbols-outlined text-xs">add</span>
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-2">
-                                            <div className="flex items-center bg-slate-50 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-100 dark:border-slate-700">
-                                              <button onClick={() => updateLocalQty(p.id, -1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
-                                                <span className="material-symbols-outlined text-xs">remove</span>
-                                              </button>
-                                              <div className="flex items-center gap-1 px-1">
-                                                <input
-                                                  type="number"
-                                                  min="1"
-                                                  value={localQtys[p.id] || 1}
-                                                  onChange={(e) => handleQtyChange(p.id, e.target.value)}
-                                                  onBlur={(e) => {
-                                                    const val = parseInt(e.target.value) || 1;
-                                                    handleQtyChange(p.id, Math.max(1, val).toString());
-                                                  }}
-                                                  className="w-10 text-[12px] font-black text-slate-800 dark:text-white tabular-nums text-center bg-transparent border-none outline-none focus:ring-0"
-                                                />
-                                                <span className="text-[10px] font-black text-slate-800 dark:text-white">
-                                                  {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
-                                                </span>
-                                              </div>
-                                              <button onClick={() => updateLocalQty(p.id, 1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
-                                                <span className="material-symbols-outlined text-xs">add</span>
-                                              </button>
-                                            </div>
-                                            <button onClick={() => handleAddToCart(p.id)} disabled={processingId === p.id || !p.inStock} className="size-8 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95 flex items-center justify-center disabled:grayscale disabled:opacity-50">
-                                              <span className="material-symbols-outlined text-base">add_shopping_cart</span>
-                                            </button>
-                                          </div>
-                                        )}
-                                     </div>
-                                  </div>
-                               </div>
-                            </div>
-                          );
-                       })}
-                    </div>
-                 )}
-              </div>
-
-              {productsTotalPages > 1 && (
-                <div className="px-10 py-5 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex items-center justify-between shrink-0">
-                   <div className="text-[10px] font-black text-slate-400 tabular-nums     ">{lang === 'ar' ? 'إجمالي المنتجات: ' : 'Total Products: '} {productsTotalElements}</div>
-                   <div className="flex items-center gap-1.5"><button onClick={() => productsPage > 0 && setProductsPage(productsPage - 1)} disabled={productsPage === 0} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span></button><div className="flex items-center gap-1">{Array.from({ length: Math.min(productsTotalPages, 5) }).map((_, i) => <button key={i} onClick={() => setProductsPage(i)} className={`size-9 rounded-xl font-black text-[11px] transition-all shadow-sm ${productsPage === i ? 'bg-primary text-white' : 'bg-white dark:bg-slate-900 text-slate-400 border border-primary/5 hover:border-primary'}`}>{i + 1}</button>)}</div><button onClick={() => productsPage < productsTotalPages - 1 && setProductsPage(productsPage + 1)} disabled={productsPage >= productsTotalPages - 1} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span></button></div>
+          <div
+            className="w-full md:w-[90%] md:max-w-5xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[90vh] md:h-[90vh] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle - mobile: swipe down to close */}
+            <div className="md:hidden pt-3 pb-1 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.parentElement as HTMLElement;
+              if (!modal) return;
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  closeProductsModal();
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
+            </div>
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">storefront</span></div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white leading-none">{viewingSupplier.organizationName || viewingSupplier.name}</h3>
+                  <p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? 'كتالوج المواد الخام' : 'Vendor Product Catalog'}</p>
                 </div>
-              )}
-              
-              {/* Bottom: Manual Order + Close - side by side */}
-              <div className="px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0 flex flex-wrap gap-3">
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative" ref={catalogFilterRef}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowCatalogFilters(!showCatalogFilters); }} className={`size-10 rounded-xl flex items-center justify-center transition-all border active:scale-90 shrink-0 ${activeCatalogFiltersCount > 0 ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-primary/40'}`} aria-label={lang === 'ar' ? 'تصفية' : 'Filter'}>
+                    <span className="material-symbols-outlined text-xl">tune</span>
+                    {activeCatalogFiltersCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white size-4 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900">{activeCatalogFiltersCount}</span>}
+                  </button>
+                  {showCatalogFilters && (
+                    <div className={`absolute top-full mt-3 z-[260] w-[320px] sm:w-[380px] max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-primary/10 p-6 animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xs font-black text-slate-400">{lang === 'ar' ? 'تصفية المنتجات' : 'Filter Catalog'}</h3>
+                        <button type="button" onClick={resetCatalogFilters} className="text-[10px] font-black text-primary hover:underline">{lang === 'ar' ? 'مسح الكل' : 'Clear All'}</button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <FloatingLabelInput
+                            type="text"
+                            label={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
+                            value={prodSearchName}
+                            onChange={(e) => { setProdSearchName(e.target.value); setProductsPage(0); }}
+                            placeholder={lang === 'ar' ? 'اسم المنتج' : 'Product Name'}
+                            isRtl={lang === 'ar'}
+                          />
+                        </div>
+                        <FloatingLabelDropdown
+                          label={t.products.category}
+                          options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                          value={prodSearchCat}
+                          onChange={setProdSearchCat}
+                          placeholder={lang === 'ar' ? 'الفئات' : 'Categories'}
+                          isRtl={lang === 'ar'}
+                          showClear
+                        />
+                        <div className="space-y-1.5">
+                          <Dropdown label={t.products.subCategory} options={catalogSubCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))} value={prodSearchSub} onChange={setProdSearchSub} placeholder={lang === 'ar' ? 'الأنواع' : 'Types'} disabled={!prodSearchCat} isRtl={lang === 'ar'} wrapperClassName="space-y-1" triggerClassName="w-full min-h-[42px] flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl pl-4 pr-10 rtl:pl-10 rtl:pr-4 py-2.5 text-[10px] font-bold outline-none focus:border-primary transition-all disabled:opacity-30 text-slate-900 dark:text-white cursor-pointer text-start disabled:cursor-not-allowed" />
+                        </div>
+                        <div className="sm:col-span-2 space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
+                          <Dropdown options={getCountryOptions(lang)} value={prodSearchOrigin} onChange={(v) => { setProdSearchOrigin(v); setProductsPage(0); }} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-primary outline-none text-slate-900 dark:text-white cursor-pointer text-start" />
+                        </div>
+                      </div>
+                      <div className={`absolute -top-1.5 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-primary/20 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`} />
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
-                  onClick={openManualModal}
-                  className="flex-1 min-w-[140px] py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  onClick={(e) => { e.stopPropagation(); closeProductsModal(); }}
+                  className="size-10 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90 shrink-0"
                 >
-                  <span className="material-symbols-outlined text-lg">edit_document</span>
-                  {lang === 'ar' ? 'طلب يدوي' : 'Manual Order'}
-                </button>
-                <button
-                  onClick={() => closeProductsModal()}
-                  className="flex-1 min-w-[140px] py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-lg">close</span>
-                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                  <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
-           </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-slate-50/20 relative">
+              {isProductsLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center"><div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-[11px] font-black text-slate-400 animate-pulse">Syncing Catalog...</p></div>
+              ) : supplierProducts.length === 0 ? (
+                <EmptyState title={t.productSearch.empty} subtitle={t.productSearch.refine} />
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-24">
+                  {supplierProducts.map((p, idx) => {
+                    const isInCart = !!cartItems[p.id];
+                    const cartQty = cartItems[p.id] || 0;
+                    return (
+                      <div key={p.id} className={`group relative bg-white dark:bg-slate-900 rounded-[1.8rem] p-3 md:p-4 shadow-sm border transition-all duration-300 ${isInCart ? 'border-primary/40 bg-primary/5' : 'border-slate-100 dark:border-slate-800'} animate-in fade-in slide-in-from-bottom-2 flex gap-4 items-center h-full`} style={{ animationDelay: `${idx * 20}ms` }}>
+                        <div className="relative size-24 md:size-28 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 shadow-inner">
+                          {p.image ? <img src={p.image} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" alt={p.name} /> : <div className="size-full flex items-center justify-center text-slate-200"><span className="material-symbols-outlined text-3xl">inventory_2</span></div>}
+                          <div className="absolute top-1.5 left-1.5"><div className={`size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${p.inStock ? 'bg-emerald-500' : 'bg-red-500'} shadow-sm`}></div></div>
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+                          <div>
+                            <h4 className="text-sm font-black text-slate-800 dark:text-white line-clamp-1 leading-tight ">{p.name}</h4>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                              <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">category</span><span className="text-[10px] font-bold   truncate max-w-[120px]">{lang === 'ar' ? p.category?.arabicName : p.category?.name}</span></div>
+                              <div className="flex items-center gap-1.5 text-slate-400"><span className="material-symbols-outlined text-[16px] text-primary/60">public</span><span className="text-[10px] font-bold   tabular-nums">{getCountryName(p.origin, lang)}</span></div>
+                              {p.unit && (
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <span className="material-symbols-outlined text-[16px] text-primary/60">straighten</span>
+                                  <span className="text-[10px] font-bold">{p.unit}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+                              <div className="flex items-center gap-1 text-slate-400">
+                                <span className="material-symbols-outlined text-[14px] text-primary/60">calendar_today</span>
+                                <span className="text-[9px] font-bold">{lang === 'ar' ? 'إنتاج:' : 'Prod:'} {p.productionDate ? formatDate(p.productionDate) : 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-slate-400">
+                                <span className="material-symbols-outlined text-[14px] text-primary/60">event_available</span>
+                                <span className="text-[9px] font-bold">{lang === 'ar' ? 'انتهاء:' : 'Exp:'} {p.expirationDate ? formatDate(p.expirationDate) : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between gap-2">
+                            <div className="flex flex-col"><p className="text-[10px] font-black text-slate-400   leading-none mb-1">{lang === 'ar' ? 'المخزون' : 'Stock'}</p><div className="flex items-baseline gap-1 text-primary"><span className="text-base font-black tabular-nums">{p.stockQuantity}</span>{p.unit ? <span className="text-[9px] font-black">{p.unit}</span> : <span className="text-[9px] font-black">{lang === 'ar' ? 'وحدة' : 'Units'}</span>}</div></div>
+                            <div className="flex items-center gap-2">
+                              {isInCart ? (
+                                <div className="flex items-center bg-emerald-500/10 dark:bg-emerald-500/5 p-0.5 rounded-lg border border-emerald-500/20">
+                                  <button onClick={() => handleAddToCart(p.id, cartItems[p.id] - 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
+                                    <span className="material-symbols-outlined text-xs">remove</span>
+                                  </button>
+                                  <div className="flex items-center gap-1 px-1">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={cartQty}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 1;
+                                        handleAddToCart(p.id, Math.max(1, val));
+                                      }}
+                                      onBlur={(e) => {
+                                        const val = parseInt(e.target.value) || 1;
+                                        handleAddToCart(p.id, Math.max(1, val));
+                                      }}
+                                      disabled={processingId === p.id}
+                                      className="w-10 text-[12px] font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-center bg-transparent border-none outline-none focus:ring-0 disabled:opacity-30"
+                                    />
+                                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                                      {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                    </span>
+                                  </div>
+                                  <button onClick={() => handleAddToCart(p.id, cartItems[p.id] + 1)} disabled={processingId === p.id} className="size-6 rounded-md bg-white dark:bg-slate-700 text-emerald-600 shadow-sm flex items-center justify-center disabled:opacity-30">
+                                    <span className="material-symbols-outlined text-xs">add</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center bg-slate-50 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    <button onClick={() => updateLocalQty(p.id, -1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-xs">remove</span>
+                                    </button>
+                                    <div className="flex items-center gap-1 px-1">
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={localQtys[p.id] || 1}
+                                        onChange={(e) => handleQtyChange(p.id, e.target.value)}
+                                        onBlur={(e) => {
+                                          const val = parseInt(e.target.value) || 1;
+                                          handleQtyChange(p.id, Math.max(1, val).toString());
+                                        }}
+                                        className="w-10 text-[12px] font-black text-slate-800 dark:text-white tabular-nums text-center bg-transparent border-none outline-none focus:ring-0"
+                                      />
+                                      <span className="text-[10px] font-black text-slate-800 dark:text-white">
+                                        {p.unit || (lang === 'ar' ? 'وحدة' : 'Units')}
+                                      </span>
+                                    </div>
+                                    <button onClick={() => updateLocalQty(p.id, 1)} className="size-6 rounded-md bg-white dark:bg-slate-700 text-slate-500 shadow-sm flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-xs">add</span>
+                                    </button>
+                                  </div>
+                                  <button onClick={() => handleAddToCart(p.id)} disabled={processingId === p.id || !p.inStock} className="size-8 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95 flex items-center justify-center disabled:grayscale disabled:opacity-50">
+                                    <span className="material-symbols-outlined text-base">add_shopping_cart</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {productsTotalPages > 1 && (
+              <div className="px-10 py-5 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex items-center justify-between shrink-0">
+                <div className="text-[10px] font-black text-slate-400 tabular-nums     ">{lang === 'ar' ? 'إجمالي المنتجات: ' : 'Total Products: '} {productsTotalElements}</div>
+                <div className="flex items-center gap-1.5"><button onClick={() => productsPage > 0 && setProductsPage(productsPage - 1)} disabled={productsPage === 0} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_left</span></button><div className="flex items-center gap-1">{Array.from({ length: Math.min(productsTotalPages, 5) }).map((_, i) => <button key={i} onClick={() => setProductsPage(i)} className={`size-9 rounded-xl font-black text-[11px] transition-all shadow-sm ${productsPage === i ? 'bg-primary text-white' : 'bg-white dark:bg-slate-900 text-slate-400 border border-primary/5 hover:border-primary'}`}>{i + 1}</button>)}</div><button onClick={() => productsPage < productsTotalPages - 1 && setProductsPage(productsPage + 1)} disabled={productsPage >= productsTotalPages - 1} className="size-9 rounded-xl border border-primary/10 bg-white dark:bg-slate-900 text-slate-500 hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-95 shadow-sm"><span className="material-symbols-outlined text-lg rtl-flip">chevron_right</span></button></div>
+              </div>
+            )}
+
+            {/* Bottom: Manual Order + Close - side by side */}
+            <div className="px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={openManualModal}
+                className="flex-1 min-w-[140px] py-3 rounded-xl bg-primary text-white font-black text-sm shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">edit_document</span>
+                {lang === 'ar' ? 'طلب يدوي' : 'Manual Order'}
+              </button>
+              <button
+                onClick={() => closeProductsModal()}
+                className="flex-1 min-w-[140px] py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Manual Order Modal */}
       {isManualModalOpen && viewingSupplier && (
         <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-              <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.manualOrder.title}</h3><p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? `طلب خاص من ${viewingSupplier.organizationName || viewingSupplier.name}` : `Special Request to ${viewingSupplier.organizationName || viewingSupplier.name}`}</p></div></div>
-                 <button onClick={() => setIsManualModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
-              </div>
+          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4"><div className="size-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">edit_document</span></div><div><h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.manualOrder.title}</h3><p className="text-[10px] font-black text-slate-400   mt-2   ">{lang === 'ar' ? `طلب خاص من ${viewingSupplier.organizationName || viewingSupplier.name}` : `Special Request to ${viewingSupplier.organizationName || viewingSupplier.name}`}</p></div></div>
+              <button onClick={() => setIsManualModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
+            </div>
 
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                 <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-6">
-                   {manualOrders.map((order, index) => (
-                     <div key={order.id} className="space-y-5 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
-                       {/* Order Header */}
-                       <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
-                         <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">
-                           {lang === 'ar' ? `طلب ${index + 1}` : `Order ${index + 1}`}
-                         </h4>
-                         {manualOrders.length > 1 && (
-                           <button
-                             type="button"
-                             onClick={() => removeManualOrder(order.id)}
-                             className="size-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center active:scale-95"
-                             title={lang === 'ar' ? 'حذف الطلب' : 'Remove Order'}
-                           >
-                             <span className="material-symbols-outlined text-lg">delete</span>
-                           </button>
-                         )}
-                       </div>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              <form onSubmit={handleManualSubmit} id="manualForm" className="space-y-6">
+                {manualOrders.map((order, index) => (
+                  <div key={order.id} className="space-y-5 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                    {/* Order Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                      <h4 className="text-sm font-black text-slate-700 dark:text-slate-300">
+                        {lang === 'ar' ? `طلب ${index + 1}` : `Order ${index + 1}`}
+                      </h4>
+                      {manualOrders.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeManualOrder(order.id)}
+                          className="size-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center active:scale-95"
+                          title={lang === 'ar' ? 'حذف الطلب' : 'Remove Order'}
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      )}
+                    </div>
 
-                       {/* Product Name */}
-                       <FloatingLabelInput
-                         required
-                         type="text"
-                         label={t.manualOrder.prodName}
-                         value={order.name}
-                         onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
-                         placeholder={t.manualOrder.prodName}
-                         isRtl={lang === 'ar'}
-                       />
+                    {/* Product Name */}
+                    <FloatingLabelInput
+                      required
+                      type="text"
+                      label={t.manualOrder.prodName}
+                      value={order.name}
+                      onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, name: e.target.value } : o))}
+                      placeholder={t.manualOrder.prodName}
+                      isRtl={lang === 'ar'}
+                    />
 
-                       {/* Category & SubCategory */}
-                       <div className="grid grid-cols-2 gap-4">
-                         <div className="space-y-1.5">
-                           <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
-                           <Dropdown
-                             options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
-                             value={order.categoryId}
-                             onChange={(value) => {
-                               const category = categories.find(c => c.id === value);
-                               setManualOrders(prev => prev.map(o => {
-                                 if (o.id === order.id) {
-                                   if (value) {
-                                     api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${value}`)
-                                       .then((data) => {
-                                         setManualOrders(prevOrders => prevOrders.map(ord => 
-                                           ord.id === order.id ? { ...ord, subCategories: data || [] } : ord
-                                         ));
-                                       })
-                                       .catch(() => {
-                                         setManualOrders(prevOrders => prevOrders.map(ord => 
-                                           ord.id === order.id ? { ...ord, subCategories: [] } : ord
-                                         ));
-                                       });
-                                   }
-                                   return {
-                                     ...o,
-                                     categoryId: value,
-                                     subCategoryId: '',
-                                     categoryExtraFields: category?.extraFields || [],
-                                     extraFieldValues: {}
-                                   };
-                                 }
-                                 return o;
-                               }));
-                             }}
-                             placeholder={t.products.selectCategory}
-                             isRtl={lang === 'ar'}
-                             triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
-                           />
-                         </div>
-                         <div className="space-y-1.5">
-                           <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
-                           <Dropdown
-                             options={order.subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
-                             value={order.subCategoryId}
-                             onChange={(value) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, subCategoryId: value } : o))}
-                             placeholder={t.products.selectSubCategory}
-                             disabled={!order.categoryId}
-                             isRtl={lang === 'ar'}
-                             triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
-                           />
-                         </div>
-                       </div>
+                    {/* Category & SubCategory */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.category}</label>
+                        <Dropdown
+                          options={supplierScopedCategories.map(c => ({ value: c.id, label: lang === 'ar' ? (c.arabicName || '') : (c.name || '') }))}
+                          value={order.categoryId}
+                          onChange={(value) => {
+                            const category = categories.find(c => c.id === value);
+                            setManualOrders(prev => prev.map(o => {
+                              if (o.id === order.id) {
+                                if (value) {
+                                  api.get<SubCategory[]>(`/api/v1/category/sub-category?categoryId=${value}`)
+                                    .then((data) => {
+                                      setManualOrders(prevOrders => prevOrders.map(ord =>
+                                        ord.id === order.id ? { ...ord, subCategories: data || [] } : ord
+                                      ));
+                                    })
+                                    .catch(() => {
+                                      setManualOrders(prevOrders => prevOrders.map(ord =>
+                                        ord.id === order.id ? { ...ord, subCategories: [] } : ord
+                                      ));
+                                    });
+                                }
+                                return {
+                                  ...o,
+                                  categoryId: value,
+                                  subCategoryId: '',
+                                  categoryExtraFields: category?.extraFields || [],
+                                  extraFieldValues: {}
+                                };
+                              }
+                              return o;
+                            }));
+                          }}
+                          placeholder={t.products.selectCategory}
+                          isRtl={lang === 'ar'}
+                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{t.products.subCategory}</label>
+                        <Dropdown
+                          options={order.subCategories.map(s => ({ value: s.id, label: lang === 'ar' ? (s.arabicName || '') : (s.name || '') }))}
+                          value={order.subCategoryId}
+                          onChange={(value) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, subCategoryId: value } : o))}
+                          placeholder={t.products.selectSubCategory}
+                          disabled={!order.categoryId}
+                          isRtl={lang === 'ar'}
+                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
 
-                       {/* Extra Fields */}
-                       {order.categoryExtraFields.length > 0 && (
-                         <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
-                           {order.categoryExtraFields.some(field => field.key === 'serviceName') && (
-                             <FloatingLabelInput
-                               type="text"
-                               label={lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}
-                               value={order.extraFieldValues.serviceName || ''}
-                               onChange={(e) => {
-                                 const val = e.target.value;
-                                 setManualOrders(prev => prev.map(o => 
-                                   o.id === order.id 
-                                     ? { ...o, extraFieldValues: { ...o.extraFieldValues, serviceName: val }, name: val }
-                                     : o
-                                 ));
-                               }}
-                               placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
-                               isRtl={lang === 'ar'}
-                             />
-                           )}
-                           {order.categoryExtraFields.some(field => field.key === 'dimensions') && (
-                             <div className="space-y-2">
-                               <div className="grid grid-cols-3 gap-2">
-                                 <FloatingLabelInput
-                                   type="text"
-                                   label={lang === 'ar' ? 'طول' : 'Length'}
-                                   value={order.extraFieldValues.dimensions_length || ''}
-                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                     o.id === order.id 
-                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_length: e.target.value } }
-                                       : o
-                                   ))}
-                                   placeholder={lang === 'ar' ? 'طول' : 'Length'}
-                                   isRtl={lang === 'ar'}
-                                   className="text-xs"
-                                 />
-                                 <FloatingLabelInput
-                                   type="text"
-                                   label={lang === 'ar' ? 'عرض' : 'Width'}
-                                   value={order.extraFieldValues.dimensions_width || ''}
-                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                     o.id === order.id 
-                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_width: e.target.value } }
-                                       : o
-                                   ))}
-                                   placeholder={lang === 'ar' ? 'عرض' : 'Width'}
-                                   isRtl={lang === 'ar'}
-                                   className="text-xs"
-                                 />
-                                 <FloatingLabelInput
-                                   type="text"
-                                   label={lang === 'ar' ? 'ارتفاع' : 'Height'}
-                                   value={order.extraFieldValues.dimensions_height || ''}
-                                   onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                     o.id === order.id 
-                                       ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_height: e.target.value } }
-                                       : o
-                                   ))}
-                                   placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
-                                   isRtl={lang === 'ar'}
-                                   className="text-xs"
-                                 />
-                               </div>
-                             </div>
-                           )}
-                           {order.categoryExtraFields.some(field => field.key === 'note') && (
-                             <FloatingLabelTextarea
-                               label={lang === 'ar' ? 'ملاحظة' : 'Note'}
-                               value={order.extraFieldValues.note || ''}
-                               onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                 o.id === order.id 
-                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, note: e.target.value } }
-                                   : o
-                               ))}
-                               placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
-                             />
-                           )}
-                           {order.categoryExtraFields.some(field => field.key === 'colorCount') && (
-                             <FloatingLabelInput
-                               type="text"
-                               label={lang === 'ar' ? 'عدد الألوان' : 'Color Count'}
-                               value={order.extraFieldValues.colorCount || ''}
-                               onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                 o.id === order.id 
-                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, colorCount: e.target.value } }
-                                   : o
-                               ))}
-                               placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
-                               isRtl={lang === 'ar'}
-                             />
-                           )}
-                           {order.categoryExtraFields.some(field => field.key === 'paperSize') && (
-                             <FloatingLabelInput
-                               type="text"
-                               label={lang === 'ar' ? 'حجم الورق' : 'Paper Size'}
-                               value={order.extraFieldValues.paperSize || ''}
-                               onChange={(e) => setManualOrders(prev => prev.map(o => 
-                                 o.id === order.id 
-                                   ? { ...o, extraFieldValues: { ...o.extraFieldValues, paperSize: e.target.value } }
-                                   : o
-                               ))}
-                               placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
-                               isRtl={lang === 'ar'}
-                             />
-                           )}
-                         </div>
-                       )}
+                    {/* Extra Fields */}
+                    {order.categoryExtraFields.length > 0 && (
+                      <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4">
+                        {order.categoryExtraFields.some(field => field.key === 'serviceName') && (
+                          <FloatingLabelInput
+                            type="text"
+                            label={lang === 'ar' ? 'اسم الخدمة' : 'Service Name'}
+                            value={order.extraFieldValues.serviceName || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setManualOrders(prev => prev.map(o =>
+                                o.id === order.id
+                                  ? { ...o, extraFieldValues: { ...o.extraFieldValues, serviceName: val }, name: val }
+                                  : o
+                              ));
+                            }}
+                            placeholder={lang === 'ar' ? 'أدخل اسم الخدمة' : 'Enter service name'}
+                            isRtl={lang === 'ar'}
+                          />
+                        )}
+                        {order.categoryExtraFields.some(field => field.key === 'dimensions') && (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              <FloatingLabelInput
+                                type="text"
+                                label={lang === 'ar' ? 'طول' : 'Length'}
+                                value={order.extraFieldValues.dimensions_length || ''}
+                                onChange={(e) => setManualOrders(prev => prev.map(o =>
+                                  o.id === order.id
+                                    ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_length: e.target.value } }
+                                    : o
+                                ))}
+                                placeholder={lang === 'ar' ? 'طول' : 'Length'}
+                                isRtl={lang === 'ar'}
+                                className="text-xs"
+                              />
+                              <FloatingLabelInput
+                                type="text"
+                                label={lang === 'ar' ? 'عرض' : 'Width'}
+                                value={order.extraFieldValues.dimensions_width || ''}
+                                onChange={(e) => setManualOrders(prev => prev.map(o =>
+                                  o.id === order.id
+                                    ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_width: e.target.value } }
+                                    : o
+                                ))}
+                                placeholder={lang === 'ar' ? 'عرض' : 'Width'}
+                                isRtl={lang === 'ar'}
+                                className="text-xs"
+                              />
+                              <FloatingLabelInput
+                                type="text"
+                                label={lang === 'ar' ? 'ارتفاع' : 'Height'}
+                                value={order.extraFieldValues.dimensions_height || ''}
+                                onChange={(e) => setManualOrders(prev => prev.map(o =>
+                                  o.id === order.id
+                                    ? { ...o, extraFieldValues: { ...o.extraFieldValues, dimensions_height: e.target.value } }
+                                    : o
+                                ))}
+                                placeholder={lang === 'ar' ? 'ارتفاع' : 'Height'}
+                                isRtl={lang === 'ar'}
+                                className="text-xs"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {order.categoryExtraFields.some(field => field.key === 'note') && (
+                          <FloatingLabelTextarea
+                            label={lang === 'ar' ? 'ملاحظة' : 'Note'}
+                            value={order.extraFieldValues.note || ''}
+                            onChange={(e) => setManualOrders(prev => prev.map(o =>
+                              o.id === order.id
+                                ? { ...o, extraFieldValues: { ...o.extraFieldValues, note: e.target.value } }
+                                : o
+                            ))}
+                            placeholder={lang === 'ar' ? 'اكتب ملاحظات إضافية...' : 'Write additional notes...'}
+                          />
+                        )}
+                        {order.categoryExtraFields.some(field => field.key === 'colorCount') && (
+                          <FloatingLabelInput
+                            type="text"
+                            label={lang === 'ar' ? 'عدد الألوان' : 'Color Count'}
+                            value={order.extraFieldValues.colorCount || ''}
+                            onChange={(e) => setManualOrders(prev => prev.map(o =>
+                              o.id === order.id
+                                ? { ...o, extraFieldValues: { ...o.extraFieldValues, colorCount: e.target.value } }
+                                : o
+                            ))}
+                            placeholder={lang === 'ar' ? 'أدخل عدد الألوان' : 'Enter color count'}
+                            isRtl={lang === 'ar'}
+                          />
+                        )}
+                        {order.categoryExtraFields.some(field => field.key === 'paperSize') && (
+                          <FloatingLabelInput
+                            type="text"
+                            label={lang === 'ar' ? 'حجم الورق' : 'Paper Size'}
+                            value={order.extraFieldValues.paperSize || ''}
+                            onChange={(e) => setManualOrders(prev => prev.map(o =>
+                              o.id === order.id
+                                ? { ...o, extraFieldValues: { ...o.extraFieldValues, paperSize: e.target.value } }
+                                : o
+                            ))}
+                            placeholder={lang === 'ar' ? 'أدخل حجم الورق' : 'Enter paper size'}
+                            isRtl={lang === 'ar'}
+                          />
+                        )}
+                      </div>
+                    )}
 
-                       {/* Origin & Quantity */}
-                       <div className="grid grid-cols-2 gap-4">
-                         <div className="space-y-1.5">
-                           <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label>
-                           <Dropdown
-                             options={getCountryOptions(lang)}
-                             value={order.origin}
-                             onChange={(v) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, origin: v } : o))}
-                             placeholder={t.products.originPlaceholder}
-                             isRtl={lang === 'ar'}
-                             searchable
-                             searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
-                             noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
-                             showClear={false}
-                             triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
-                           />
-                         </div>
-                         <FloatingLabelInput
-                           required
-                           type="number"
-                           label={t.manualOrder.qty}
-                           min={1}
-                           value={order.quantity}
-                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
-                           isRtl={lang === 'ar'}
-                         />
-                       </div>
+                    {/* Origin & Quantity (placeholder carries label) */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Dropdown
+                          options={getCountryOptions(lang)}
+                          value={order.origin}
+                          onChange={(v) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, origin: v } : o))}
+                          placeholder={t.productSearch.originLabel}
+                          isRtl={lang === 'ar'}
+                          searchable
+                          searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
+                          noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
+                          showClear={false}
+                          triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                        />
+                      </div>
+                      <FloatingLabelInput
+                        required
+                        type="number"
+                        label={t.manualOrder.qty}
+                        min={1}
+                        value={order.quantity}
+                        onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
+                        isRtl={lang === 'ar'}
+                      />
+                    </div>
 
-                       {/* Unit */}
-                       <FloatingLabelInput
-                         required
-                         type="text"
-                         label={lang === 'ar' ? 'الوحدة' : 'Unit'}
-                         value={order.unit}
-                         onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
-                         placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
-                         isRtl={lang === 'ar'}
-                       />
+                    {/* Origin Type */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع المصدر' : 'Origin Type'}</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, imported: false } : o))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${order.imported === false ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'محلي' : 'Local'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, imported: true } : o))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${order.imported === true ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'مستورد' : 'Imported'}
+                        </button>
+                      </div>
+                    </div>
 
-                       {/* Image */}
-                       <div className="space-y-1.5">
-                         <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label>
-                         <div
-                           onClick={() => manualFileInputRefs.current[order.id]?.click()}
-                           className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${order.preview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}
-                         >
-                           {order.preview ? (
-                             <img src={order.preview} className="size-full object-cover" alt="" />
-                           ) : (
-                             <>
-                               <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                               <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
-                             </>
-                           )}
-                         </div>
-                         <input
-                           ref={(el) => { manualFileInputRefs.current[order.id] = el; }}
-                           type="file"
-                           className="hidden"
-                           accept="image/*"
-                           onChange={(e) => handleManualFileChange(order.id, e)}
-                         />
-                       </div>
-                     </div>
-                   ))}
+                    {/* Unit */}
+                    <FloatingLabelInput
+                      required
+                      type="text"
+                      label={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                      value={order.unit}
+                      onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
+                      placeholder={lang === 'ar' ? 'مثال: كيلو / طن / قطعة / كرتونة' : 'e.g. kg / ton / piece / carton'}
+                      isRtl={lang === 'ar'}
+                    />
 
-                   {/* Add Another Order Button */}
-                   <button
-                     type="button"
-                     onClick={addManualOrder}
-                     className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
-                   >
-                     <span className="material-symbols-outlined text-lg">add</span>
-                     {lang === 'ar' ? 'إضافة طلب آخر' : 'Add Another Order'}
-                   </button>
-                 </form>
-              </div>
+                    {/* Image */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.image}</label>
+                      <div
+                        onClick={() => manualFileInputRefs.current[order.id]?.click()}
+                        className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden ${order.preview ? 'border-primary' : 'border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50'}`}
+                      >
+                        {order.preview ? (
+                          <img src={order.preview} className="size-full object-cover" alt="" />
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                            <span className="text-[9px] font-black text-slate-400">{t.common.clickToUpload}</span>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        ref={(el) => { manualFileInputRefs.current[order.id] = el; }}
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleManualFileChange(order.id, e)}
+                      />
+                    </div>
+                  </div>
+                ))}
 
-              <div className="p-6 md:p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex flex-wrap gap-3">
-                <button form="manualForm" type="submit" disabled={isSubmittingManual} className="flex-1 min-w-[140px] py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
-                  {isSubmittingManual ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined">send</span>{t.manualOrder.submit}</>}
-                </button>
+                {/* Add Another Order Button */}
                 <button
                   type="button"
-                  onClick={() => setIsManualModalOpen(false)}
-                  className="flex-1 min-w-[140px] py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+                  onClick={addManualOrder}
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
                 >
-                  <span className="material-symbols-outlined text-lg">close</span>
-                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  {lang === 'ar' ? 'إضافة طلب آخر' : 'Add Another Order'}
                 </button>
-              </div>
-           </div>
+              </form>
+            </div>
+
+            <div className="p-6 md:p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0 flex flex-wrap gap-3">
+              <button form="manualForm" type="submit" disabled={isSubmittingManual} className="flex-1 min-w-[140px] py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                {isSubmittingManual ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><span className="material-symbols-outlined">send</span>{t.manualOrder.submit}</>}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsManualModalOpen(false)}
+                className="flex-1 min-w-[140px] py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+                {lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

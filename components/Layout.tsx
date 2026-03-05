@@ -4,6 +4,7 @@ import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-do
 import { useApp } from '../App';
 import { api } from '../api';
 import RecentNotifications from './RecentNotifications';
+import { getWebPushToken, saveWebTokenToBackend } from '../services/fcm';
 
 interface LayoutProps {
   onLogout: () => void;
@@ -25,11 +26,21 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const settingsRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const location = useLocation();
+  const [notifPermission, setNotifPermission] = useState<string | null>(null);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
       setUserData(JSON.parse(user));
+    }
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setNotifPermission((window as any).Notification?.permission || 'default');
+      } else {
+        setNotifPermission(null);
+      }
+    } catch {
+      setNotifPermission(null);
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -166,6 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       items = [
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'المخزون' : 'Products', icon: 'inventory_2', path: '/products' },
+        { name: lang === 'ar' ? 'التقارير' : 'Reports', icon: 'analytics', path: '/advanced-reports' },
         { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
@@ -426,6 +438,22 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
           </div>
 
           <div className="flex items-center relative" ref={notifRef}>
+            {notifPermission && notifPermission !== 'granted' && (
+              <button
+                className="mr-2 px-3 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 text-[11px] font-black shadow-sm hover:bg-primary/20 transition-colors hidden md:inline-flex items-center gap-1"
+                onClick={async () => {
+                  const token = await getWebPushToken();
+                  if (token) {
+                    await saveWebTokenToBackend(token);
+                    setNotifPermission('granted');
+                  }
+                }}
+                title={lang === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications'}
+              >
+                <span className="material-symbols-outlined text-base">notifications_active</span>
+                {lang === 'ar' ? 'تفعيل الإشعارات' : 'Enable'}
+              </button>
+            )}
             <button
               className={`relative p-2.5 transition-colors active:scale-95 rounded-xl ${showNotifications ? 'bg-primary/10 text-primary shadow-inner' : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'}`}
               onClick={() => setShowNotifications(!showNotifications)}

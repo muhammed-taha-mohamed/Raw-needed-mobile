@@ -91,6 +91,7 @@ const MyTeam: React.FC = () => {
     const role = ownerRole;
     return allPossibleScreens.filter(s => s.roles.includes(role));
   }, [ownerRole, lang]);
+  const isSupplierOwner = (ownerRole || '').toUpperCase().includes('SUPPLIER');
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -226,7 +227,7 @@ const MyTeam: React.FC = () => {
       
 
       {/* Floating Action Button — mobile only */}
-      <div className={`fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6 md:hidden ${activeTab !== 'team' ? 'hidden' : ''}`}>
+      <div className={`fixed bottom-32 left-0 right-0 z-[180] pointer-events-none px-6 md:hidden ${(!isSupplierOwner && activeTab !== 'team') ? 'hidden' : ''}`}>
         <div className="w-full flex flex-col items-end pointer-events-auto">
           <button 
             onClick={openAddModal}
@@ -237,7 +238,8 @@ const MyTeam: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs + Search operations filters */}
+      {/* Tabs + Search operations filters (hidden for suppliers) */}
+      {!isSupplierOwner && (
       <div className="mb-4">
         <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 w-full min-w-0">
           <button
@@ -280,9 +282,10 @@ const MyTeam: React.FC = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Desktop Table View */}
-      {activeTab === 'team' && (
+      {(isSupplierOwner || activeTab === 'team') && (
       <div className="hidden md:block mb-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
           {/* Table Header with Add Button */}
@@ -411,7 +414,7 @@ const MyTeam: React.FC = () => {
       )}
 
       {/* Mobile View - Cards */}
-      <div className={`md:hidden space-y-4 mb-6 ${activeTab !== 'team' ? 'hidden' : ''}`}>
+      <div className={`md:hidden space-y-4 mb-6 ${(!isSupplierOwner && activeTab !== 'team') ? 'hidden' : ''}`}>
         {isLoading && members.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-40"><div className="size-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div><p className="text-slate-400 font-black text-xs">Loading team...</p></div>
         ) : members.length === 0 ? (

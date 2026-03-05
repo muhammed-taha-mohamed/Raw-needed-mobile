@@ -77,6 +77,7 @@ const ProductSearch: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [suppliersList, setSuppliersList] = useState<Supplier[]>([]);
+  const [isSuppliersLoading, setIsSuppliersLoading] = useState(false);
 
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedSub, setSelectedSub] = useState('');
@@ -114,9 +115,10 @@ const ProductSearch: React.FC = () => {
   // Manual Order State - Multiple Orders Support
   interface ManualOrderItem {
     id: string; // unique id for each order item
-    supplierId: string;
+    supplierIds: string[];
     name: string;
     origin: string;
+    imported: boolean | null;
     quantity: number;
     unit: string;
     image: string;
@@ -133,6 +135,7 @@ const ProductSearch: React.FC = () => {
   const [manualOrders, setManualOrders] = useState<ManualOrderItem[]>([]);
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const manualFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [openSuppliersFor, setOpenSuppliersFor] = useState<string | null>(null);
 
   // Add Searches (partial renewal) popup
   const [addSearchesModalOpen, setAddSearchesModalOpen] = useState(false);
@@ -161,7 +164,7 @@ const ProductSearch: React.FC = () => {
     try {
       const saved = localStorage.getItem('bulkAddLogs');
       if (saved) setBulkLogs(JSON.parse(saved));
-    } catch {}
+    } catch { }
 
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -339,9 +342,14 @@ const ProductSearch: React.FC = () => {
 
   const fetchSuppliersList = async () => {
     try {
+      setIsSuppliersLoading(true);
       const data = await api.get<Supplier[]>('/api/v1/user/suppliers-list');
       setSuppliersList(data || []);
-    } catch (e) { }
+    } catch (e) {
+      setSuppliersList([]);
+    } finally {
+      setIsSuppliersLoading(false);
+    }
   };
 
   const fetchSubCategories = async (catId: string) => {
@@ -468,7 +476,7 @@ const ProductSearch: React.FC = () => {
       await fetchCart();
       const added = allowed.length;
       const skipped = selectedProducts.length - added;
-      setToast({ message: lang === 'ar' ? `تمت إضافة ${added} عنصر${lang==='ar'?'':'(s)'} للعربة` : `Added ${added} item(s) to cart`, type: 'success' });
+      setToast({ message: lang === 'ar' ? `تمت إضافة ${added} عنصر${lang === 'ar' ? '' : '(s)'} للعربة` : `Added ${added} item(s) to cart`, type: 'success' });
       setTimeout(() => setToast(null), 3000);
       clearSelection();
       setShowBulkConfirm(false);
@@ -490,9 +498,10 @@ const ProductSearch: React.FC = () => {
 
   const createNewManualOrder = (): ManualOrderItem => ({
     id: `order-${Date.now()}-${Math.random()}`,
-    supplierId: '',
+    supplierIds: [],
     name: '',
     origin: '',
+    imported: null,
     quantity: 1,
     unit: '',
     image: '',
@@ -535,7 +544,7 @@ const ProductSearch: React.FC = () => {
     setIsManualModalOpen(true);
   };
 
-  const buildManualExtraFieldValues = (extraFields: CategoryExtraField[], extraFieldValues: Record<string, string>) => {
+  const buildManualExtraFieldValues = (extraFields: CategoryExtraField[], extraFieldValues: Record<string, string>, importedFlag?: boolean | null) => {
     const values: Record<string, string> = {};
     if (extraFields.some(f => f.key === 'dimensions')) {
       const length = (extraFieldValues.dimensions_length || '').trim();
@@ -561,16 +570,19 @@ const ProductSearch: React.FC = () => {
       const v = (extraFieldValues.paperSize || '').trim();
       if (v) values.paperSize = v;
     }
+    if (importedFlag !== undefined && importedFlag !== null) {
+      values.originType = importedFlag ? 'IMPORTED' : 'LOCAL';
+    }
     return values;
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate all orders have supplier selected
-    const ordersWithoutSupplier = manualOrders.filter(order => !order.supplierId);
+    // Validate all orders have at least one supplier selected
+    const ordersWithoutSupplier = manualOrders.filter(order => !order.supplierIds || order.supplierIds.length === 0);
     if (ordersWithoutSupplier.length > 0) {
-      setToast({ message: lang === 'ar' ? 'يرجى اختيار الموزع لجميع الطلبات' : 'Please select a distributor for all orders', type: 'error' });
+      setToast({ message: lang === 'ar' ? 'يرجى اختيار موزع واحد على الأقل لكل طلب' : 'Please select at least one distributor for each request', type: 'error' });
       return;
     }
 
@@ -581,35 +593,36 @@ const ProductSearch: React.FC = () => {
 
     setIsSubmittingManual(true);
     try {
-      // Process all orders and upload images
-      const items = await Promise.all(manualOrders.map(async (order) => {
+      // Process all orders and upload images, expanding by selected suppliers
+      const items: any[] = [];
+      for (const order of manualOrders) {
         let imageUrl = '';
         if (order.file) {
           const formData = new FormData();
           formData.append('file', order.file);
           imageUrl = await api.post<string>('/api/v1/image/upload', formData);
         }
-
-        const selectedVendor = suppliersList.find(s => s.id === order.supplierId);
         const productName = (order.categoryExtraFields.some(f => f.key === 'serviceName') && (order.extraFieldValues.serviceName || '').trim())
           ? (order.extraFieldValues.serviceName || '').trim()
           : order.name;
-
-        return {
-          id: null,
-          name: productName,
-          origin: order.origin,
-          supplierId: order.supplierId,
-          supplierName: selectedVendor?.organizationName || selectedVendor?.name || 'Manual Vendor',
-          inStock: true,
-          quantity: order.quantity,
-          unit: order.unit || null,
-          image: imageUrl || null,
-          categoryId: order.categoryId || null,
-          subCategoryId: order.subCategoryId || null,
-          extraFieldValues: buildManualExtraFieldValues(order.categoryExtraFields, order.extraFieldValues)
-        };
-      }));
+        for (const sid of order.supplierIds) {
+          const selectedVendor = suppliersList.find(s => s.id === sid);
+          items.push({
+            id: null,
+            name: productName,
+            origin: order.origin,
+            supplierId: sid,
+            supplierName: selectedVendor?.organizationName || selectedVendor?.name || 'Manual Vendor',
+            inStock: true,
+            quantity: order.quantity,
+            unit: order.unit || null,
+            image: imageUrl || null,
+            categoryId: order.categoryId || null,
+            subCategoryId: order.subCategoryId || null,
+            extraFieldValues: buildManualExtraFieldValues(order.categoryExtraFields, order.extraFieldValues, order.imported)
+          });
+        }
+      }
 
       const payload = {
         userId: userId,
@@ -1155,8 +1168,8 @@ const ProductSearch: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
-                      <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
+                    <label className="text-[10px] font-black text-slate-500 px-1">{lang === 'ar' ? 'المنشأ' : 'Origin'}</label>
+                    <Dropdown options={getCountryOptions(lang)} value={searchOrigin} onChange={(v) => setSearchOrigin(v)} placeholder={t.products.originPlaceholder} isRtl={lang === 'ar'} searchable searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'} noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'} showClear triggerClassName="w-full min-h-[42px] bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-primary transition-all text-slate-900 dark:text-white cursor-pointer text-start" />
                   </div>
                 </div>
 
@@ -1232,7 +1245,7 @@ const ProductSearch: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <form id="manualProductSearchForm" onSubmit={handleManualSubmit} className="space-y-6">
                 {manualOrders.map((order, index) => {
-                  const categoryOptionsForOrder = order.supplierId ? getCategoriesForManualOrder(order.supplierId) : categories;
+                  const categoryOptionsForOrder = (order.supplierIds?.length === 1) ? getCategoriesForManualOrder(order.supplierIds[0]) : categories;
                   return (
                     <div key={order.id} className="space-y-5 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
                       {/* Order Header */}
@@ -1252,36 +1265,72 @@ const ProductSearch: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Supplier Selection */}
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.selectSupplier}</label>
-                        <Dropdown
-                          options={suppliersList.map(s => ({ value: s.id, label: s.organizationName || s.name || '' }))}
-                          value={order.supplierId}
-                          onChange={(v) => {
-                            setManualOrders(prev => prev.map(o => {
-                              if (o.id === order.id) {
-                                if (v) {
-                                  const categoryOptions = getCategoriesForManualOrder(v);
-                                  return {
-                                    ...o,
-                                    supplierId: v,
-                                    categoryId: '',
-                                    subCategoryId: '',
-                                    subCategories: [],
-                                    categoryExtraFields: [],
-                                    extraFieldValues: {}
-                                  };
-                                }
-                                return { ...o, supplierId: v, categoryId: '', subCategoryId: '', subCategories: [], categoryExtraFields: [], extraFieldValues: {} };
-                              }
-                              return o;
-                            }));
-                          }}
-                          placeholder={lang === 'ar' ? 'اختر الموزع من القائمة' : 'Select a Distributor'}
-                          isRtl={lang === 'ar'}
-                          triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
-                        />
+                      {/* Supplier Multi-Select */}
+                      <div className="space-y-1.5 relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenSuppliersFor(prev => prev === order.id ? null : order.id)}
+                          className="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold outline-none focus:border-primary transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                        >
+                          <span className="truncate">
+                            {order.supplierIds.length === 0
+                              ? t.manualOrder.selectSupplier
+                              : (order.supplierIds.length === suppliersList.length
+                                ? (lang === 'ar' ? 'جميع الموزعين' : 'All distributors')
+                                : (lang === 'ar' ? `${order.supplierIds.length} مختار` : `${order.supplierIds.length} selected`))}
+                          </span>
+                          <span className={`material-symbols-outlined ${lang === 'ar' ? 'mr-2' : 'ml-2'}`}>expand_more</span>
+                        </button>
+                        {openSuppliersFor === order.id && (
+                          <div className={`absolute z-[120] w-full mt-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2 max-h-[240px] overflow-y-auto custom-scrollbar ${lang === 'ar' ? 'right-0' : 'left-0'}`}>
+                            {isSuppliersLoading ? (
+                              <div className="py-6 flex items-center justify-center">
+                                <div className="size-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="px-2 py-1">
+                                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                    <input
+                                      type="checkbox"
+                                      checked={order.supplierIds.length === suppliersList.length && suppliersList.length > 0}
+                                      onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, supplierIds: checked ? suppliersList.map(s => s.id) : [], categoryId: '', subCategoryId: '', subCategories: [], categoryExtraFields: [], extraFieldValues: {} } : o));
+                                      }}
+                                    />
+                                    {lang === 'ar' ? 'تحديد الكل' : 'Select All'}
+                                  </label>
+                                </div>
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+                                {suppliersList.map(s => {
+                                  const isChecked = order.supplierIds.includes(s.id);
+                                  return (
+                                    <label key={s.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          const checked = e.target.checked;
+                                          setManualOrders(prev => prev.map(o => {
+                                            if (o.id !== order.id) return o;
+                                            const next = new Set(o.supplierIds);
+                                            if (checked) next.add(s.id); else next.delete(s.id);
+                                            return { ...o, supplierIds: Array.from(next), categoryId: '', subCategoryId: '', subCategories: [], categoryExtraFields: [], extraFieldValues: {} };
+                                          }));
+                                        }}
+                                      />
+                                      <span className="truncate">{s.organizationName || s.name || ''}</span>
+                                    </label>
+                                  );
+                                })}
+                              </>
+                            )}
+                            <div className="p-2">
+                              <button type="button" onClick={() => setOpenSuppliersFor(null)} className="w-full py-2 rounded-xl bg-primary text-white text-xs font-black">{lang === 'ar' ? 'تم' : 'Done'}</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Category & SubCategory */}
@@ -1320,7 +1369,7 @@ const ProductSearch: React.FC = () => {
                               }));
                             }}
                             placeholder={t.products.selectCategory}
-                            disabled={!order.supplierId}
+                            disabled={false}
                             isRtl={lang === 'ar'}
                             triggerClassName="w-full min-h-[44px] flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start disabled:opacity-40 disabled:cursor-not-allowed"
                           />
@@ -1463,23 +1512,8 @@ const ProductSearch: React.FC = () => {
                         isRtl={lang === 'ar'}
                       />
 
-                      {/* Origin & Quantity */}
+                      {/* Quantity & Unit in one row */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-500 px-1">{t.manualOrder.origin}</label>
-                          <Dropdown
-                            options={getCountryOptions(lang)}
-                            value={order.origin}
-                            onChange={(v) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, origin: v } : o))}
-                            placeholder={t.products.originPlaceholder}
-                            isRtl={lang === 'ar'}
-                            searchable
-                            searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
-                            noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
-                            showClear={false}
-                            triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
-                          />
-                        </div>
                         <FloatingLabelInput
                           required
                           type="number"
@@ -1489,18 +1523,55 @@ const ProductSearch: React.FC = () => {
                           onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, quantity: parseInt(e.target.value) || 1 } : o))}
                           isRtl={lang === 'ar'}
                         />
+                        <FloatingLabelInput
+                          required
+                          type="text"
+                          label={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                          value={order.unit}
+                          onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
+                          placeholder={lang === 'ar' ? 'الوحدة' : 'Unit'}
+                          isRtl={lang === 'ar'}
+                        />
                       </div>
 
-                      {/* Unit */}
-                      <FloatingLabelInput
-                        required
-                        type="text"
-                        label={lang === 'ar' ? 'الوحدة' : 'Unit'}
-                        value={order.unit}
-                        onChange={(e) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, unit: e.target.value } : o))}
-                        placeholder={lang === 'ar' ? 'الوحدة' : 'Unit'}
-                        isRtl={lang === 'ar'}
-                      />
+                      {/* Origin alone */}
+                      <div className="space-y-1.5">
+                        <Dropdown
+                          options={getCountryOptions(lang)}
+                          value={order.origin}
+                          onChange={(v) => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, origin: v } : o))}
+                          placeholder={t.productSearch.originLabel}
+                          isRtl={lang === 'ar'}
+                          searchable
+                          searchPlaceholder={lang === 'ar' ? 'ابحث عن الدولة...' : 'Search country...'}
+                          noResultsText={lang === 'ar' ? 'لا توجد نتائج' : 'No results'}
+                          showClear={false}
+                          triggerClassName="w-full min-h-[44px] px-4 py-3 rounded-xl border-2 border-primary/10 bg-slate-50 dark:bg-slate-800 text-sm font-bold focus:border-primary outline-none transition-all shadow-inner text-slate-900 dark:text-white cursor-pointer text-start"
+                        />
+                      </div>
+
+                      {/* Origin Type */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع المصدر' : 'Origin Type'}</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, imported: false } : o))}
+                            className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${order.imported === false ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                          >
+                            {lang === 'ar' ? 'محلي' : 'Local'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setManualOrders(prev => prev.map(o => o.id === order.id ? { ...o, imported: true } : o))}
+                            className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${order.imported === true ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                          >
+                            {lang === 'ar' ? 'مستورد' : 'Imported'}
+                          </button>
+                        </div>
+                      </div>
+
+
 
                       {/* Image */}
                       <div className="space-y-1.5">
@@ -1566,7 +1637,7 @@ const ProductSearch: React.FC = () => {
 
       {/* Bulk confirm modal */}
       {showBulkConfirm && (
-        <div className="fixed inset-0 z-[350] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => {!bulkAdding && setShowBulkConfirm(false)}}>
+        <div className="fixed inset-0 z-[350] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { !bulkAdding && setShowBulkConfirm(false) }}>
           <div className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl w-full md:max-w-lg max-h-[90vh] overflow-y-auto border-t border-x md:border border-slate-200 dark:border-slate-700 p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">{lang === 'ar' ? 'تأكيد الإضافة الجماعية' : 'Confirm Bulk Add'}</h3>

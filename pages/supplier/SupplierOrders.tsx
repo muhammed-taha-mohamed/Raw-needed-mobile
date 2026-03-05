@@ -232,14 +232,21 @@ const SupplierOrders: React.FC = () => {
 
   const renderExtraFields = (offer: RFQOffer) => {
     const extra = offer.extraFieldValues || {};
+    const originType = (extra.originType || '').toString().toUpperCase();
+    const hasOriginType = originType === 'LOCAL' || originType === 'IMPORTED';
     const hasNote = !!extra.note;
     const hasDims = !!(extra.dimensions_length || extra.dimensions_width || extra.dimensions_height);
     const hasServiceName = !!extra.serviceName;
     const hasColorCount = !!extra.colorCount;
     const hasPaperSize = !!extra.paperSize;
-    if (!hasNote && !hasDims && !hasServiceName && !hasColorCount && !hasPaperSize) return null;
+    if (!hasNote && !hasDims && !hasServiceName && !hasColorCount && !hasPaperSize && !hasOriginType) return null;
     return (
       <div className="mt-2 rounded-xl border border-primary/15 bg-primary/5 dark:bg-primary/10 p-2.5 space-y-1.5">
+        {hasOriginType && (
+          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 break-words">
+            {lang === 'ar' ? 'نوع المصدر:' : 'Origin Type:'} {originType === 'LOCAL' ? (lang === 'ar' ? 'محلي' : 'Local') : (lang === 'ar' ? 'مستورد' : 'Imported')}
+          </p>
+        )}
         {hasDims && (
           <div className="space-y-1">
             <p className="text-[10px] font-black text-slate-600 dark:text-slate-300">
@@ -422,52 +429,17 @@ const SupplierOrders: React.FC = () => {
                 </div>
               )}
             </div>
-            {/* Pagination Footer - Fixed at Bottom */}
-            {totalPages > 1 && (
-              <div className="flex-shrink-0 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/5 px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full shrink-0 border border-primary/20">
-                    <span className="text-[11px] font-black text-slate-600 dark:text-slate-400 tabular-nums">
-                      {currentPage + 1} / {totalPages}
-                    </span>
-                  </div>
-                  <div className="h-6 w-px bg-primary/20 mx-1"></div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 0}
-                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_left</span>
-                    </button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                        let pageNum = i;
-                        if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => handlePageChange(pageNum)}
-                            className={`size-9 rounded-full font-black text-xs transition-all ${currentPage === pageNum
-                                ? 'bg-primary text-white shadow-md'
-                                : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
-                              }`}
-                          >
-                            {pageNum + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages - 1}
-                      className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base rtl-flip">chevron_right</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {/* Table pagination footer (desktop web) */}
+            {totalPages > 0 && (
+              <PaginationFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                currentCount={offers.length}
+                asTableFooter
+              />
             )}
           </div>
         </div>
@@ -672,14 +644,7 @@ const SupplierOrders: React.FC = () => {
         )}
       </div>
 
-      <PaginationFooter
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-        currentCount={offers.length}
-      />
+      {/* Removed duplicate bottom pagination for desktop; mobile pagination exists above */}
 
       {respondingOffer && (
         <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">

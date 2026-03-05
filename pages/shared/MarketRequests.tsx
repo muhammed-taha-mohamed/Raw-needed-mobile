@@ -139,7 +139,7 @@ const MarketRequests: React.FC = () => {
     unit: '',
     orderType: null,
     targetType: 'CUSTOMERS',
-    imported: null,
+    imported: false,
     image: '',
     file: null,
     preview: null
@@ -204,7 +204,7 @@ const MarketRequests: React.FC = () => {
           unit: post.unit.trim(),
           orderType: post.orderType,
           targetType: 'CUSTOMERS',
-          imported: post.imported,
+          imported: false,
           image: imageUrl || post.image.trim() || null
         };
         await api.put(`/api/v1/clients-special-orders/${editingPostId}`, payload);
@@ -224,7 +224,7 @@ const MarketRequests: React.FC = () => {
             unit: post.unit.trim(),
             orderType: post.orderType,
             targetType: 'CUSTOMERS',
-            imported: post.imported,
+            imported: false,
             image: imageUrl || post.image.trim() || null,
           };
         }));
@@ -442,7 +442,7 @@ const MarketRequests: React.FC = () => {
                                   quantity: String(post.quantity || ''),
                                   unit: post.unit || '',
                                   targetType: ((post as any).targetType === 'BOTH' ? 'SUPPLIERS' : (post as any).targetType) || 'SUPPLIERS',
-                                  imported: (post as any).imported ?? null,
+                                imported: false,
                                   image: post.image || '',
                                   file: null,
                                   preview: post.image || null
@@ -645,25 +645,7 @@ const MarketRequests: React.FC = () => {
                     </div>
 
                     {/* Local vs Imported */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع المصدر' : 'Origin Type'}</label>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, imported: false } : p))}
-                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.imported === false ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                        >
-                          {lang === 'ar' ? 'محلي' : 'Local'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, imported: true } : p))}
-                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.imported === true ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                        >
-                          {lang === 'ar' ? 'مستورد' : 'Imported'}
-                        </button>
-                      </div>
-                    </div>
+                    {/* Origin Type forced to Local for raw material advance */}
 
                     {/* Target Type removed: default to CUSTOMERS */}
 

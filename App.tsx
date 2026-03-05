@@ -41,6 +41,7 @@ import { setToastService, setSessionExpiredCallback } from './api';
 import { clearSubscriptionCache } from './utils/subscription';
 import { api } from './api';
 import SessionExpiredModal from './components/SessionExpiredModal';
+import { getWebPushToken, saveWebTokenToBackend } from './services/fcm';
 
 interface UserData {
   token: string;
@@ -79,7 +80,7 @@ export const useLanguage = useApp;
 const PlaceholderPage = ({ name }: { name: string }) => (
   <div className="p-10 text-center animate-in fade-in duration-500">
     <div className="size-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
-       <span className="material-symbols-outlined text-4xl">construction</span>
+      <span className="material-symbols-outlined text-4xl">construction</span>
     </div>
     <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{name}</h2>
     <p className="text-slate-500 font-bold">This module is under development and will be available soon.</p>
@@ -96,7 +97,7 @@ const AppContent: React.FC = () => {
       return null;
     }
   });
-  
+
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('lang') as Language) || 'ar';
   });
@@ -162,10 +163,37 @@ const AppContent: React.FC = () => {
     localStorage.setItem('token', finalUser.token);
     localStorage.setItem('user', JSON.stringify(finalUser));
     setUser(finalUser);
+    (async () => {
+      try { console.debug('[Login] Attempting to obtain web push token...'); } catch { }
+      const token = await getWebPushToken();
+      if (token) {
+        try { console.debug('[Login] Web push token obtained, saving...'); } catch { }
+        try { await saveWebTokenToBackend(token); } finally {
+          try { console.debug('[Login] Save web token call finished'); } catch { }
+        }
+      } else {
+        try { console.debug('[Login] No web push token generated'); } catch { }
+      }
+    })();
   };
 
+  useEffect(() => {
+    if (!user?.token) return;
+    (async () => {
+      try { console.debug('[Auto] User available, attempting web push token...'); } catch { }
+      const token = await getWebPushToken();
+      if (token) {
+        try { console.debug('[Auto] Web push token obtained, saving...'); } catch { }
+        try { await saveWebTokenToBackend(token); } finally {
+          try { console.debug('[Auto] Save web token call finished'); } catch { }
+        }
+      } else {
+        try { console.debug('[Auto] No web push token generated'); } catch { }
+      }
+    })();
+  }, [user?.token]);
   const handleLogout = () => {
-    api.post('/api/v1/user/auth/logout', {}).catch(() => {});
+    api.post('/api/v1/user/auth/logout', {}).catch(() => { });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     clearSubscriptionCache();
@@ -333,8 +361,8 @@ const AppContent: React.FC = () => {
   return (
     <AppContext.Provider value={{ lang, setLang, t, isDarkMode, toggleDarkMode }}>
       <Toast />
-      <SessionExpiredModal 
-        isOpen={showSessionExpiredModal} 
+      <SessionExpiredModal
+        isOpen={showSessionExpiredModal}
         onClose={handleSessionExpiredClose}
         lang={lang}
       />
