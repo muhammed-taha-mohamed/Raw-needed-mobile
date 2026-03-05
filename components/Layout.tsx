@@ -118,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       { name: lang === 'ar' ? 'العروض الخاصة' : 'Special Offers', icon: 'local_offer', path: '/special-offers' },
       { name: lang === 'ar' ? 'العربة' : 'Cart', icon: 'shopping_cart', path: '/cart' },
       { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
-      { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Requests', icon: 'campaign', path: '/market-requests' },
+      ...(isCustomer ? [{ name: lang === 'ar' ? 'سلفة خامة' : 'Material Advance', icon: 'compare_arrows', path: '/market-requests' }] : []),
       { name: lang === 'ar' ? 'المخزون' : 'My Products', icon: 'inventory_2', path: '/products' },
       { name: lang === 'ar' ? 'التقارير المتقدمة' : 'Advanced Reports', icon: 'analytics', path: '/advanced-reports' },
       { name: lang === 'ar' ? 'باقات الإعلانات' : 'Ad Packages', icon: 'campaign', path: '/ad-packages' },
@@ -167,7 +167,6 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         { name: lang === 'ar' ? 'الرئيسية' : 'Home', icon: 'home', path: '/' },
         { name: lang === 'ar' ? 'المخزون' : 'Products', icon: 'inventory_2', path: '/products' },
         { name: lang === 'ar' ? 'الطلبات' : 'Orders', icon: 'receipt_long', path: '/orders' },
-        { name: lang === 'ar' ? 'طلبات خاصة' : 'Special Req', icon: 'campaign', path: '/market-requests' },
         { name: lang === 'ar' ? 'المزيد' : 'More', icon: 'menu', path: 'SIDEBAR_TRIGGER' },
       ];
     } else if (isCustomer) {
@@ -312,7 +311,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                         : 'text-slate-500 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'}
                   `}
                 >
-                  <span className={`material-symbols-outlined text-[22px] shrink-0`}>{item.icon}</span>
+                  <span className={`material-symbols-outlined text-[22px] shrink-0 transition-transform duration-200 group-hover:scale-110`}>{item.icon}</span>
                   {!isSidebarCollapsed && (
                     <>
                       <span className="text-[14px] font-bold ">{item.name}</span>
@@ -564,7 +563,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                   >
                     {({ isActive }) => (
                       <>
-                        <span className={`material-symbols-outlined text-[28px] ${isActive && !item.disabled ? 'fill-1' : ''}`}>{item.icon}</span>
+                        <span className={`material-symbols-outlined text-[28px] transition-transform duration-200 group-hover:scale-110 ${isActive && !item.disabled ? 'fill-1' : ''}`}>{item.icon}</span>
                         <span className="text-[10px] font-black  mt-1 ">{item.name}</span>
                       </>
                     )}

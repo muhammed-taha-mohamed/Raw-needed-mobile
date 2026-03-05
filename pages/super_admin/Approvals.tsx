@@ -599,18 +599,56 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                    </div>
 
                    {/* Document Preview */}
-                   {selectedUser.organizationCRNImage && (
-                     <div className="space-y-4">
-                        <p className="text-[12px] font-black text-slate-400   px-1">{lang === 'ar' ? 'شهادة البطاقة الضريبية' : 'Registration Certificate'}</p>
-                        <div 
-                          onClick={() => setSelectedReceipt(selectedUser.organizationCRNImage)}
-                          className="relative group cursor-pointer overflow-hidden rounded-3xl border-2 border-primary/10 shadow-lg h-40"
-                        >
-                           <img src={selectedUser.organizationCRNImage} className="size-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="CRN" />
-                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                             <span className="material-symbols-outlined text-3xl">zoom_in</span>
+                   {(selectedUser.organizationCRNImage || selectedUser.taxCardImage) && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedUser.organizationCRNImage && (
+                          <div className="space-y-3">
+                            <p className="text-[12px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة السجل التجاري' : 'Commercial Registry'}</p>
+                            <div onClick={() => setSelectedReceipt(selectedUser.organizationCRNImage)} className="relative group cursor-pointer overflow-hidden rounded-3xl border-2 border-primary/10 shadow-lg h-40">
+                              <img src={selectedUser.organizationCRNImage} className="size-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="CRN" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"><span className="material-symbols-outlined text-3xl">zoom_in</span></div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedUser.taxCardImage && (
+                          <div className="space-y-3">
+                            <p className="text-[12px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة البطاقة الضريبية' : 'Tax Card Certificate'}</p>
+                            <div onClick={() => setSelectedReceipt(selectedUser.taxCardImage)} className="relative group cursor-pointer overflow-hidden rounded-3xl border-2 border-primary/10 shadow-lg h-40">
+                              <img src={selectedUser.taxCardImage} className="size-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="Tax" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"><span className="material-symbols-outlined text-3xl">zoom_in</span></div>
+                            </div>
+                          </div>
+                        )}
+                     </div>
+                   )}
+                   
+                   {/* Regulatory certificates */}
+                   {(selectedUser.drugAuthorityCertificates?.length > 0 || selectedUser.foodSafetyCertificates?.length > 0) && (
+                     <div className="space-y-6">
+                       {selectedUser.drugAuthorityCertificates?.length > 0 && (
+                         <div>
+                           <p className="text-[12px] font-black text-slate-400 px-1 mb-2">{lang === 'ar' ? 'سجل المورد - هيئة الدواء' : 'Supplier Registry - Drug Authority'}</p>
+                           <div className="grid grid-cols-2 gap-3">
+                             {selectedUser.drugAuthorityCertificates.map((url: string, i: number) => (
+                               <div key={`drug-${i}`} onClick={() => setSelectedReceipt(url)} className="h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+                                 <img src={url} className="size-full object-cover" />
+                               </div>
+                             ))}
                            </div>
-                        </div>
+                         </div>
+                       )}
+                       {selectedUser.foodSafetyCertificates?.length > 0 && (
+                         <div>
+                           <p className="text-[12px] font-black text-slate-400 px-1 mb-2">{lang === 'ar' ? 'سجل المورد - هيئة سلامة الغذاء' : 'Supplier Registry - Food Safety Authority'}</p>
+                           <div className="grid grid-cols-2 gap-3">
+                             {selectedUser.foodSafetyCertificates.map((url: string, i: number) => (
+                               <div key={`food-${i}`} onClick={() => setSelectedReceipt(url)} className="h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+                                 <img src={url} className="size-full object-cover" />
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       )}
                      </div>
                    )}
                 </div>

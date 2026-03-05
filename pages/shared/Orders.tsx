@@ -814,7 +814,7 @@ const Orders: React.FC = () => {
         <OrderChat
           isOpen={!!chatOrderLine}
           onClose={() => setChatOrderLine(null)}
-          orderId={chatOrderLine.id}
+          orderId={selectedOrder?.id || (chatOrderLine as any).orderId || chatOrderLine.id}
           orderNumber={selectedOrder?.orderNumber || chatOrderLine.id.slice(-6)}
           title={(lang === 'ar' ? (chatOrderLine.productArabicName || chatOrderLine.productName || chatOrderLine.productEnglishName) : (chatOrderLine.productEnglishName || chatOrderLine.productName || chatOrderLine.productArabicName)) as string}
         />

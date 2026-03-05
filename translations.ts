@@ -25,7 +25,7 @@ export const translations = {
       favItems: 'Favourite Items',
       cart: 'Cart',
       orders: 'Orders',
-      marketRequests: 'Clients Special Orders',
+      marketRequests: 'Material Advance',
       ads: 'Advertisements',
       support: 'Support & Complaints'
     },
@@ -85,9 +85,9 @@ export const translations = {
       selectSupplier: 'Select Distributor'
     },
     marketRequests: {
-      title: 'Clients Special Orders',
-      subtitle: 'Browse urgent material requests or post your own needs to find verified sources.',
-      createPost: 'Request Material',
+      title: 'Material Advance',
+      subtitle: 'Request an advance of raw material and receive supplier offers.',
+      createPost: 'Request Material Advance',
       materialName: 'Material Name',
       quantity: 'Quantity',
       unit: 'Unit (e.g. KG, Ton)',
@@ -264,7 +264,7 @@ export const translations = {
       contactSales: 'Contact sales for pricing',
       edit: 'Edit',
       name: ' Plan name',
-       status: ' status',
+      status: ' status',
       pricePerUser: 'Price per User',
       description: 'Description',
       planNamePlaceholder: 'e.g. Enterprise Elite',
@@ -292,7 +292,7 @@ export const translations = {
       freeTrial: 'Free Trial Available',
       activate: 'Activate',
       deactivate: 'Archive',
-      statusActive:   'Activated',
+      statusActive: 'Activated',
       statusArchived: 'Archived',
       statusDraft: 'Draft'
     },
@@ -510,7 +510,7 @@ export const translations = {
       favItems: 'العناصر المفضلة',
       cart: 'العربة',
       orders: 'الطلبات',
-      marketRequests: 'طلبات العملاء الخاصة',
+      marketRequests: 'سلفة خامة',
       ads: 'الإعلانات',
       support: 'الدعم والشكاوى'
     },
@@ -572,9 +572,9 @@ export const translations = {
       originPlaceholder: 'اختر الدولة'
     },
     marketRequests: {
-      title: 'طلبات العملاء الخاصة',
-      subtitle: 'تصفح طلبات المواد العاجلة أو انشر احتياجك لتجد مصادر توريد موثوقة.',
-      createPost: 'طلب مادة جديدة',
+      title: 'سلفة خامة',
+      subtitle: 'اطلب سلفة خامة واستقبل عروض الموردين المناسبة.',
+      createPost: 'طلب سلفة خامة',
       materialName: 'اسم المادة الخام',
       quantity: 'الكمية المطلوبة',
       unit: 'الوحدة (مثلاً: كيلو، طن)',

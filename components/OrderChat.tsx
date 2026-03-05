@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../App';
-import { api } from '../api';
+import { api, BASE_URL } from '../api';
 import { OrderMessage } from '../types';
 
 interface OrderChatProps {
@@ -21,15 +21,51 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sseRef = useRef<EventSource | null>(null);
+  const seenIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (isOpen) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      setCurrentUserId(user.userInfo?.id || user.id || '');
-      fetchMessages();
-      const interval = setInterval(fetchMessages, 10000); // Polling every 10s
-      return () => clearInterval(interval);
+    if (!isOpen) {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      return;
     }
+    if (sseRef.current) {
+      sseRef.current.close();
+      sseRef.current = null;
+    }
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setCurrentUserId(user.userInfo?.id || user.id || '');
+    fetchMessages();
+    const token = localStorage.getItem('token') || '';
+    const lang = localStorage.getItem('lang') || 'ar';
+    try {
+      const url = `${BASE_URL}/api/v1/orders/${orderId}/stream?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+      const es = new EventSource(url, { withCredentials: false } as any);
+      sseRef.current = es;
+      es.addEventListener('message', (evt) => {
+        try {
+          const data = JSON.parse(evt.data) as OrderMessage;
+          if (data && data.id && !seenIdsRef.current.has(data.id)) {
+            seenIdsRef.current.add(data.id);
+            setMessages(prev => [...prev, data]);
+            if (data.userId !== currentUserId) {
+              playDing(900);
+            }
+          }
+        } catch { }
+      });
+      es.addEventListener('connected', () => { });
+      es.onerror = () => { };
+    } catch { }
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
   }, [isOpen, orderId]);
 
   useEffect(() => {
@@ -43,12 +79,41 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
   const fetchMessages = async () => {
     try {
       const data = await api.get<OrderMessage[]>(`/api/v1/orders/${orderId}/messages`);
-      setMessages(data || []);
+      const list = data || [];
+      setMessages(list);
+      const ids = new Set<string>();
+      for (const m of list) if (m?.id) ids.add(m.id);
+      seenIdsRef.current = ids;
     } catch (err) {
       console.error("Failed to fetch order messages", err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const playDing = (ms: number) => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
+      const g = ctx.createGain();
+      o1.type = 'triangle';
+      o2.type = 'sine';
+      o1.frequency.value = 880;
+      o2.frequency.value = 1320;
+      o1.connect(g);
+      o2.connect(g);
+      g.connect(ctx.destination);
+      const now = ctx.currentTime;
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.15, now + 0.05);
+      g.gain.linearRampToValueAtTime(0.08, now + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + ms / 1000);
+      o1.start(now);
+      o2.start(now + 0.02);
+      o1.stop(now + ms / 1000);
+      o2.stop(now + ms / 1000);
+    } catch { }
   };
 
   const handleSendMessage = async (e: React.FormEvent, imageUrl: string | null = null) => {
@@ -57,11 +122,10 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
 
     setIsSending(true);
     try {
-      const response = await api.post<OrderMessage>(`/api/v1/orders/${orderId}/messages`, {
+      await api.post<OrderMessage>(`/api/v1/orders/${orderId}/messages`, {
         message: newMessage,
         image: imageUrl
       });
-      setMessages(prev => [...prev, response]);
       setNewMessage('');
     } catch (err) {
       console.error("Failed to send message", err);
@@ -97,13 +161,13 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
   return (
     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[80vh] md:h-[80vh]">
-        
+
         {/* Drag Handle - Mobile Only */}
         <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
           const startY = e.touches[0].clientY;
           const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
           if (!modal) return;
-          
+
           const handleMove = (moveEvent: TouchEvent) => {
             const currentY = moveEvent.touches[0].clientY;
             const diff = currentY - startY;
@@ -112,7 +176,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
               modal.style.transition = 'none';
             }
           };
-          
+
           const handleEnd = () => {
             const finalY = modal.getBoundingClientRect().top;
             if (finalY > window.innerHeight * 0.3) {
@@ -124,13 +188,13 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
             document.removeEventListener('touchmove', handleMove);
             document.removeEventListener('touchend', handleEnd);
           };
-          
+
           document.addEventListener('touchmove', handleMove);
           document.addEventListener('touchend', handleEnd);
         }}>
           <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
         </div>
-        
+
         {/* Chat Header */}
         <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
           <div className="flex items-center gap-4">
@@ -156,9 +220,9 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
             </div>
           ) : messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
-               <span className="material-symbols-outlined text-7xl mb-4">forum</span>
-               <h3 className="text-xl font-black">{lang === 'ar' ? 'ابدأ المحادثة' : 'Start the conversation'}</h3>
-               <p className="text-sm font-bold">{lang === 'ar' ? 'تواصل مباشرة مع الطرف الآخر بخصوص هذا الطلب.' : 'Connect directly about this order.'}</p>
+              <span className="material-symbols-outlined text-7xl mb-4">forum</span>
+              <h3 className="text-xl font-black">{lang === 'ar' ? 'ابدأ المحادثة' : 'Start the conversation'}</h3>
+              <p className="text-sm font-bold">{lang === 'ar' ? 'تواصل مباشرة مع الطرف الآخر بخصوص هذا الطلب.' : 'Connect directly about this order.'}</p>
             </div>
           ) : (
             messages.map((msg, i) => {
@@ -166,11 +230,10 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
               return (
                 <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
                   <div className={`max-w-[85%] space-y-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                    <div className={`px-5 py-3.5 rounded-[1.8rem] shadow-sm ${
-                      isOwn 
-                      ? 'bg-primary text-white rounded-br-none' 
-                      : 'bg-white dark:bg-slate-800 border border-primary/5 text-slate-800 dark:text-slate-200 rounded-bl-none'
-                    }`}>
+                    <div className={`px-5 py-3.5 rounded-[1.8rem] shadow-sm ${isOwn
+                        ? 'bg-primary text-white rounded-br-none'
+                        : 'bg-white dark:bg-slate-800 border border-primary/5 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                      }`}>
                       {msg.message && <p className="text-sm font-bold leading-relaxed">{msg.message}</p>}
                       {msg.image && (
                         <div className={`mt-2 rounded-xl overflow-hidden border border-white/20 shadow-md ${msg.message ? 'max-w-[240px]' : ''}`}>
@@ -179,8 +242,8 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
                       )}
                     </div>
                     <div className="flex items-center gap-2 px-2">
-                       {!isOwn && <span className="text-[9px] font-black text-primary   ">{msg.userOrganizationName || msg.userName}</span>}
-                       <span className="text-[9px] font-bold text-slate-400    tabular-nums">{formatTime(msg.createdAt)}</span>
+                      {!isOwn && <span className="text-[9px] font-black text-primary   ">{msg.userOrganizationName || msg.userName}</span>}
+                      <span className="text-[9px] font-bold text-slate-400    tabular-nums">{formatTime(msg.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -193,36 +256,36 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, orderNumber, isOpen, onC
         {/* Input Area */}
         <div className="p-6 border-t border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <form onSubmit={(e) => handleSendMessage(e)} className="flex gap-3">
-             <button 
-               type="button"
-               onClick={() => fileInputRef.current?.click()}
-               disabled={isSending}
-               className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary border border-slate-100 dark:border-slate-700 transition-all flex items-center justify-center shrink-0 active:scale-95"
-             >
-                <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
-             </button>
-             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-             
-             <div className="flex-1 relative">
-                <input 
-                  type="text" 
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={t.complaints.messagePlaceholder}
-                  className="w-full h-14 pl-6 pr-14 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
-                />
-                <button 
-                   type="submit"
-                   disabled={isSending || (!newMessage.trim())}
-                   className={`absolute ${lang === 'ar' ? 'left-2' : 'right-2'} top-2 size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg transition-all active:scale-90 disabled:opacity-30`}
-                >
-                   {isSending ? (
-                     <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                   ) : (
-                     <span className="material-symbols-outlined text-xl rtl-flip">send</span>
-                   )}
-                </button>
-             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSending}
+              className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary border border-slate-100 dark:border-slate-700 transition-all flex items-center justify-center shrink-0 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
+            </button>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={t.complaints.messagePlaceholder}
+                className="w-full h-14 pl-6 pr-14 py-4 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white font-bold focus:border-primary outline-none transition-all shadow-inner text-sm md:text-base placeholder:text-xs md:placeholder:text-sm placeholder:font-medium"
+              />
+              <button
+                type="submit"
+                disabled={isSending || (!newMessage.trim())}
+                className={`absolute ${lang === 'ar' ? 'left-2' : 'right-2'} top-2 size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg transition-all active:scale-90 disabled:opacity-30`}
+              >
+                {isSending ? (
+                  <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <span className="material-symbols-outlined text-xl rtl-flip">send</span>
+                )}
+              </button>
+            </div>
           </form>
         </div>
       </div>

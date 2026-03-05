@@ -55,12 +55,12 @@ const SupplierOrders: React.FC = () => {
   const [offers, setOffers] = useState<RFQOffer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  
+
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -69,7 +69,7 @@ const SupplierOrders: React.FC = () => {
   const [respondingOffer, setRespondingOffer] = useState<RFQOffer | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Chat State
   const [chatOffer, setChatOffer] = useState<RFQOffer | null>(null);
   const [detailsOffer, setDetailsOffer] = useState<RFQOffer | null>(null);
@@ -82,7 +82,7 @@ const SupplierOrders: React.FC = () => {
   const [formCoaUrl, setFormCoaUrl] = useState<string>('');
   const [formCoaPreview, setFormCoaPreview] = useState<string>('');
   const coaFileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -136,9 +136,9 @@ const SupplierOrders: React.FC = () => {
     setCompletingId(offerId);
     try {
       await api.post(`/api/v1/rfq/line/${offerId}/complete`, {});
-      setToast({ 
-        message: lang === 'ar' ? 'تم إتمام الطلب بنجاح' : 'Order completed successfully', 
-        type: 'success' 
+      setToast({
+        message: lang === 'ar' ? 'تم إتمام الطلب بنجاح' : 'Order completed successfully',
+        type: 'success'
       });
       fetchOffers(currentPage, statusFilter, pageSize);
     } catch (err: any) {
@@ -151,7 +151,7 @@ const SupplierOrders: React.FC = () => {
   const handleSubmitResponse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!respondingOffer) return;
-    
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -164,12 +164,12 @@ const SupplierOrders: React.FC = () => {
       };
 
       await api.post(`/api/v1/rfq/line/${respondingOffer.id}/respond`, payload);
-      
-      setToast({ 
-        message: lang === 'ar' ? 'تم إرسال العرض بنجاح' : 'Response sent successfully', 
-        type: 'success' 
+
+      setToast({
+        message: lang === 'ar' ? 'تم إرسال العرض بنجاح' : 'Response sent successfully',
+        type: 'success'
       });
-      
+
       setRespondingOffer(null);
       fetchOffers(currentPage, statusFilter, pageSize);
     } catch (err: any) {
@@ -181,28 +181,28 @@ const SupplierOrders: React.FC = () => {
 
   const getStatusConfig = (status: RFQOffer['status']) => {
     const configs = {
-      PENDING: { 
-        label: lang === 'ar' ? 'قيد الانتظار' : 'Pending', 
+      PENDING: {
+        label: lang === 'ar' ? 'قيد الانتظار' : 'Pending',
         bg: 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800',
         dot: 'bg-amber-500'
       },
-      RESPONDED: { 
-        label: lang === 'ar' ? 'تم الرد' : 'Responded', 
+      RESPONDED: {
+        label: lang === 'ar' ? 'تم الرد' : 'Responded',
         bg: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800',
         dot: 'bg-blue-500'
       },
-      APPROVED: { 
-        label: lang === 'ar' ? 'تم الاعتماد' : 'Approved', 
+      APPROVED: {
+        label: lang === 'ar' ? 'تم الاعتماد' : 'Approved',
         bg: 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800',
         dot: 'bg-indigo-500'
       },
-      COMPLETED: { 
-        label: lang === 'ar' ? 'مكتمل' : 'Completed', 
+      COMPLETED: {
+        label: lang === 'ar' ? 'مكتمل' : 'Completed',
         bg: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800',
         dot: 'bg-emerald-500'
       },
-      REJECTED: { 
-        label: lang === 'ar' ? 'مرفوض' : 'Rejected', 
+      REJECTED: {
+        label: lang === 'ar' ? 'مرفوض' : 'Rejected',
         bg: 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-800',
         dot: 'bg-red-500'
       }
@@ -276,10 +276,10 @@ const SupplierOrders: React.FC = () => {
 
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
-      
+
       {toast && (
         <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
-           {toast.message}
+          {toast.message}
         </div>
       )}
 
@@ -296,11 +296,10 @@ const SupplierOrders: React.FC = () => {
                   <button
                     key={opt.id as any}
                     onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); }}
-                    className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
-                      statusFilter === opt.id
+                    className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${statusFilter === opt.id
                         ? 'bg-primary text-white shadow-md shadow-primary/20'
                         : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary border border-primary/20'
-                    }`}
+                      }`}
                   >
                     {opt.label}
                   </button>
@@ -376,7 +375,7 @@ const SupplierOrders: React.FC = () => {
                             <span className="material-symbols-outlined text-xl">visibility</span>
                           </button>
                           {offer.status !== 'PENDING' && (
-                            <button 
+                            <button
                               onClick={() => setChatOffer(offer)}
                               className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-blue-800 transition-all active:scale-90 flex items-center justify-center"
                               title={lang === 'ar' ? 'دردشة' : 'Chat'}
@@ -385,7 +384,7 @@ const SupplierOrders: React.FC = () => {
                             </button>
                           )}
                           {offer.status === 'APPROVED' ? (
-                            <button 
+                            <button
                               disabled={completingId === offer.id}
                               onClick={() => handleCompleteOffer(offer.id)}
                               className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
@@ -405,13 +404,12 @@ const SupplierOrders: React.FC = () => {
                               {lang === 'ar' ? 'مكتمل' : 'Finalized'}
                             </div>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => handleOpenResponse(offer)}
-                              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
-                                offer.status === 'RESPONDED' 
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
-                                : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
-                              }`}
+                              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${offer.status === 'RESPONDED'
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary'
+                                  : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
+                                }`}
                             >
                               <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
                               {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
@@ -435,8 +433,8 @@ const SupplierOrders: React.FC = () => {
                   </div>
                   <div className="h-6 w-px bg-primary/20 mx-1"></div>
                   <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => handlePageChange(currentPage - 1)} 
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 0}
                       className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
                     >
@@ -448,21 +446,20 @@ const SupplierOrders: React.FC = () => {
                         if (totalPages > 5 && currentPage > 2) pageNum = Math.min(currentPage - 2 + i, totalPages - 1);
                         return (
                           <button
-                            key={pageNum} 
+                            key={pageNum}
                             onClick={() => handlePageChange(pageNum)}
-                            className={`size-9 rounded-full font-black text-xs transition-all ${
-                              currentPage === pageNum 
-                              ? 'bg-primary text-white shadow-md' 
-                              : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
-                            }`}
+                            className={`size-9 rounded-full font-black text-xs transition-all ${currentPage === pageNum
+                                ? 'bg-primary text-white shadow-md'
+                                : 'bg-white dark:bg-slate-800 text-slate-400 border border-primary/20 hover:border-primary'
+                              }`}
                           >
                             {pageNum + 1}
                           </button>
                         );
                       })}
                     </div>
-                    <button 
-                      onClick={() => handlePageChange(currentPage + 1)} 
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage >= totalPages - 1}
                       className="size-9 rounded-full border border-primary/20 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-20 transition-all flex items-center justify-center active:scale-90"
                     >
@@ -542,7 +539,7 @@ const SupplierOrders: React.FC = () => {
                         <span className="material-symbols-outlined text-xl">visibility</span>
                       </button>
                       {offer.status !== 'PENDING' && (
-                        <button 
+                        <button
                           onClick={() => setChatOffer(offer)}
                           className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-blue-800 transition-all active:scale-90 flex items-center justify-center"
                           title={lang === 'ar' ? 'دردشة' : 'Chat'}
@@ -551,7 +548,7 @@ const SupplierOrders: React.FC = () => {
                         </button>
                       )}
                       {offer.status === 'APPROVED' ? (
-                        <button 
+                        <button
                           disabled={completingId === offer.id}
                           onClick={() => handleCompleteOffer(offer.id)}
                           className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-emerald-600/10"
@@ -571,13 +568,12 @@ const SupplierOrders: React.FC = () => {
                           {lang === 'ar' ? 'مكتمل' : 'Finalized'}
                         </div>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => handleOpenResponse(offer)}
-                          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${
-                            offer.status === 'RESPONDED' 
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary' 
-                            : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
-                          }`}
+                          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all active:scale-95 whitespace-nowrap shadow-md ${offer.status === 'RESPONDED'
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary'
+                              : 'bg-primary text-white shadow-primary/10 hover:bg-slate-900 dark:hover:bg-slate-800'
+                            }`}
                         >
                           <span className="material-symbols-outlined text-lg">{offer.status === 'RESPONDED' ? 'edit_square' : 'send'}</span>
                           {offer.status === 'RESPONDED' ? (lang === 'ar' ? 'تعديل السعر' : 'Edit Quote') : (lang === 'ar' ? 'تقديم عرض' : 'Submit Quote')}
@@ -595,7 +591,7 @@ const SupplierOrders: React.FC = () => {
         <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
           <div className="w-full flex flex-col items-end pointer-events-auto">
             <div className="relative" ref={filterRef}>
-              <button 
+              <button
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
                 className="size-14 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 border-white/20"
               >
@@ -612,7 +608,7 @@ const SupplierOrders: React.FC = () => {
                   <div className="flex justify-between items-center mb-4 px-2">
                     <h3 className="text-xs font-black tracking-[0.2em] text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
                     {statusFilter && (
-                      <button onClick={() => {setStatusFilter(null); setShowFilterMenu(false);}} className="text-xs font-black text-red-500">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
+                      <button onClick={() => { setStatusFilter(null); setShowFilterMenu(false); }} className="text-xs font-black text-red-500">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
                     )}
                   </div>
                   <div className="space-y-1">
@@ -620,11 +616,10 @@ const SupplierOrders: React.FC = () => {
                       <button
                         key={opt.id as any}
                         onClick={() => { setStatusFilter(opt.id); setCurrentPage(0); setShowFilterMenu(false); }}
-                        className={`w-full text-start px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between ${
-                          statusFilter === opt.id 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
+                        className={`w-full text-start px-4 py-3 rounded-xl text-sm font-black transition-all flex items-center justify-between ${statusFilter === opt.id
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
                       >
                         {opt.label}
                         {statusFilter === opt.id && <span className="material-symbols-outlined text-base">check</span>}
@@ -649,8 +644,8 @@ const SupplierOrders: React.FC = () => {
               </div>
               <div className="h-7 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => handlePageChange(currentPage - 1)} 
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0}
                   className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                 >
@@ -664,8 +659,8 @@ const SupplierOrders: React.FC = () => {
                     {currentPage + 1}
                   </button>
                 </div>
-                <button 
-                  onClick={() => handlePageChange(currentPage + 1)} 
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages - 1}
                   className="size-10 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-primary hover:border-primary disabled:opacity-30 transition-all flex items-center justify-center active:scale-90 shadow-sm"
                 >
@@ -689,13 +684,13 @@ const SupplierOrders: React.FC = () => {
       {respondingOffer && (
         <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:w-[90%] md:max-w-2xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            
+
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
               const startY = e.touches[0].clientY;
               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
               if (!modal) return;
-              
+
               const handleMove = (moveEvent: TouchEvent) => {
                 const currentY = moveEvent.touches[0].clientY;
                 const diff = currentY - startY;
@@ -704,7 +699,7 @@ const SupplierOrders: React.FC = () => {
                   modal.style.transition = 'none';
                 }
               };
-              
+
               const handleEnd = () => {
                 const finalY = modal.getBoundingClientRect().top;
                 if (finalY > window.innerHeight * 0.3) {
@@ -716,31 +711,31 @@ const SupplierOrders: React.FC = () => {
                 document.removeEventListener('touchmove', handleMove);
                 document.removeEventListener('touchend', handleEnd);
               };
-              
+
               document.addEventListener('touchmove', handleMove);
               document.addEventListener('touchend', handleEnd);
             }}>
               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
             </div>
-            
+
             <div className="px-10 py-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
-               <div className="flex items-center gap-5">
-                  <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
-                     <span className="material-symbols-outlined text-3xl">request_quote</span>
-                  </div>
-                  <div>
-                     <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-2">
-                        {lang === 'ar' ? 'تقديم عرض سعر' : 'Supply Quotation'}
-                     </h3>
-                     <p className="text-[12px] font-bold text-slate-400 tabular-nums">Ref #{respondingOffer.id.slice(-8).toUpperCase()} • {respondingOffer.productName}</p>
-                  </div>
-               </div>
-               <button 
-                 onClick={() => setRespondingOffer(null)} 
-                 className="size-12 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-800 active:scale-90 shadow-sm"
-               >
-                 <span className="material-symbols-outlined text-2xl">close</span>
-               </button>
+              <div className="flex items-center gap-5">
+                <div className="size-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
+                  <span className="material-symbols-outlined text-3xl">request_quote</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-2">
+                    {lang === 'ar' ? 'تقديم عرض سعر' : 'Supply Quotation'}
+                  </h3>
+                  <p className="text-[12px] font-bold text-slate-400 tabular-nums">Ref #{respondingOffer.id.slice(-8).toUpperCase()} • {respondingOffer.productName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setRespondingOffer(null)}
+                className="size-12 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-800 active:scale-90 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-2xl">close</span>
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
@@ -839,13 +834,13 @@ const SupplierOrders: React.FC = () => {
                       try {
                         const url = await api.post<string>('/api/v1/image/upload', formData);
                         setFormCoaUrl(url || '');
-                      } catch {}
+                      } catch { }
                     }}
                   />
                 </div>
 
                 <div className="pt-6">
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSubmitting}
                     className="w-full py-5 bg-primary text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-4 tracking-[0.1em]"
@@ -862,7 +857,7 @@ const SupplierOrders: React.FC = () => {
                 </div>
               </form>
             </div>
-            
+
           </div>
         </div>
       )}
@@ -967,11 +962,11 @@ const SupplierOrders: React.FC = () => {
 
       {/* Chat Component Integration */}
       {chatOffer && (
-        <OrderChat 
+        <OrderChat
           isOpen={!!chatOffer}
           onClose={() => setChatOffer(null)}
-          orderId={chatOffer.id}
-          orderNumber={chatOffer.id.slice(-8).toUpperCase()}
+          orderId={chatOffer.orderId}
+          orderNumber={(chatOffer.orderId || chatOffer.id).slice(-8).toUpperCase()}
           title={chatOffer.productName}
         />
       )}

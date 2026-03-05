@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
-import { api } from '../../api';
+import { api, BASE_URL } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
 import EmptyState from '../../components/EmptyState';
 import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
@@ -23,6 +23,9 @@ const Complaints: React.FC = () => {
   const [isClosingTicket, setIsClosingTicket] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messageImageInputRef = useRef<HTMLInputElement>(null);
+  const sseRef = useRef<EventSource | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const seenIdsRef = useRef<Set<string>>(new Set());
 
   // New Ticket Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -47,6 +50,52 @@ const Complaints: React.FC = () => {
     scrollToBottom();
   }, [selectedTicket?.messages]);
 
+  useEffect(() => {
+    if (!selectedTicket) {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      return;
+    }
+    seenIdsRef.current = new Set((selectedTicket.messages || []).map(m => m.id));
+    const token = localStorage.getItem('token') || '';
+    const lang = localStorage.getItem('lang') || 'ar';
+    try {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      const url = `${BASE_URL}/api/v1/complaints/${selectedTicket.id}/stream?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+      const es = new EventSource(url, { withCredentials: false } as any);
+      sseRef.current = es;
+      es.addEventListener('message', (evt) => {
+        try {
+          const data = JSON.parse(evt.data) as ComplaintMessage;
+          if (data && data.id && !seenIdsRef.current.has(data.id)) {
+            seenIdsRef.current.add(data.id);
+            setSelectedTicket(prev => prev ? { ...prev, messages: [...(prev.messages || []), data] } : prev);
+          }
+          const userStr = localStorage.getItem('user') || '{}';
+          const user = JSON.parse(userStr);
+          const isAdminUser = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN');
+          const isFromOtherSide = isAdminUser ? !data.admin : data.admin;
+          if (isFromOtherSide) {
+            playDing(900);
+          }
+        } catch { }
+      });
+      es.addEventListener('connected', () => { });
+      es.onerror = () => { };
+    } catch { }
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
+  }, [selectedTicket?.id, userRole]);
+
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -63,11 +112,37 @@ const Complaints: React.FC = () => {
       const data = response.data || response;
       const list: Complaint[] = data.content || [];
       setComplaints(list);
+      setUnreadCounts(computeUnread(list));
     } catch (err) {
       console.error("Fetch complaints failed", err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const computeUnread = (list: Complaint[]) => {
+    const m: Record<string, number> = {};
+    const readMapStr = localStorage.getItem('complaintsReadAt') || '{}';
+    const readMap = JSON.parse(readMapStr || '{}') as Record<string, string>;
+    const isAdminUser = isAdmin;
+    for (const c of list) {
+      const last = (c.messages && c.messages.length > 0) ? c.messages[c.messages.length - 1] : null;
+      if (!last) { m[c.id] = 0; continue; }
+      const readAt = readMap[c.id] ? new Date(readMap[c.id]).getTime() : 0;
+      const lastTime = new Date(last.createdAt).getTime();
+      const isFromOtherSide = isAdminUser ? !last.admin : last.admin;
+      m[c.id] = (lastTime > readAt && isFromOtherSide) ? 1 : 0;
+    }
+    return m;
+  };
+
+  const markRead = (complaintId: string) => {
+    const now = new Date().toISOString();
+    const readMapStr = localStorage.getItem('complaintsReadAt') || '{}';
+    const readMap = JSON.parse(readMapStr || '{}') as Record<string, string>;
+    readMap[complaintId] = now;
+    localStorage.setItem('complaintsReadAt', JSON.stringify(readMap));
+    setUnreadCounts(prev => ({ ...prev, [complaintId]: 0 }));
   };
 
   // ترتيب: آخر شكوى فيها رسالة (أحدث نشاط) تكون الأولى
@@ -93,10 +168,10 @@ const Complaints: React.FC = () => {
         formData.append('file', selectedFile);
         imageUrl = await api.post<string>('/api/v1/image/upload', formData);
       }
-      await api.post('/api/v1/complaints', { 
-        subject: newTicket.subject, 
-        description: newTicket.description, 
-        image: imageUrl || null 
+      await api.post('/api/v1/complaints', {
+        subject: newTicket.subject,
+        description: newTicket.description,
+        image: imageUrl || null
       });
       setIsCreateModalOpen(false);
       resetForm();
@@ -115,11 +190,10 @@ const Complaints: React.FC = () => {
         formData.append('file', messageImageFile);
         imageUrl = await api.post<string>('/api/v1/image/upload', formData);
       }
-      const response = await api.post<ComplaintMessage>(`/api/v1/complaints/${selectedTicket.id}/messages`, {
+      await api.post<ComplaintMessage>(`/api/v1/complaints/${selectedTicket.id}/messages`, {
         message: newMessage.trim() || (imageUrl ? ' ' : ''),
         image: imageUrl
       });
-      setSelectedTicket(prev => prev ? { ...prev, messages: [...(prev.messages || []), response] } : null);
       setNewMessage('');
       setMessageImageFile(null);
       setMessageImagePreview(null);
@@ -198,6 +272,31 @@ const Complaints: React.FC = () => {
   const showList = !selectedTicket;
   const showChat = !!selectedTicket;
 
+  const playDing = (ms: number) => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
+      const g = ctx.createGain();
+      o1.type = 'triangle';
+      o2.type = 'sine';
+      o1.frequency.value = 880;
+      o2.frequency.value = 1320;
+      o1.connect(g);
+      o2.connect(g);
+      g.connect(ctx.destination);
+      const now = ctx.currentTime;
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.15, now + 0.05);
+      g.gain.linearRampToValueAtTime(0.08, now + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + ms / 1000);
+      o1.start(now);
+      o2.start(now + 0.02);
+      o1.stop(now + ms / 1000);
+      o2.stop(now + ms / 1000);
+    } catch { }
+  };
+
   return (
     <div className="w-full mt-4 md:mt-5 h-[calc(100vh-7.5rem)] md:h-[calc(100vh-6.5rem)] min-h-[420px] flex animate-in fade-in duration-500 font-display overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
       {/* Left: Conversation list (sidebar) - hidden on mobile when chat is open */}
@@ -239,7 +338,7 @@ const Complaints: React.FC = () => {
                   <button
                     key={ticket.id}
                     type="button"
-                    onClick={() => setSelectedTicket(ticket)}
+                    onClick={() => { setSelectedTicket(ticket); markRead(ticket.id); }}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isSelected ? 'bg-primary/15 dark:bg-primary/20 border border-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent'}`}
                   >
                     <div className={`size-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
@@ -250,7 +349,14 @@ const Complaints: React.FC = () => {
                         <span className={`text-sm font-black truncate ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
                           {isAdmin ? (ticket.userName || ticket.subject) : ticket.subject}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 tabular-nums shrink-0">{formatDate(lastMsg?.createdAt || ticket.createdAt)}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {unreadCounts[ticket.id] > 0 && (
+                            <span className="min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                              {unreadCounts[ticket.id]}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-slate-400 tabular-nums">{formatDate(lastMsg?.createdAt || ticket.createdAt)}</span>
+                        </div>
                       </div>
                       {isAdmin && ticket.userName && (
                         <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{ticket.subject}</p>
@@ -384,96 +490,96 @@ const Complaints: React.FC = () => {
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-           <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-             
-             {/* Drag Handle - Mobile Only */}
-             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
-               const startY = e.touches[0].clientY;
-               const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
-               if (!modal) return;
-               
-               const handleMove = (moveEvent: TouchEvent) => {
-                 const currentY = moveEvent.touches[0].clientY;
-                 const diff = currentY - startY;
-                 if (diff > 0) {
-                   modal.style.transform = `translateY(${diff}px)`;
-                   modal.style.transition = 'none';
-                 }
-               };
-               
-               const handleEnd = () => {
-                 const finalY = modal.getBoundingClientRect().top;
-                 if (finalY > window.innerHeight * 0.3) {
-                   setIsCreateModalOpen(false);
-                 } else {
-                   modal.style.transform = '';
-                   modal.style.transition = '';
-                 }
-                 document.removeEventListener('touchmove', handleMove);
-                 document.removeEventListener('touchend', handleEnd);
-               };
-               
-               document.addEventListener('touchmove', handleMove);
-               document.addEventListener('touchend', handleEnd);
-             }}>
-               <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-             </div>
-             
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>
-                    <div>
-                       <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.complaints.addNew}</h3>
-                       <p className="text-[10px] font-black text-slate-400 mt-2">{t.complaints.subjectDescriptionAttachment}</p>
+          <div className="w-full md:w-[90%] md:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+
+            {/* Drag Handle - Mobile Only */}
+            <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
+              const startY = e.touches[0].clientY;
+              const modal = e.currentTarget.closest('.fixed')?.querySelector('.w-full') as HTMLElement;
+              if (!modal) return;
+
+              const handleMove = (moveEvent: TouchEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const diff = currentY - startY;
+                if (diff > 0) {
+                  modal.style.transform = `translateY(${diff}px)`;
+                  modal.style.transition = 'none';
+                }
+              };
+
+              const handleEnd = () => {
+                const finalY = modal.getBoundingClientRect().top;
+                if (finalY > window.innerHeight * 0.3) {
+                  setIsCreateModalOpen(false);
+                } else {
+                  modal.style.transform = '';
+                  modal.style.transition = '';
+                }
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+              };
+
+              document.addEventListener('touchmove', handleMove);
+              document.addEventListener('touchend', handleEnd);
+            }}>
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+            </div>
+
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-2xl">add_comment</span></div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{t.complaints.addNew}</h3>
+                  <p className="text-[10px] font-black text-slate-400 mt-2">{t.complaints.subjectDescriptionAttachment}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCreateModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-5">
+                <FloatingLabelInput
+                  required
+                  type="text"
+                  label={t.complaints.subjectPlaceholder}
+                  value={newTicket.subject}
+                  onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                  placeholder={t.complaints.subjectPlaceholder}
+                  isRtl={lang === 'ar'}
+                />
+                <FloatingLabelTextarea
+                  required
+                  label={t.complaints.descriptionPlaceholder}
+                  value={newTicket.description}
+                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                  placeholder={t.complaints.descriptionPlaceholder}
+                />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.image}</label>
+                  {!preview ? (
+                    <div onClick={() => fileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
+                      <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
+                      <span className="text-[9px] font-black text-slate-400">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach screenshot'}</span>
                     </div>
-                 </div>
-                 <button onClick={() => setIsCreateModalOpen(false)} className="size-8 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center shrink-0"><span className="material-symbols-outlined text-xl">close</span></button>
-              </div>
+                  ) : (
+                    <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
+                      <img src={preview} className="size-full object-cover" alt="" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button type="button" onClick={() => { setSelectedFile(null); setPreview(null); }} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">delete</span></button>
+                      </div>
+                    </div>
+                  )}
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                </div>
+              </form>
+            </div>
 
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                <form id="ticketForm" onSubmit={handleCreateTicket} className="space-y-5">
-                   <FloatingLabelInput
-                     required
-                     type="text"
-                     label={t.complaints.subjectPlaceholder}
-                     value={newTicket.subject}
-                     onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                     placeholder={t.complaints.subjectPlaceholder}
-                     isRtl={lang === 'ar'}
-                   />
-                   <FloatingLabelTextarea
-                     required
-                     label={t.complaints.descriptionPlaceholder}
-                     value={newTicket.description}
-                     onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                     placeholder={t.complaints.descriptionPlaceholder}
-                   />
-                   <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.complaints.image}</label>
-                      {!preview ? (
-                        <div onClick={() => fileInputRef.current?.click()} className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer border-slate-200 hover:border-primary bg-slate-50/50 dark:bg-slate-800/50">
-                          <span className="material-symbols-outlined text-3xl text-slate-300 mb-1">add_a_photo</span>
-                          <span className="text-[9px] font-black text-slate-400">{lang === 'ar' ? 'إرفاق لقطة شاشة' : 'Attach screenshot'}</span>
-                        </div>
-                      ) : (
-                        <div className="relative h-40 rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 group">
-                          <img src={preview} className="size-full object-cover" alt="" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <button type="button" onClick={() => { setSelectedFile(null); setPreview(null); }} className="size-10 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center"><span className="material-symbols-outlined">delete</span></button>
-                          </div>
-                        </div>
-                      )}
-                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                   </div>
-                </form>
-              </div>
-
-              <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
-                 <button form="ticketForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
-                   {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'إرسال التذكرة' : 'Dispatch Ticket'}<span className="material-symbols-outlined">verified</span></>}
-                 </button>
-              </div>
-           </div>
+            <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
+              <button form="ticketForm" type="submit" disabled={isProcessing} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50">
+                {isProcessing ? <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{lang === 'ar' ? 'إرسال التذكرة' : 'Dispatch Ticket'}<span className="material-symbols-outlined">verified</span></>}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

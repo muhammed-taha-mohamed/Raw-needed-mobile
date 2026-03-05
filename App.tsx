@@ -262,7 +262,7 @@ const AppContent: React.FC = () => {
             <Route path="/my-team" element={<MyTeam />} />
             <Route path="/products" element={<Products />} />
             <Route path="/special-offers" element={<SpecialOffers />} />
-            <Route path="/market-requests" element={<MarketRequests />} />
+            {/* market-requests: customers only; hide from suppliers */}
             <Route path="/support" element={<Complaints />} />
             <Route path="/orders" element={<SupplierOrders />} />
             <Route path="/ad-packages" element={<SupplierAdPackages />} />
@@ -284,7 +284,7 @@ const AppContent: React.FC = () => {
             <Route path="/product-search" element={canAccess('/product-search') ? <ProductSearch /> : <Navigate to="/" replace />} />
             <Route path="/vendors" element={canAccess('/vendors') ? <Vendors /> : <Navigate to="/" replace />} />
             <Route path="/special-offers" element={canAccess('/special-offers') ? <ViewSpecialOffers /> : <Navigate to="/" replace />} />
-            <Route path="/market-requests" element={canAccess('/market-requests') ? <MarketRequests /> : <Navigate to="/" replace />} />
+            {/* market-requests: customers only; hide from suppliers staff */}
             <Route path="/support" element={canAccess('/support') ? <Complaints /> : <Navigate to="/" replace />} />
             <Route path="/cart" element={canAccess('/cart') ? <Cart /> : <Navigate to="/" replace />} />
             <Route path="/profile" element={canAccess('/profile') ? <Profile /> : <Navigate to="/" replace />} />
@@ -303,7 +303,7 @@ const AppContent: React.FC = () => {
             <Route path="/" element={canAccess('/') ? <SupplierDashboard /> : <Navigate to="/profile" replace />} />
             <Route path="/products" element={canAccess('/products') ? <Products /> : <Navigate to="/" replace />} />
             <Route path="/special-offers" element={canAccess('/special-offers') ? <SpecialOffers /> : <Navigate to="/" replace />} />
-            <Route path="/market-requests" element={canAccess('/market-requests') ? <MarketRequests /> : <Navigate to="/" replace />} />
+            {/* market-requests: customers only; hide from suppliers staff */}
             <Route path="/support" element={canAccess('/support') ? <Complaints /> : <Navigate to="/" replace />} />
             <Route path="/orders" element={canAccess('/orders') ? <SupplierOrders /> : <Navigate to="/" replace />} />
             <Route path="/ad-packages" element={canAccess('/ad-packages') ? <SupplierAdPackages /> : <Navigate to="/" replace />} />
@@ -321,7 +321,7 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route element={<Layout onLogout={handleLogout} />}>
           <Route path="/" element={role.includes('CUSTOMER') ? <CustomerDashboard /> : <SupplierDashboard />} />
-          <Route path="/market-requests" element={<MarketRequests />} />
+          {/* market-requests accessible for customers only; default unreachable here */}
           <Route path="/support" element={<Complaints />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

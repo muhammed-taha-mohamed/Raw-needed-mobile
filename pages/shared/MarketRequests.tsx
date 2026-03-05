@@ -62,13 +62,14 @@ const MarketRequests: React.FC = () => {
   const [isResponding, setIsResponding] = useState(false);
   const [postToClose, setPostToClose] = useState<MarketPost | null>(null);
   const [isClosing, setIsClosing] = useState(false);
-  
+
   // Market Post Item Interface - Multiple Orders Support
   interface MarketPostItem {
     id: string; // unique id for each post item
     materialName: string;
     quantity: string;
     unit: string;
+    orderType: 'SAMPLE' | 'QUANTITY' | null;
     targetType: 'SUPPLIERS' | 'CUSTOMERS' | 'BOTH';
     imported: boolean | null;
     image: string;
@@ -78,7 +79,7 @@ const MarketRequests: React.FC = () => {
 
   const [marketPosts, setMarketPosts] = useState<MarketPostItem[]>([]);
   const marketFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  
+
   const [hasPrivateOrdersFeature, setHasPrivateOrdersFeature] = useState<boolean | null>(null);
   const pageSize = 10;
 
@@ -90,7 +91,7 @@ const MarketRequests: React.FC = () => {
       setUserRole(role);
       const uid = parsedUser?.userInfo?.id || parsedUser?.id || '';
       setCurrentUserId(uid);
-      
+
       // Check if user has private orders feature
       if (role === 'CUSTOMER_OWNER') {
         hasFeature(PlanFeaturesEnum.CUSTOMER_PRIVATE_ORDERS).then(setHasPrivateOrdersFeature);
@@ -121,14 +122,14 @@ const MarketRequests: React.FC = () => {
     setIsLoading(true);
     try {
       const endpoint = tab === 'all'
-        ? `/api/v1/clients-special-orders?page=${page}&size=${size}`
-        : `/api/v1/clients-special-orders/my-clients-special-orders?page=${page}&size=${size}`;
+        ? `/api/v1/raw-material-advance?page=${page}&size=${size}`
+        : `/api/v1/raw-material-advance/my-raw-material-advance?page=${page}&size=${size}`;
       const response = await api.get<any>(endpoint);
       setPosts(response.content || []);
       setTotalPages(response.totalPages || 0);
       setTotalElements(response.totalElements || 0);
       setCurrentPage(response.number || page);
-    } catch (err) {} finally { setIsLoading(false); }
+    } catch (err) { } finally { setIsLoading(false); }
   };
 
   const createNewMarketPost = (): MarketPostItem => ({
@@ -136,7 +137,8 @@ const MarketRequests: React.FC = () => {
     materialName: '',
     quantity: '',
     unit: '',
-    targetType: 'SUPPLIERS', // default; removed BOTH from creation
+    orderType: null,
+    targetType: 'CUSTOMERS',
     imported: null,
     image: '',
     file: null,
@@ -158,8 +160,8 @@ const MarketRequests: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMarketPosts(prev => prev.map(post => 
-          post.id === postId 
+        setMarketPosts(prev => prev.map(post =>
+          post.id === postId
             ? { ...post, file, preview: reader.result as string }
             : post
         ));
@@ -175,12 +177,12 @@ const MarketRequests: React.FC = () => {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all posts
-    const invalidPosts = marketPosts.filter(post => 
-      !post.materialName.trim() || !post.unit.trim() || Number(post.quantity) <= 0
+    const invalidPosts = marketPosts.filter(post =>
+      !post.materialName.trim() || !post.unit.trim() || Number(post.quantity) <= 0 || !post.orderType
     );
-    
+
     if (invalidPosts.length > 0) {
       showToast(lang === 'ar' ? 'يرجى إدخال بيانات صحيحة لجميع الطلبات' : 'Please fill valid details for all requests', 'warning');
       return;
@@ -200,7 +202,8 @@ const MarketRequests: React.FC = () => {
           materialName: post.materialName.trim(),
           quantity: Number(post.quantity),
           unit: post.unit.trim(),
-          targetType: post.targetType,
+          orderType: post.orderType,
+          targetType: 'CUSTOMERS',
           imported: post.imported,
           image: imageUrl || post.image.trim() || null
         };
@@ -214,20 +217,21 @@ const MarketRequests: React.FC = () => {
             formData.append('file', post.file);
             imageUrl = await api.post<string>('/api/v1/image/upload', formData);
           }
-  
+
           return {
             materialName: post.materialName.trim(),
             quantity: Number(post.quantity),
             unit: post.unit.trim(),
-            targetType: post.targetType,
+            orderType: post.orderType,
+            targetType: 'CUSTOMERS',
             imported: post.imported,
             image: imageUrl || post.image.trim() || null,
           };
         }));
-  
+
         // Send all posts sequentially
         for (const postData of postsData) {
-          await api.post('/api/v1/clients-special-orders', postData);
+          await api.post('/api/v1/raw-material-advance', postData);
         }
       }
 
@@ -407,7 +411,7 @@ const MarketRequests: React.FC = () => {
                                   setIsLoadingOffers(true);
                                   setViewOffersData(null);
                                   try {
-                                    const data = await api.get<any>(`/api/v1/clients-special-orders/${post.id}`);
+                                    const data = await api.get<any>(`/api/v1/raw-material-advance/${post.id}`);
                                     setViewOffersData(data?.offers || []);
                                   } catch (err) {
                                     setViewOffersData([]);
@@ -470,7 +474,7 @@ const MarketRequests: React.FC = () => {
                         ) : (
                           isSupplier && post.createdById !== currentUserId && (post.targetType === 'SUPPLIERS' || post.targetType === 'BOTH') && (
                             <button
-                              onClick={() => { 
+                              onClick={() => {
                                 setOfferPost(post);
                                 setOfferPrice('');
                                 setOfferQty(String(post.quantity || ''));
@@ -616,6 +620,30 @@ const MarketRequests: React.FC = () => {
                       />
                     </div>
 
+                    {/* Order Type (Sample vs Quantity) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع الطلب' : 'Order Type'}</label>
+                      <p className="text-[10px] font-bold text-slate-400 px-1 mb-1">
+                        {lang === 'ar' ? 'اختر إذا كنت تحتاج عينة للتجربة أو كمية للتوريد' : 'Choose whether you need a small sample or full quantity for supply'}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, orderType: 'SAMPLE' } : p))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.orderType === 'SAMPLE' ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'عينة' : 'Sample'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, orderType: 'QUANTITY' } : p))}
+                          className={`flex-1 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${post.orderType === 'QUANTITY' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {lang === 'ar' ? 'كمية' : 'Quantity'}
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Local vs Imported */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-black text-slate-500 px-1">{lang === 'ar' ? 'نوع المصدر' : 'Origin Type'}</label>
@@ -637,26 +665,7 @@ const MarketRequests: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Target Type */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-black text-slate-500 px-1">{t.marketRequests.target}</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: 'SUPPLIERS' } : p))}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${post.targetType === 'SUPPLIERS' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                        >
-                          {t.marketRequests.suppliersOnly}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMarketPosts(prev => prev.map(p => p.id === post.id ? { ...p, targetType: 'CUSTOMERS' } : p))}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${post.targetType === 'CUSTOMERS' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-                        >
-                          {t.marketRequests.customersOnly}
-                        </button>
-                      </div>
-                    </div>
+                    {/* Target Type removed: default to CUSTOMERS */}
 
                     {/* Image Upload */}
                     <div className="space-y-1.5">
@@ -749,7 +758,7 @@ const MarketRequests: React.FC = () => {
                     if (!postToDelete) return;
                     setIsDeleting(true);
                     try {
-                      await api.delete(`/api/v1/clients-special-orders/${postToDelete.id}`);
+                      await api.delete(`/api/v1/raw-material-advance/${postToDelete.id}`);
                       await fetchData(currentPage, activeTab, pageSize);
                       setPostToDelete(null);
                     } catch (err) {
@@ -871,7 +880,7 @@ const MarketRequests: React.FC = () => {
                       estimatedDelivery: offerDelivery ? offerDelivery : null,
                       notes: offerNotes || null
                     };
-                    await api.post(`/api/v1/clients-special-orders/${offerPost.id}/offers`, payload);
+                    await api.post(`/api/v1/raw-material-advance/${offerPost.id}/offers`, payload);
                     showToast(lang === 'ar' ? 'تم إرسال العرض بنجاح' : 'Offer submitted successfully', 'success');
                     setOfferPost(null);
                     await fetchData(currentPage, activeTab, pageSize);
@@ -1109,7 +1118,7 @@ const MarketRequests: React.FC = () => {
                         if (!viewOffersPost || !respondOfferId || respondAccept === null) return;
                         setIsResponding(true);
                         try {
-                          await api.post(`/api/v1/clients-special-orders/offers/respond?privateOrderId=${viewOffersPost.id}&offerId=${respondOfferId}`, {
+                          await api.post(`/api/v1/raw-material-advance/offers/respond?privateOrderId=${viewOffersPost.id}&offerId=${respondOfferId}`, {
                             accepted: respondAccept,
                             responseMessage: respondMsg || null
                           });
