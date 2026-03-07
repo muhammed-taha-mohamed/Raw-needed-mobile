@@ -638,7 +638,7 @@ const Profile: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <button onClick={() => setActiveDocTab('tax')} className={`px-3 py-1.5 rounded-lg text-[11px] font-black border ${activeDocTab === 'tax' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>{lang === 'ar' ? 'البطاقة الضريبية' : 'Tax Card'}</button>
-                    <button onClick={() => setActiveDocTab('crn')} className={`px-3 py-1.5 rounded-lg text-[11px] font-black border ${activeDocTab === 'crn' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>{lang === 'ar' ? 'السجل التجاري' : 'Commercial Registry'}</button>
+                    <button onClick={() => setActiveDocTab('crn')} className={`px-3 py-1.5 rounded-lg text-[11px] font-black border ${activeDocTab === 'crn' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>{lang === 'ar' ? 'البطاقة الضريبية' : 'Tax Card'}</button>
                     <button onClick={() => setActiveDocTab('drug')} className={`px-3 py-1.5 rounded-lg text-[11px] font-black border ${activeDocTab === 'drug' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>{lang === 'ar' ? 'هيئة الدواء' : 'Drug Authority'}</button>
                     <button onClick={() => setActiveDocTab('food')} className={`px-3 py-1.5 rounded-lg text-[11px] font-black border ${activeDocTab === 'food' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>{lang === 'ar' ? 'سلامة الغذاء' : 'Food Safety'}</button>
                   </div>
@@ -656,7 +656,7 @@ const Profile: React.FC = () => {
                   {activeDocTab === 'crn' && (
                     profile?.organizationCRNImage ? (
                       <div onClick={() => setSelectedReceipt(profile.organizationCRNImage!)} className="cursor-zoom-in rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
-                        <img src={profile.organizationCRNImage} alt="CRN Certificate" className="w-full h-auto object-contain" />
+                        <img src={profile.organizationCRNImage} alt="Tax Card" className="w-full h-auto object-contain" />
                       </div>
                     ) : (
                       <div className="p-10 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-slate-500 text-sm font-bold">

@@ -505,7 +505,7 @@ const Orders: React.FC = () => {
       {/* Details Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full md:w-[90%] md:max-w-4xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[85vh] md:h-[85vh]">
+          <div className={`w-full md:w-[85vw] md:max-w-[85vw] bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/10 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col h-[85vh] ${chatOrderLine ? 'md:h-[65vh]' : 'md:h-[85vh]'}`}>
 
             {/* Drag Handle - Mobile Only */}
             <div className="md:hidden pt-3 pb-2 flex justify-center shrink-0 cursor-grab active:cursor-grabbing" onTouchStart={(e) => {
@@ -636,7 +636,7 @@ const Orders: React.FC = () => {
 
                       <div className="flex items-center gap-3">
                         {line.supplierResponse ? (
-                          <div className="flex-1 bg-primary/5 dark:bg-slate-800 rounded-2xl p-3 border border-primary/10 shadow-sm min-w-[180px]">
+                          <div className="flex-1 bg-primary/5 dark:bg-slate-800 rounded-2xl p-3 border border-primary/10 shadow-sm min-w-[220px] md:min-w-[300px]">
                             <div className="flex justify-between items-center mb-1.5"><span className="text-[9px] md:text-xs font-black text-emerald-500   ">{lang === 'ar' ? 'عرض السعر' : 'Quote Received'}</span><span className="text-base md:text-lg font-black tabular-nums text-slate-900 dark:text-white">{line.supplierResponse.price} <span className="text-[10px] md:text-xs font-bold opacity-50">EGP</span></span></div>
                             <div className="grid grid-cols-2 gap-3 pt-1.5 border-t border-primary/5 dark:border-slate-800">
                               <div><p className="text-[8px] md:text-[10px] font-bold text-slate-400">{lang === 'ar' ? 'الشحن' : 'Shipping'}</p><p className="text-[10px] md:text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{line.supplierResponse.shippingCost} EGP</p></div>
@@ -659,12 +659,20 @@ const Orders: React.FC = () => {
                           <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-700 text-center min-w-[180px] flex items-center justify-center"><p className="text-[10px] md:text-xs font-bold text-slate-400">{lang === 'ar' ? 'في انتظار رد الموزع...' : 'Waiting for distributor...'}</p></div>
                         )}
 
-                        <div className="flex flex-col gap-2 w-[5.5rem] shrink-0">
+                        <div className="flex flex-col gap-2 w-[7.5rem] md:w-[8rem] shrink-0">
                           <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => setChatOrderLine(line)} className="size-10 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shrink-0" title={lang === 'ar' ? 'دردشة' : 'Chat'}><span className="material-symbols-outlined text-xl">forum</span></button>
+                            {/* Chat */}
+                            <button
+                              onClick={() => setChatOrderLine(line)}
+                              className="size-10 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                              title={lang === 'ar' ? 'دردشة' : 'Chat'}
+                            >
+                              <span className="material-symbols-outlined text-xl">forum</span>
+                            </button>
+                            {/* WhatsApp */}
                             {line.supplierResponse?.phoneNumber ? (() => {
                               const phone = String(line.supplierResponse.phoneNumber).trim().replace(/\D/g, '');
-                              if (!phone) return <div className="size-10 shrink-0" />;
+                              if (!phone) return <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center" />;
                               const defaultMessage = lang === 'ar'
                                 ? 'مرحباً، أتصل بخصوص طلب عرض السعر / الطلب.'
                                 : 'Hello, I am contacting regarding the quote/order.';
@@ -674,30 +682,67 @@ const Orders: React.FC = () => {
                                   href={waUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="size-10 rounded-xl bg-[#25D366] text-white shadow-lg shadow-[#25D366]/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shrink-0"
-                                  title={lang === 'ar' ? 'واتساب' : 'WhatsApp'}
+                                  className="size-10 rounded-xl bg-[#25D366] text-white shadow-lg shadow-[#25D366]/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                                  title="WhatsApp"
                                 >
                                   <svg className="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                 </a>
                               );
                             })() : (
-                              line.status === 'APPROVED'
-                                ? <div className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-black flex items-center justify-center shrink-0">
-                                  {lang === 'ar' ? 'تم الموافقة' : 'Approved'}
-                                </div>
-                                : <div className="size-10 shrink-0" />
+                              <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-lg">chat</span>
+                              </div>
                             )}
+                            {/* Decision zone */}
+                            {(() => {
+                              const approved = line.status === 'APPROVED';
+                              const rejected = line.status === 'REJECTED';
+                              const deciding = !(approved || rejected);
+                              if (!deciding) {
+                                return (
+                                  <button
+                                    disabled
+                                    className={`col-span-2 h-10 rounded-xl font-black text-xs flex items-center justify-center ${approved
+                                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                      : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800'} `}
+                                    style={{ gridColumn: '1 / span 2' }}
+                                  >
+                                    {approved ? (lang === 'ar' ? 'تم الموافقة' : 'Approved') : (lang === 'ar' ? 'تم الرفض' : 'Rejected')}
+                                  </button>
+                                );
+                              }
+                              return (
+                                <>
+                                  <button
+                                    onClick={() => setLineToApprove(line)}
+                                    className="size-10 rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 flex items-center justify-center hover:bg-emerald-700 active:scale-95 transition-all"
+                                    title={lang === 'ar' ? 'قبول' : 'Accept'}
+                                  >
+                                    <span className="material-symbols-outlined text-xl">check</span>
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      setProcessingLineId(line.id);
+                                      try {
+                                        await api.post(`/api/v1/rfq/line/${line.id}/reject`, {});
+                                        setToast({ message: lang === 'ar' ? 'تم رفض العرض' : 'Offer rejected', type: 'success' });
+                                        if (selectedOrder) fetchOrderDetails(selectedOrder);
+                                        fetchOrders(currentPage, statusFilter, pageSize);
+                                      } catch (err: any) {
+                                        setToast({ message: err.message || (lang === 'ar' ? 'فشل الرفض' : 'Reject failed'), type: 'error' });
+                                      } finally {
+                                        setProcessingLineId(null);
+                                      }
+                                    }}
+                                    className="size-10 rounded-xl bg-red-600 text-white shadow-lg shadow-red-600/20 flex items-center justify-center hover:bg-red-700 active:scale-95 transition-all"
+                                    title={lang === 'ar' ? 'رفض' : 'Reject'}
+                                  >
+                                    <span className="material-symbols-outlined text-xl">close</span>
+                                  </button>
+                                </>
+                              );
+                            })()}
                           </div>
-                          {line.supplierResponse && line.status === 'RESPONDED' && (
-                            <button
-                              disabled={processingLineId === line.id}
-                              onClick={() => setLineToApprove(line)}
-                              className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 hover:bg-emerald-700 active:scale-[0.98] transition-all font-black text-xs"
-                            >
-                              <span className="material-symbols-outlined text-lg">check_circle</span>
-                              {lang === 'ar' ? 'قبول' : 'Accept'}
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -814,7 +859,8 @@ const Orders: React.FC = () => {
         <OrderChat
           isOpen={!!chatOrderLine}
           onClose={() => setChatOrderLine(null)}
-          orderId={selectedOrder?.id || (chatOrderLine as any).orderId || chatOrderLine.id}
+          orderId={chatOrderLine.id}
+          parentOrderId={selectedOrder?.id || (chatOrderLine as any).orderId}
           orderNumber={selectedOrder?.orderNumber || chatOrderLine.id.slice(-6)}
           title={(lang === 'ar' ? (chatOrderLine.productArabicName || chatOrderLine.productName || chatOrderLine.productEnglishName) : (chatOrderLine.productEnglishName || chatOrderLine.productName || chatOrderLine.productArabicName)) as string}
         />

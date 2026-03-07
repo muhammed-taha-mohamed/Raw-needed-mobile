@@ -294,44 +294,32 @@ const Register: React.FC = () => {
         .animate-fade-up { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
       `}</style>
 
-      {/* Floating Auth Header */}
+      {/* Floating Auth Header (match ForgotPassword style) */}
       <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none">
         <div className="pointer-events-auto">
           <button
             onClick={() => navigate('/')}
-            className="size-11 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm transition-all active:scale-90 hover:border-primary"
-            title={lang === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to landing'}
+            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
+            title={lang === 'ar' ? 'العودة للرئيسية' : 'Back to landing'}
           >
-            <span className="material-symbols-outlined text-lg rtl-flip">arrow_back</span>
+            <span className="material-symbols-outlined text-lg">home</span>
           </button>
         </div>
-        <div className="pointer-events-auto relative">
-          {toolsOpen && <div className="fixed inset-0 z-[190]" onClick={() => setToolsOpen(false)} />}
-          <div className="relative z-[200]">
-            <button
-              onClick={() => setToolsOpen(!toolsOpen)}
-              className="h-10 px-3 rounded-full bg-primary/10 text-primary border border-primary/20 text-[11px] font-black shadow-sm active:scale-95 flex items-center gap-1"
-              aria-label="Tools"
-            >
-              <span className="material-symbols-outlined text-sm">{toolsOpen ? 'close' : 'apps'}</span>
-              {lang === 'ar' ? 'أدوات' : 'Tools'}
-            </button>
-            <div className={`absolute ${lang === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 flex flex-col gap-2 transition-all ${toolsOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-              <button
-                onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-                className="h-9 px-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black shadow-lg"
-              >
-                {lang === 'ar' ? 'EN' : 'AR'}
-              </button>
-              <button
-                onClick={toggleDarkMode}
-                className="h-9 px-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black shadow-lg flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-                {lang === 'ar' ? 'الوضع' : 'Theme'}
-              </button>
-            </div>
-          </div>
+        <div className="flex gap-2 pointer-events-auto">
+          <button
+            onClick={toggleDarkMode}
+            className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
+            title={lang === 'ar' ? 'الوضع' : 'Theme'}
+          >
+            <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+          </button>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
+            title={lang === 'ar' ? 'EN/AR' : 'AR/EN'}
+          >
+            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
+          </button>
         </div>
       </div>
 
@@ -421,7 +409,7 @@ const Register: React.FC = () => {
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500 pb-4">
                 <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({ ...formData, organizationName: e.target.value })} placeholder={lang === 'ar' ? 'اسم المؤسسة' : 'Organization Name'} required />
-                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({ ...formData, organizationCRN: e.target.value })} placeholder={lang === 'ar' ? 'رقم السجل التجاري' : 'Commercial Registry Number'} required />
+                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({ ...formData, organizationCRN: e.target.value })} placeholder={lang === 'ar' ? 'رقم البطاقة الضريبية' : 'Tax Card Number'} required />
                 {/* Documents moved to step 4 */}
                 {formData.role === 'SUPPLIER_OWNER' && (
                   <>

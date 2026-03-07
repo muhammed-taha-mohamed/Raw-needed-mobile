@@ -1,7 +1,7 @@
 
 // Base URL 
- export const BASE_URL = 'https://localhost:8644/raw-needed';
-//export const BASE_URL = 'https://api.rawneeded.com/raw-needed';
+//export const BASE_URL = 'https://localhost:8644/raw-needed';
+export const BASE_URL = 'https://api.rawneeded.com/raw-needed';
 
 
 export interface ApiResponse<T> {
@@ -43,14 +43,14 @@ const FAILED_REQUEST_COOLDOWN = 30000; // 30 seconds cooldown before retrying fa
 async function internalRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('token');
   const lang = localStorage.getItem('lang') || 'ar';
-  
+
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${BASE_URL}${cleanEndpoint}`;
 
   // Create a unique request key to prevent duplicate calls
   // Include body hash for POST/PUT/PATCH to differentiate requests with different data
   let requestKey = `${options.method || 'GET'}:${fullUrl}`;
-  
+
   // For requests with body, add a simple hash to differentiate them
   if (options.body && (options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH')) {
     if (options.body instanceof FormData) {
@@ -65,7 +65,7 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
       requestKey += `:${bodyHash}`;
     }
   }
-  
+
   // Check if there's already a pending request for this endpoint - return it instead of creating new one
   if (pendingRequests.has(requestKey)) {
     return pendingRequests.get(requestKey)!;
@@ -76,7 +76,7 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
   if (lastFailedTime) {
     const now = Date.now();
     const timeSinceFailure = now - lastFailedTime;
-    
+
     if (timeSinceFailure < FAILED_REQUEST_COOLDOWN) {
       // Request failed recently, block it and throw error immediately
       const errorMsg = `Network Error: Unable to connect. Please wait before retrying.`;
@@ -150,29 +150,20 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
       // Clear error tracking on success
       recentErrors.delete(requestKey);
       failedRequests.delete(requestKey);
-      
+
       return (data.content?.data !== undefined ? data.content.data : data.content) as T;
     } catch (err: any) {
       // Handle network errors specifically
       if (err instanceof TypeError && (err.message === 'Failed to fetch' || err.message.includes('NetworkError'))) {
         const helpMsg = `Network Error: Unable to connect to ${BASE_URL}.`;
-        
+
         // Mark this request as failed
         const now = Date.now();
         failedRequests.set(requestKey, now);
-        
-        // Check cooldown before showing network error toast
-        const lastErrorTime = recentErrors.get(requestKey) || 0;
-        const shouldShowToast = (now - lastErrorTime) > ERROR_COOLDOWN;
-        
-        if (shouldShowToast && toastService) {
-          recentErrors.set(requestKey, now);
-          toastService(helpMsg, 'error');
-        }
-        
+
         throw new Error(helpMsg);
       }
-      
+
       throw err;
     } finally {
       // Always remove from pending requests after completion (success or failure)
@@ -185,33 +176,33 @@ async function internalRequest<T>(endpoint: string, options: RequestInit = {}): 
 
   // Store the pending request BEFORE returning
   pendingRequests.set(requestKey, requestPromise);
-  
+
   return requestPromise;
 }
 
 export const api = {
   request: internalRequest,
   get<T>(endpoint: string) { return internalRequest<T>(endpoint, { method: 'GET' }); },
-  post<T>(endpoint: string, body: any) { 
+  post<T>(endpoint: string, body: any) {
     const isFormData = body instanceof FormData;
-    return internalRequest<T>(endpoint, { 
-      method: 'POST', 
-      body: isFormData ? body : JSON.stringify(body) 
-    }); 
+    return internalRequest<T>(endpoint, {
+      method: 'POST',
+      body: isFormData ? body : JSON.stringify(body)
+    });
   },
-  put<T>(endpoint: string, body: any) { 
+  put<T>(endpoint: string, body: any) {
     const isFormData = body instanceof FormData;
-    return internalRequest<T>(endpoint, { 
-      method: 'PUT', 
-      body: isFormData ? body : JSON.stringify(body) 
-    }); 
+    return internalRequest<T>(endpoint, {
+      method: 'PUT',
+      body: isFormData ? body : JSON.stringify(body)
+    });
   },
-  patch<T>(endpoint: string, body: any) { 
+  patch<T>(endpoint: string, body: any) {
     const isFormData = body instanceof FormData;
-    return internalRequest<T>(endpoint, { 
-      method: 'PATCH', 
-      body: isFormData ? body : JSON.stringify(body) 
-    }); 
+    return internalRequest<T>(endpoint, {
+      method: 'PATCH',
+      body: isFormData ? body : JSON.stringify(body)
+    });
   },
   delete<T>(endpoint: string) { return internalRequest<T>(endpoint, { method: 'DELETE' }); },
 };

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import { MODAL_INPUT_CLASS, MODAL_OVERLAY_BASE_CLASS, MODAL_PANEL_BASE_CLASS } from '../../components/modalTheme';
@@ -21,6 +22,7 @@ interface AdminUser {
 const AdminManagement: React.FC = () => {
   const { lang } = useLanguage();
   const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const currentRole = useMemo(() => {
     const userStr = localStorage.getItem('user');
@@ -185,11 +187,13 @@ const AdminManagement: React.FC = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      lang === 'ar'
-        ? `هل أنت متأكد من حذف المسؤول ${admin.name}؟`
-        : `Are you sure you want to delete admin ${admin.name}?`
-    );
+    const confirmed = await confirmDialog({
+      variant: 'danger',
+      title: lang === 'ar' ? 'حذف مسؤول؟' : 'Delete admin?',
+      message: lang === 'ar' ? `سيتم حذف المسؤول ${admin.name}. لا يمكن التراجع.` : `Admin ${admin.name} will be deleted. This cannot be undone.`,
+      confirmText: lang === 'ar' ? 'حذف' : 'Delete',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Cancel',
+    });
     if (!confirmed) return;
 
     setDeletingAdminId(admin.id);

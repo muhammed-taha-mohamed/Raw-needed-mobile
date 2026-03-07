@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../App';
-import { api, BASE_URL } from '../../api';
+import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
 import EmptyState from '../../components/EmptyState';
 import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
+import PaginationFooter from '../../components/PaginationFooter';
+import ComplaintChat from '../../components/ComplaintChat';
+import { useToast } from '../../contexts/ToastContext';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -13,19 +16,13 @@ const Complaints: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
 
-  // Detail & Chat State
   const [selectedTicket, setSelectedTicket] = useState<Complaint | null>(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [messageImageFile, setMessageImageFile] = useState<File | null>(null);
-  const [messageImagePreview, setMessageImagePreview] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
+  const [chatTicket, setChatTicket] = useState<Complaint | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isClosingTicket, setIsClosingTicket] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const messageImageInputRef = useRef<HTMLInputElement>(null);
-  const sseRef = useRef<EventSource | null>(null);
+  const [isDeletingTicket, setIsDeletingTicket] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const seenIdsRef = useRef<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // New Ticket Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -34,87 +31,61 @@ const Complaints: React.FC = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
+  const [confirmAction, setConfirmAction] = useState<{ type: 'close' | 'delete'; id: string } | null>(null);
+
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const parsedUser = JSON.parse(userStr);
       setUserRole((parsedUser.role || ''));
+      setCurrentUserId(parsedUser.userInfo?.id || parsedUser.id || '');
     }
   }, []);
 
   useEffect(() => {
     if (userRole) fetchComplaints();
-  }, [userRole]);
+  }, [userRole, currentPage, pageSize, statusFilter]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [selectedTicket?.messages]);
-
-  useEffect(() => {
-    if (!selectedTicket) {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
-      return;
-    }
-    seenIdsRef.current = new Set((selectedTicket.messages || []).map(m => m.id));
-    const token = localStorage.getItem('token') || '';
-    const lang = localStorage.getItem('lang') || 'ar';
-    try {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
-      const url = `${BASE_URL}/api/v1/complaints/${selectedTicket.id}/stream?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-      const es = new EventSource(url, { withCredentials: false } as any);
-      sseRef.current = es;
-      es.addEventListener('message', (evt) => {
-        try {
-          const data = JSON.parse(evt.data) as ComplaintMessage;
-          if (data && data.id && !seenIdsRef.current.has(data.id)) {
-            seenIdsRef.current.add(data.id);
-            setSelectedTicket(prev => prev ? { ...prev, messages: [...(prev.messages || []), data] } : prev);
-          }
-          const userStr = localStorage.getItem('user') || '{}';
-          const user = JSON.parse(userStr);
-          const isAdminUser = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN');
-          const isFromOtherSide = isAdminUser ? !data.admin : data.admin;
-          if (isFromOtherSide) {
-            playDing(900);
-          }
-        } catch { }
-      });
-      es.addEventListener('connected', () => { });
-      es.onerror = () => { };
-    } catch { }
-    return () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilterMenu(false);
       }
     };
-  }, [selectedTicket?.id, userRole]);
-
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
 
   const fetchComplaints = async () => {
     setIsLoading(true);
     try {
-      const endpoint = isAdmin
-        ? `/api/v1/complaints/admin/all?page=0&size=500`
-        : `/api/v1/complaints/my-complaints?page=0&size=500`;
+      const baseEndpoint = isAdmin
+        ? `/api/v1/complaints/admin/all?page=${currentPage}&size=${pageSize}`
+        : `/api/v1/complaints/my-complaints?page=${currentPage}&size=${pageSize}`;
+      const endpoint = statusFilter === 'ALL' ? baseEndpoint : `${baseEndpoint}&status=${statusFilter}`;
       const response = await api.get<any>(endpoint);
       const data = response.data || response;
       const list: Complaint[] = data.content || [];
       setComplaints(list);
+      setTotalPages(data.totalPages ?? 0);
+      setTotalElements(data.totalElements ?? (Array.isArray(list) ? list.length : 0));
       setUnreadCounts(computeUnread(list));
     } catch (err) {
       console.error("Fetch complaints failed", err);
+      setComplaints([]);
+      setTotalPages(0);
+      setTotalElements(0);
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +118,8 @@ const Complaints: React.FC = () => {
 
   // ترتيب: آخر شكوى فيها رسالة (أحدث نشاط) تكون الأولى
   const sortedComplaints = useMemo(() => {
-    return [...complaints].sort((a, b) => {
+    const filtered = complaints.filter(c => statusFilter === 'ALL' ? true : c.status === statusFilter);
+    return [...filtered].sort((a, b) => {
       const lastActivity = (c: Complaint) => {
         const msgs = c.messages;
         if (msgs?.length) return new Date(msgs[msgs.length - 1].createdAt).getTime();
@@ -155,7 +127,7 @@ const Complaints: React.FC = () => {
       };
       return lastActivity(b) - lastActivity(a);
     });
-  }, [complaints]);
+  }, [complaints, statusFilter]);
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,38 +151,6 @@ const Complaints: React.FC = () => {
     } catch (err) { console.error(err); } finally { setIsProcessing(false); }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTicket || (!newMessage.trim() && !messageImageFile)) return;
-    setIsSending(true);
-    try {
-      let imageUrl: string | null = null;
-      if (messageImageFile) {
-        const formData = new FormData();
-        formData.append('file', messageImageFile);
-        imageUrl = await api.post<string>('/api/v1/image/upload', formData);
-      }
-      await api.post<ComplaintMessage>(`/api/v1/complaints/${selectedTicket.id}/messages`, {
-        message: newMessage.trim() || (imageUrl ? ' ' : ''),
-        image: imageUrl
-      });
-      setNewMessage('');
-      setMessageImageFile(null);
-      setMessageImagePreview(null);
-    } catch (err) { console.error(err); } finally { setIsSending(false); }
-  };
-
-  const handleMessageImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMessageImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setMessageImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-    e.target.value = '';
-  };
-
   const handleCloseComplaint = async () => {
     if (!selectedTicket || selectedTicket.status === 'CLOSED' || !isAdmin) return;
     setIsClosingTicket(true);
@@ -222,6 +162,57 @@ const Complaints: React.FC = () => {
       console.error(err);
     } finally {
       setIsClosingTicket(false);
+    }
+  };
+  const closeComplaintById = async (id: string) => {
+    setIsClosingTicket(true);
+    try {
+      const complaint = await api.put<Complaint>(`/api/v1/complaints/${id}/close`, {});
+      setComplaints(prev => prev.map(c => c.id === complaint.id ? complaint : c));
+      showToast(lang === 'ar' ? 'تم إغلاق الشكوى بنجاح' : 'Ticket closed successfully', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(lang === 'ar' ? 'فشل إغلاق الشكوى' : 'Failed to close ticket', 'error');
+    } finally {
+      setIsClosingTicket(false);
+    }
+  };
+
+  const handleDeleteComplaint = async () => {
+    if (!selectedTicket || selectedTicket.status !== 'CLOSED') return;
+    const ok = await confirmDialog({
+      variant: 'danger',
+      title: lang === 'ar' ? 'حذف الشكوى؟' : 'Delete ticket?',
+      message: lang === 'ar' ? 'سيتم حذف الشكوى نهائيًا. لا يمكن التراجع.' : 'Ticket will be permanently deleted. This cannot be undone.',
+      confirmText: lang === 'ar' ? 'حذف' : 'Delete',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Cancel'
+    });
+    if (!ok) return;
+    setIsDeletingTicket(true);
+    try {
+      await api.delete(`/api/v1/complaints/${selectedTicket.id}`);
+      setComplaints(prev => prev.filter(c => c.id !== selectedTicket.id));
+      if (chatTicket?.id === selectedTicket.id) setChatTicket(null);
+      setSelectedTicket(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeletingTicket(false);
+    }
+  };
+  const deleteComplaintById = async (id: string) => {
+    setIsDeletingTicket(true);
+    try {
+      await api.delete(`/api/v1/complaints/${id}`);
+      setComplaints(prev => prev.filter(c => c.id !== id));
+      if (chatTicket?.id === id) setChatTicket(null);
+      if (selectedTicket?.id === id) setSelectedTicket(null);
+      showToast(lang === 'ar' ? 'تم حذف الشكوى' : 'Ticket deleted', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(lang === 'ar' ? 'فشل حذف الشكوى' : 'Failed to delete ticket', 'error');
+    } finally {
+      setIsDeletingTicket(false);
     }
   };
 
@@ -247,245 +238,311 @@ const Complaints: React.FC = () => {
     return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' });
   };
 
-  // اليوم الساعة كذا / الأمس الساعة كذا / أو التاريخ الكامل
-  const formatMessageDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const timeStr = date.toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    if (msgDay.getTime() === today.getTime()) {
-      return lang === 'ar' ? `اليوم الساعة ${timeStr}` : `Today at ${timeStr}`;
-    }
-    if (msgDay.getTime() === yesterday.getTime()) {
-      return lang === 'ar' ? `الأمس الساعة ${timeStr}` : `Yesterday at ${timeStr}`;
-    }
-    return date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-  };
-
   const AUTO_REPLY_KEY = 'COMPLAINT_AUTO_REPLY';
 
-  // Messenger/WhatsApp Desktop: on mobile show either list or chat (back clears selection)
-  const showList = !selectedTicket;
-  const showChat = !!selectedTicket;
-
-  const playDing = (ms: number) => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const o1 = ctx.createOscillator();
-      const o2 = ctx.createOscillator();
-      const g = ctx.createGain();
-      o1.type = 'triangle';
-      o2.type = 'sine';
-      o1.frequency.value = 880;
-      o2.frequency.value = 1320;
-      o1.connect(g);
-      o2.connect(g);
-      g.connect(ctx.destination);
-      const now = ctx.currentTime;
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(0.15, now + 0.05);
-      g.gain.linearRampToValueAtTime(0.08, now + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + ms / 1000);
-      o1.start(now);
-      o2.start(now + 0.02);
-      o1.stop(now + ms / 1000);
-      o2.stop(now + ms / 1000);
-    } catch { }
-  };
-
   return (
-    <div className="w-full mt-4 md:mt-5 h-[calc(100vh-7.5rem)] md:h-[calc(100vh-6.5rem)] min-h-[420px] flex animate-in fade-in duration-500 font-display overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
-      {/* Left: Conversation list (sidebar) - hidden on mobile when chat is open */}
-      <aside className={`flex flex-col w-full md:w-[340px] lg:w-[380px] shrink-0 border-slate-200 dark:border-slate-800 md:border-r bg-slate-50/50 dark:bg-slate-900/50 ${showChat ? 'hidden md:flex' : 'flex'}`}>
-        {/* Sidebar header */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">
-              {isAdmin ? (lang === 'ar' ? 'الشكاوى' : 'Complaints') : t.complaints.title}
-            </h2>
-            {!isAdmin && (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 hover:bg-primary/90 active:scale-95 transition-all shrink-0"
-                title={t.complaints.addNew}
-              >
-                <span className="material-symbols-outlined text-xl">edit_square</span>
-              </button>
-            )}
-          </div>
-        </div>
-        {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-          {isLoading && complaints.length === 0 ? (
-            <div className="py-16 flex justify-center">
-              <div className="size-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-            </div>
-          ) : complaints.length === 0 ? (
-            <div className="p-6">
-              <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'افتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
-            </div>
-          ) : (
-            <div className="p-2 space-y-0.5">
-              {sortedComplaints.map((ticket) => {
-                const lastMsg = ticket.messages?.length ? ticket.messages[ticket.messages.length - 1] : null;
-                const preview = lastMsg ? lastMsg.message : ticket.description;
-                const isSelected = selectedTicket?.id === ticket.id;
-                return (
+    <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
+      <div className="hidden md:block mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border-2 border-primary/20 dark:border-primary/10 shadow-lg overflow-hidden">
+          <div className="h-[90vh] flex flex-col">
+            <div className="flex-shrink-0 bg-primary/10 dark:bg-primary/5 border-b-2 border-primary/20 px-6 py-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="material-symbols-outlined text-lg text-primary">filter_list</span>
+                <span className="text-xs font-black text-slate-400">{lang === 'ar' ? 'الحالة:' : 'Status:'}</span>
+                {[
+                  { id: 'ALL', label: lang === 'ar' ? 'الكل' : 'All' },
+                  { id: 'OPEN', label: t.complaints.statusOpen },
+                  { id: 'CLOSED', label: t.complaints.statusClosed }
+                ].map(opt => (
                   <button
-                    key={ticket.id}
-                    type="button"
-                    onClick={() => { setSelectedTicket(ticket); markRead(ticket.id); }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isSelected ? 'bg-primary/15 dark:bg-primary/20 border border-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent'}`}
+                    key={opt.id}
+                    onClick={() => { setStatusFilter(opt.id as any); setCurrentPage(0); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${statusFilter === opt.id
+                      ? 'bg-primary text-white shadow-md shadow-primary/20'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary border border-primary/20'
+                      }`}
                   >
-                    <div className={`size-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                      <span className="material-symbols-outlined text-2xl">support_agent</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <span className={`text-sm font-black truncate ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
-                          {isAdmin ? (ticket.userName || ticket.subject) : ticket.subject}
-                        </span>
+                    {opt.label}
+                  </button>
+                ))}
+                {!isAdmin && (
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="ms-auto px-4 py-2 rounded-xl bg-primary text-white font-black shadow-md shadow-primary/20 hover:bg-slate-900 dark:hover:bg-slate-800 transition-all active:scale-95"
+                  >
+                    {t.complaints.addNew}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-900/30">
+              {isLoading && complaints.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40">
+                  <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-400 font-black text-xs opacity-50">Loading...</p>
+                </div>
+              ) : sortedComplaints.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'افتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  {sortedComplaints.map(ticket => {
+                    const lastMsg = ticket.messages?.length ? ticket.messages[ticket.messages.length - 1] : null;
+                    const preview = lastMsg ? lastMsg.message : ticket.description;
+                    const statusCls = ticket.status === 'OPEN'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : 'bg-slate-100 text-slate-600 border-slate-200';
+                    return (
+                      <div key={ticket.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-4 group">
+                        <div className={`size-12 rounded-2xl flex items-center justify-center border shrink-0 transition-all ${statusCls} group-hover:scale-105 shadow-inner`}>
+                          <span className="material-symbols-outlined text-xl">support_agent</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                            <h3 className="text-base font-black text-slate-800 dark:text-white truncate">{isAdmin ? (ticket.userName || ticket.subject) : ticket.subject}</h3>
+                            <span className={`px-2 py-0.5 rounded-lg text-xs font-black border ${statusCls}`}>{ticket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}</span>
+                            {unreadCounts[ticket.id] > 0 && (
+                              <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black">{unreadCounts[ticket.id]}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {formatDate(lastMsg?.createdAt || ticket.createdAt)}</span>
+                            {isAdmin && ticket.userName && (<><span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span><span className="text-primary">{ticket.subject}</span></>)}
+                          </div>
+                          <p className="text-xs mt-1 text-slate-500 dark:text-slate-400 truncate">{(lastMsg?.message === AUTO_REPLY_KEY ? t.complaints.autoReply : preview) || '—'}</p>
+                        </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          {unreadCounts[ticket.id] > 0 && (
-                            <span className="min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
-                              {unreadCounts[ticket.id]}
-                            </span>
+                          {(ticket.status === 'OPEN' && (isAdmin || ticket.userId === currentUserId)) && (
+                            <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'close', id: ticket.id }); }}
+                              className="size-10 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all active:scale-95"
+                              title={t.complaints.closeTicket}
+                            >
+                              <span className="material-symbols-outlined text-lg">lock</span>
+                            </button>
                           )}
-                          <span className="text-[10px] font-bold text-slate-400 tabular-nums">{formatDate(lastMsg?.createdAt || ticket.createdAt)}</span>
+                          {ticket.status === 'CLOSED' && (
+                            <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'delete', id: ticket.id }); }}
+                              className="size-10 rounded-xl border border-slate-100 dark:border-slate-800 text-red-500 hover:text-white hover:bg-red-600 transition-all active:scale-95"
+                              title={lang === 'ar' ? 'حذف الشكوى' : 'Delete complaint'}
+                            >
+                              <span className="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => { setSelectedTicket(ticket); markRead(ticket.id); }}
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-slate-900 dark:hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-primary/10"
+                          >
+                            <span className="material-symbols-outlined text-base">visibility</span>
+                            {lang === 'ar' ? 'التفاصيل' : 'Details'}
+                          </button>
+                          <button
+                            onClick={() => { setChatTicket(ticket); markRead(ticket.id); }}
+                            className="size-10 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                            title={lang === 'ar' ? 'دردشة' : 'Chat'}
+                          >
+                            <span className="material-symbols-outlined text-xl">forum</span>
+                          </button>
                         </div>
                       </div>
-                      {isAdmin && ticket.userName && (
-                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{ticket.subject}</p>
-                      )}
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                        {(lastMsg?.message === AUTO_REPLY_KEY ? t.complaints.autoReply : preview) || '—'}
-                      </p>
-                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-black ${ticket.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-400'}`}>
-                        {ticket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}
-                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <PaginationFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={(p) => { if (p >= 0 && p < totalPages) setCurrentPage(p); }}
+              currentCount={complaints.length}
+              asTableFooter
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="md:hidden">
+        <div className="min-h-[400px] mb-6">
+          {isLoading && complaints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-40">
+              <div className="size-10 border-[3px] border-primary/10 border-t-primary rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-400 font-black text-[10px] md:text-xs opacity-50">Loading...</p>
+            </div>
+          ) : sortedComplaints.length === 0 ? (
+            <div className="flex flex-col items-center gap-4">
+              <EmptyState title={t.complaints.empty} subtitle={!isAdmin ? (lang === 'ar' ? 'افتح تذكرة جديدة للحصول على المساعدة.' : 'Open a new ticket to get assistance.') : undefined} />
+              {!isAdmin && (
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="px-6 py-3 rounded-2xl bg-primary text-white font-black shadow-lg active:scale-95"
+                >
+                  {lang === 'ar' ? 'تذكرة جديدة' : 'New Ticket'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {sortedComplaints.map((ticket, idx) => {
+                const statusCls = ticket.status === 'OPEN'
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                  : 'bg-slate-100 text-slate-600 border-slate-200';
+                const lastMsg = ticket.messages?.length ? ticket.messages[ticket.messages.length - 1] : null;
+                const preview = lastMsg ? lastMsg.message : ticket.description;
+                return (
+                  <div
+                    key={ticket.id}
+                    className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row items-center gap-3 group animate-in slide-in-from-bottom-2"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    <div className="flex items-center gap-3.5 flex-1 w-full">
+                      <div className={`size-11 rounded-2xl flex items-center justify-center border shrink-0 transition-all duration-500 ${statusCls} group-hover:scale-105 shadow-inner`}>
+                        <span className="material-symbols-outlined text-lg">support_agent</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <h3 className="text-sm md:text-base font-black text-slate-800 dark:text-white truncate">
+                            {isAdmin ? (ticket.userName || ticket.subject) : ticket.subject}
+                          </h3>
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] md:text-xs font-black border ${statusCls}`}>
+                            {ticket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}
+                          </span>
+                          {unreadCounts[ticket.id] > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black">{unreadCounts[ticket.id]}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-slate-400">
+                          <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">calendar_today</span> <span className="font-black text-slate-600 dark:text-slate-300">{formatDate(lastMsg?.createdAt || ticket.createdAt)}</span></span>
+                          {isAdmin && ticket.userName && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+                              <span className="text-primary truncate">{ticket.subject}</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 truncate">
+                          {(preview) || '—'}
+                        </p>
+                      </div>
                     </div>
-                  </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                      {(ticket.status === 'OPEN' && (isAdmin || ticket.userId === currentUserId)) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'close', id: ticket.id }); }}
+                          className="size-9 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all active:scale-90"
+                          title={t.complaints.closeTicket}
+                        >
+                          <span className="material-symbols-outlined text-base">lock</span>
+                        </button>
+                      )}
+                      {ticket.status === 'CLOSED' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'delete', id: ticket.id }); }}
+                          className="size-9 rounded-xl border border-slate-100 dark:border-slate-800 text-red-500 hover:text-white hover:bg-red-600 transition-all active:scale-90"
+                          title={lang === 'ar' ? 'حذف الشكوى' : 'Delete complaint'}
+                        >
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setSelectedTicket(ticket); markRead(ticket.id); }}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-black text-[10px] md:text-xs hover:bg-slate-900 dark:hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-md shadow-primary/10"
+                      >
+                        <span className="material-symbols-outlined text-base">visibility</span>
+                        {lang === 'ar' ? 'التفاصيل' : 'Details'}
+                      </button>
+                      <button
+                        onClick={() => { setChatTicket(ticket); markRead(ticket.id); }}
+                        className="size-9 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                        title={lang === 'ar' ? 'دردشة' : 'Chat'}
+                      >
+                        <span className="material-symbols-outlined text-lg">forum</span>
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
-      </aside>
 
-      {/* Right: Chat area (Messenger/WhatsApp style) */}
-      <main className={`flex-1 flex flex-col min-w-0 bg-slate-50/30 dark:bg-slate-800/20 ${showChat ? 'flex' : 'hidden md:flex'}`}>
-        {selectedTicket ? (
-          <>
-            {/* Chat header */}
-            <header className="h-16 px-4 flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
-              <button type="button" onClick={() => setSelectedTicket(null)} className="md:hidden size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center shrink-0" aria-label="Back">
-                <span className="material-symbols-outlined text-2xl text-slate-600 dark:text-slate-300 rtl-flip">arrow_back</span>
+        {/* Floating Filter FAB - Mobile only */}
+        <div className="fixed bottom-32 left-0 right-0 z-[130] pointer-events-none px-6">
+          <div className="w-full flex flex-col items-end pointer-events-auto">
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                className="size-14 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 border-white/20"
+              >
+                <span className="material-symbols-outlined text-2xl">tune</span>
+                {statusFilter !== 'ALL' && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white size-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-md">
+                    1
+                  </span>
+                )}
               </button>
-              <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-xl">forum</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
-                  {isAdmin ? (selectedTicket.userName || selectedTicket.subject) : selectedTicket.subject}
-                </h3>
-                <p className="text-[10px] font-bold text-slate-400">
-                  {isAdmin && selectedTicket.userName ? `${selectedTicket.subject} · ` : ''}#{selectedTicket.id.slice(-8).toUpperCase()}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${selectedTicket.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-400'}`}>
-                  {selectedTicket.status === 'OPEN' ? t.complaints.statusOpen : t.complaints.statusClosed}
-                </span>
-                {isAdmin && selectedTicket.status === 'OPEN' && (
-                  <button
-                    type="button"
-                    onClick={handleCloseComplaint}
-                    disabled={isClosingTicket}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-all disabled:opacity-50"
-                    title={t.complaints.closeTicket}
-                  >
-                    {isClosingTicket ? (lang === 'ar' ? 'جاري...' : '...') : (lang === 'ar' ? 'إغلاق الشكوى' : 'Close ticket')}
-                  </button>
-                )}
-              </div>
-            </header>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
-              {selectedTicket.messages?.map((msg) => {
-                const isMe = isAdmin ? msg.admin : !msg.admin;
-                const displayText = msg.message === AUTO_REPLY_KEY ? t.complaints.autoReply : msg.message;
-                const showSenderName = msg.admin && msg.userName;
-                return (
-                  <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${showSenderName ? 'gap-0.5' : ''}`}>
-                    {showSenderName && (
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-1">{msg.userName}</span>
+              {!isAdmin && (
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="size-14 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 border-2 border-white/20 absolute -top-20 end-0"
+                  title={lang === 'ar' ? 'تذكرة جديدة' : 'New Ticket'}
+                >
+                  <span className="material-symbols-outlined text-2xl">edit_square</span>
+                </button>
+              )}
+
+              {showFilterMenu && (
+                <div className={`absolute bottom-full mb-4 z-[250] w-60 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+                  <div className="flex justify-between items-center mb-4 px-2">
+                    <h3 className="text-[10px] font-black  text-slate-400">{lang === 'ar' ? 'تصفية الحالة' : 'Status Filter'}</h3>
+                    {statusFilter !== 'ALL' && (
+                      <button onClick={() => { setStatusFilter('ALL'); setShowFilterMenu(false); }} className="text-[10px] font-black text-red-500   ">{lang === 'ar' ? 'مسح' : 'Clear'}</button>
                     )}
-                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`w-fit max-w-[75%] md:max-w-[65%] px-4 py-2.5 rounded-2xl ${isMe ? 'rounded-br-md bg-primary text-white' : 'rounded-bl-md bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700'} shadow-sm`}>
-                        {msg.image && (
-                          <button type="button" onClick={() => setLightboxImage(msg.image!)} className="rounded-xl overflow-hidden border border-white/20 dark:border-slate-600 mb-2 max-w-[220px] block text-left focus:outline-none focus:ring-2 focus:ring-primary/50">
-                            <img src={msg.image} className="w-full h-auto object-cover cursor-pointer hover:opacity-95 transition-opacity" alt="" />
-                          </button>
-                        )}
-                        {displayText.trim() ? <p className="text-sm font-bold leading-relaxed break-words">{displayText}</p> : null}
-                        <p className={`text-[10px] mt-1 tabular-nums ${isMe ? 'text-white/70' : 'text-slate-400'}`}>{formatMessageDate(msg.createdAt)}</p>
-                      </div>
-                    </div>
                   </div>
-                );
-              })}
-              <div ref={chatEndRef} />
+                  <div className="space-y-1">
+                    {[
+                      { id: 'ALL', label: lang === 'ar' ? 'الكل' : 'All' },
+                      { id: 'OPEN', label: t.complaints.statusOpen },
+                      { id: 'CLOSED', label: t.complaints.statusClosed }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => { setStatusFilter(opt.id as any); setCurrentPage(0); setShowFilterMenu(false); }}
+                        className={`w-full text-start px-4 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-between ${statusFilter === opt.id
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                      >
+                        {opt.label}
+                        {statusFilter === opt.id && <span className="material-symbols-outlined text-base">check</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={`absolute -bottom-2 w-4 h-4 bg-white dark:bg-slate-900 border-r border-b border-slate-200 dark:border-slate-800 rotate-45 ${lang === 'ar' ? 'left-8' : 'right-8'}`}></div>
+                </div>
+              )}
             </div>
-            {/* Input bar (fixed at bottom of chat) */}
-            {selectedTicket.status === 'OPEN' && (
-              <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
-                {messageImagePreview && (
-                  <div className="mb-2 relative inline-block">
-                    <img src={messageImagePreview} alt="" className="h-20 w-20 object-cover rounded-xl border-2 border-primary/30" />
-                    <button type="button" onClick={() => { setMessageImageFile(null); setMessageImagePreview(null); }} className="absolute -top-1.5 -right-1.5 size-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg" aria-label="Remove">
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    </button>
-                  </div>
-                )}
-                <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
-                  <input type="file" ref={messageImageInputRef} className="hidden" accept="image/*" onChange={handleMessageImageChange} />
-                  <button type="button" onClick={() => messageImageInputRef.current?.click()} className="size-12 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary flex items-center justify-center transition-all shrink-0" title={lang === 'ar' ? 'إرفاق صورة' : 'Attach image'}>
-                    <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
-                  </button>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={t.complaints.messagePlaceholder}
-                    className="flex-1 min-w-0 h-12 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:border-primary transition-all text-sm placeholder:text-slate-400"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSending || (!newMessage.trim() && !messageImageFile)}
-                    className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 active:scale-95 disabled:opacity-50 transition-all shrink-0"
-                  >
-                    {isSending ? (
-                      <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <span className="material-symbols-outlined text-xl rtl-flip">send</span>
-                    )}
-                  </button>
-                </form>
-              </div>
-            )}
-          </>
-        ) : (
-          /* Empty state when no ticket selected (desktop) */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-            <span className="material-symbols-outlined text-7xl mb-4 opacity-50">chat_bubble_outline</span>
-            <p className="text-sm font-black text-slate-500 dark:text-slate-400">{lang === 'ar' ? 'اختر تذكرة من القائمة' : 'Select a ticket from the list'}</p>
+          </div>
+        </div>
+
+        {/* Mobile Pagination */}
+        {totalPages > 0 && (
+          <div className="px-4 mb-24">
+            <PaginationFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={(p) => { if (p >= 0 && p < totalPages) setCurrentPage(p); }}
+              currentCount={complaints.length}
+            />
           </div>
         )}
-      </main>
+      </div>
 
       {/* New Ticket Modal */}
       {isCreateModalOpen && (
@@ -583,7 +640,105 @@ const Complaints: React.FC = () => {
         </div>
       )}
 
-      {/* Image lightbox - click to open, click overlay or close to dismiss */}
+      {/* Details Modal */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-[400] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full md:w-[80vw] md:max-w-xl bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-xl shadow-2xl border-t border-x md:border border-primary/20 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-11 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                  <span className="material-symbols-outlined text-xl">support_agent</span>
+                </div>
+                <div>
+                  <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-none">{isAdmin ? (selectedTicket.userName || selectedTicket.subject) : selectedTicket.subject}</h3>
+                  <p className="text-[10px] md:text-xs font-black text-slate-400 mt-1">#{selectedTicket.id.slice(-8).toUpperCase()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isAdmin && selectedTicket.status === 'OPEN' && (
+                  <button
+                    onClick={handleCloseComplaint}
+                    disabled={isClosingTicket}
+                    className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black hover:bg-red-50 hover:text-red-600 transition-all"
+                  >
+                    {isClosingTicket ? (lang === 'ar' ? 'جاري...' : '...') : (lang === 'ar' ? 'إغلاق الشكوى' : 'Close ticket')}
+                  </button>
+                )}
+                {selectedTicket.status === 'CLOSED' && (
+                  <button
+                    onClick={handleDeleteComplaint}
+                    disabled={isDeletingTicket}
+                    className="px-3 py-2 rounded-xl bg-red-600 text-white text-[10px] font-black shadow-lg hover:bg-red-700 active:scale-95 transition-all"
+                    title={lang === 'ar' ? 'حذف الشكوى' : 'Delete complaint'}
+                  >
+                    {isDeletingTicket ? <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (lang === 'ar' ? 'حذف' : 'Delete')}
+                  </button>
+                )}
+                <button onClick={() => setSelectedTicket(null)} className="size-9 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800 active:scale-90">
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <div className="text-[10px] font-black text-slate-400">{lang === 'ar' ? 'الموضوع' : 'Subject'}</div>
+                <div className="text-sm font-black text-slate-900 dark:text-white">{selectedTicket.subject}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-[10px] font-black text-slate-400">{lang === 'ar' ? 'الوصف' : 'Description'}</div>
+                <div className="text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{selectedTicket.description || '-'}</div>
+              </div>
+              {selectedTicket.image && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-slate-400">{lang === 'ar' ? 'مرفق' : 'Attachment'}</div>
+                  <button onClick={() => setLightboxImage(selectedTicket.image!)} className="rounded-2xl overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-md">
+                    <img src={selectedTicket.image} className="w-full max-h-72 object-cover" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-[550] flex items-end md:items-center justify-center bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full md:w-[90%] md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-200">
+            <div className="p-6 md:p-7 text-center space-y-4">
+              <div className={`mx-auto size-16 rounded-full ${confirmAction.type === 'delete' ? 'bg-red-500' : 'bg-amber-500'} text-white flex items-center justify-center shadow-lg`}>
+                <span className="material-symbols-outlined text-3xl">{confirmAction.type === 'delete' ? 'delete' : 'lock'}</span>
+              </div>
+              <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white">
+                {confirmAction.type === 'delete' ? (lang === 'ar' ? 'حذف الشكوى؟' : 'Delete ticket?') : (lang === 'ar' ? 'إغلاق الشكوى؟' : 'Close ticket?')}
+              </h3>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                {confirmAction.type === 'delete'
+                  ? (lang === 'ar' ? 'لا يمكن التراجع عن الحذف بعد تأكيده.' : 'This action cannot be undone.')
+                  : (lang === 'ar' ? 'يمكنك فتح تذكرة جديدة لاحقًا إذا احتجت.' : 'You can open a new ticket later if needed.')}
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setConfirmAction(null)} className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black">
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const id = confirmAction.id;
+                    setConfirmAction(null);
+                    if (confirmAction.type === 'delete') await deleteComplaintById(id);
+                    else await closeComplaintById(id);
+                  }}
+                  className={`flex-1 py-3 rounded-2xl text-white font-black ${confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}
+                >
+                  {confirmAction.type === 'delete' ? (lang === 'ar' ? 'حذف' : 'Delete') : (lang === 'ar' ? 'إغلاق' : 'Close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image lightbox */}
       {lightboxImage && (
         <div
           className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
@@ -597,6 +752,16 @@ const Complaints: React.FC = () => {
           </button>
           <img src={lightboxImage} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
+      )}
+
+      {chatTicket && (
+        <ComplaintChat
+          isOpen={!!chatTicket}
+          onClose={() => setChatTicket(null)}
+          complaintId={chatTicket.id}
+          subject={isAdmin ? (chatTicket.userName || chatTicket.subject) : chatTicket.subject}
+          ticketRef={chatTicket.id}
+        />
       )}
 
       <style>{`

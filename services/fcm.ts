@@ -34,7 +34,7 @@ async function ensureServiceWorker() {
   return reg;
 }
 
-function ensureApp() {
+export function ensureApp() {
   if (!getApps().length) {
     initializeApp(firebaseConfig);
     try { console.debug('[FCM] firebase app initialized'); } catch { }

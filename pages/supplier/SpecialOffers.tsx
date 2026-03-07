@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { PlanFeaturesEnum } from '../../types';
 import { hasFeature } from '../../utils/subscription';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import PaginationFooter from '../../components/PaginationFooter';
 import EmptyState from '../../components/EmptyState';
 import FeatureUpgradePrompt from '../../components/FeatureUpgradePrompt';
@@ -33,6 +34,7 @@ const SpecialOffers: React.FC = () => {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [offers, setOffers] = useState<SpecialOffer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,9 +145,14 @@ const SpecialOffers: React.FC = () => {
   };
 
   const handleDelete = async (offerId: string) => {
-    if (!confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا العرض؟' : 'Are you sure you want to delete this offer?')) {
-      return;
-    }
+    const ok = await confirmDialog({
+      variant: 'danger',
+      title: lang === 'ar' ? 'حذف العرض؟' : 'Delete offer?',
+      message: lang === 'ar' ? 'لا يمكن التراجع عن هذا الإجراء.' : 'This action cannot be undone.',
+      confirmText: lang === 'ar' ? 'حذف' : 'Delete',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Cancel'
+    });
+    if (!ok) return;
     try {
       await api.delete(`/api/v1/special-offers/${offerId}`);
       showToast(lang === 'ar' ? 'تم حذف العرض بنجاح' : 'Offer deleted successfully', 'success');

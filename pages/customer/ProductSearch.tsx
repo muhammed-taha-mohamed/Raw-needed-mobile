@@ -11,6 +11,7 @@ import PaginationFooter from '../../components/PaginationFooter';
 import { clearSubscriptionCache } from '../../utils/subscription';
 import { APP_LOGO } from '../../constants';
 import FloatingLabelInput from '../../components/FloatingLabelInput';
+import { Alerts } from '../../services/alerts';
 
 interface Product {
   id: string;
@@ -95,7 +96,6 @@ const ProductSearch: React.FC = () => {
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [localQtys, setLocalQtys] = useState<Record<string, number>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>({});
   const [bulkQty, setBulkQty] = useState<number>(1);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
@@ -237,7 +237,7 @@ const ProductSearch: React.FC = () => {
         } else {
           const msg = err?.message || '';
           if (msg.includes(NO_SEARCHES_MSG) || msg.toLowerCase().includes('no searches') || msg.toLowerCase().includes('no points')) {
-            setToast({ message: t.productSearch.noSearchesOrPoints, type: 'error' });
+            Alerts.error(t.productSearch.noSearchesOrPoints, { title: lang === 'ar' ? 'تنبيه' : 'Warning', duration: 4000 });
           }
         }
         setResults([]);
@@ -409,8 +409,7 @@ const ProductSearch: React.FC = () => {
     try {
       await api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${productId}&quantity=${qty}`, {});
       await fetchCart();
-      setToast({ message: lang === 'ar' ? ' تم تحديث عربة التسوق' : 'Cart updated', type: 'success' });
-      setTimeout(() => setToast(null), 3000);
+      Alerts.success(lang === 'ar' ? 'تم تحديث عربة التسوق' : 'Cart updated', { title: lang === 'ar' ? 'نجاح' : 'Success', duration: 2500 });
     } catch (e) { } finally {
       setProcessingId(null);
     }
@@ -448,11 +447,11 @@ const ProductSearch: React.FC = () => {
       const userData = userStr ? JSON.parse(userStr) : null;
       const userId = userData?.userInfo?.id || userData?.id;
       if (!userId) {
-        setToast({ message: lang === 'ar' ? 'يرجى تسجيل الدخول' : 'Please login', type: 'error' });
+        Alerts.error(lang === 'ar' ? 'يرجى تسجيل الدخول' : 'Please login', { title: lang === 'ar' ? 'خطأ' : 'Error' });
         return;
       }
       if (bulkQty < 1 || selectedIds.length === 0) {
-        setToast({ message: lang === 'ar' ? 'اختر عناصر وحدد كمية صحيحة' : 'Select items and a valid quantity', type: 'error' });
+        Alerts.error(lang === 'ar' ? 'اختر عناصر وحدد كمية صحيحة' : 'Select items and a valid quantity', { title: lang === 'ar' ? 'خطأ' : 'Error' });
         return;
       }
       const allowed = selectedProducts.filter(p => p.inStock && p.stockQuantity >= bulkQty);
@@ -476,12 +475,11 @@ const ProductSearch: React.FC = () => {
       await fetchCart();
       const added = allowed.length;
       const skipped = selectedProducts.length - added;
-      setToast({ message: lang === 'ar' ? `تمت إضافة ${added} عنصر${lang === 'ar' ? '' : '(s)'} للعربة` : `Added ${added} item(s) to cart`, type: 'success' });
-      setTimeout(() => setToast(null), 3000);
+      Alerts.success(lang === 'ar' ? `تمت إضافة ${added} عنصر${lang === 'ar' ? '' : '(s)'} للعربة` : `Added ${added} item(s) to cart`, { title: lang === 'ar' ? 'نجاح' : 'Success', duration: 2500 });
       clearSelection();
       setShowBulkConfirm(false);
     } catch {
-      setToast({ message: lang === 'ar' ? 'فشلت الإضافة الجماعية' : 'Bulk add failed', type: 'error' });
+      Alerts.error(lang === 'ar' ? 'فشلت الإضافة الجماعية' : 'Bulk add failed', { title: lang === 'ar' ? 'خطأ' : 'Error' });
     } finally {
       setBulkAdding(false);
     }
@@ -582,7 +580,7 @@ const ProductSearch: React.FC = () => {
     // Validate all orders have at least one supplier selected
     const ordersWithoutSupplier = manualOrders.filter(order => !order.supplierIds || order.supplierIds.length === 0);
     if (ordersWithoutSupplier.length > 0) {
-      setToast({ message: lang === 'ar' ? 'يرجى اختيار موزع واحد على الأقل لكل طلب' : 'Please select at least one distributor for each request', type: 'error' });
+      Alerts.error(lang === 'ar' ? 'يرجى اختيار موزع واحد على الأقل لكل طلب' : 'Please select at least one distributor for each request', { title: lang === 'ar' ? 'خطأ' : 'Error' });
       return;
     }
 
@@ -630,12 +628,12 @@ const ProductSearch: React.FC = () => {
       };
 
       await api.post('/api/v1/rfq', payload);
-      setToast({ message: t.manualOrder.success, type: 'success' });
+      Alerts.success(t.manualOrder.success, { title: lang === 'ar' ? 'نجاح' : 'Success' });
       setIsManualModalOpen(false);
       setManualOrders([]);
       manualFileInputRefs.current = {};
     } catch (err: any) {
-      setToast({ message: err.message || 'Submission failed', type: 'error' });
+      Alerts.error(err.message || 'Submission failed', { title: lang === 'ar' ? 'خطأ' : 'Error' });
     } finally {
       setIsSubmittingManual(false);
     }
@@ -876,11 +874,7 @@ const ProductSearch: React.FC = () => {
         </div>
       )}
 
-      {toast && (
-        <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[300] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
-          {toast.message}
-        </div>
-      )}
+      
 
       {/* Bulk toolbar (name-only search) – desktop/tablet */}
       {showBulkUI && (

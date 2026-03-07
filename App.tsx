@@ -42,6 +42,10 @@ import { clearSubscriptionCache } from './utils/subscription';
 import { api } from './api';
 import SessionExpiredModal from './components/SessionExpiredModal';
 import { getWebPushToken, saveWebTokenToBackend } from './services/fcm';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import { setAlertService } from './services/alerts';
+import { subscribeForegroundMessages } from './services/fcm';
+import { initNotificationService, disconnectNotificationService, playNotificationSound } from './services/notificationService';
 
 interface UserData {
   token: string;
@@ -88,7 +92,7 @@ const PlaceholderPage = ({ name }: { name: string }) => (
 );
 
 const AppContent: React.FC = () => {
-  const { showToast } = useToast();
+  const { showToast, showAlert } = useToast() as any;
   const [user, setUser] = useState<UserData | null>(() => {
     const saved = localStorage.getItem('user');
     try {
@@ -112,6 +116,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     setToastService(showToast);
   }, [showToast]);
+  useEffect(() => {
+    setAlertService(showAlert);
+  }, [showAlert]);
 
   // Connect session expired callback to API
   useEffect(() => {
@@ -135,6 +142,105 @@ const AppContent: React.FC = () => {
     document.documentElement.lang = lang;
     localStorage.setItem('lang', lang);
   }, [lang]);
+
+  useEffect(() => {
+    subscribeForegroundMessages((payload: any) => {
+      const d = payload?.data || {};
+      const n = payload?.notification || {};
+      const titleAr = d.titleAr || d.title_ar || d['title-ar'];
+      const titleEn = d.titleEn || d.title_en || d['title-en'];
+      const messageAr = d.messageAr || d.bodyAr || d.message_ar || d['message-ar'] || d.body_ar || d['body-ar'];
+      const messageEn = d.messageEn || d.bodyEn || d.message_en || d['message-en'] || d.body_en || d['body-en'];
+      let title = (lang === 'ar' ? titleAr : titleEn) || n.title || (lang === 'ar' ? 'إشعار' : 'Notification');
+      let message = (lang === 'ar' ? messageAr : messageEn) || n.body || '';
+
+      if (lang === 'ar' && (!titleAr || !messageAr)) {
+        const type = String(d.type || '').toUpperCase();
+        const supplier = d.supplierName || d.supplier || '';
+        const product = d.productName || d.product || '';
+        const orderCode = d.orderCode || d.orderId || '';
+        if (type === 'RFQ_RESPONSE') {
+          title = 'تلقي رد المورد';
+          message = supplier
+            ? `قام ${supplier} بالرد على طلبك${product ? ` لـ ${product}` : ''}`
+            : 'تم استلام رد من المورد على طلبك';
+        } else if (type === 'ORDER_CREATED') {
+          title = 'تم إنشاء الطلب';
+          message = orderCode ? `تم إنشاء الطلب رقم ${orderCode}` : 'تم إنشاء طلب جديد';
+        } else if (type === 'QUOTATION_SENT') {
+          title = 'تم إرسال عرض السعر';
+          message = supplier
+            ? `قام ${supplier} بإرسال عرض سعر${product ? ` لـ ${product}` : ''}`
+            : 'تم إرسال عرض سعر جديد';
+        } else if (type === 'QUOTATION_ACCEPTED') {
+          title = 'تم قبول عرض السعر';
+          message = supplier ? `تم قبول عرض ${supplier}` : 'تم قبول عرض السعر';
+        } else if (type === 'QUOTATION_REJECTED') {
+          title = 'تم رفض عرض السعر';
+          message = supplier ? `تم رفض عرض ${supplier}` : 'تم رفض عرض السعر';
+        } else if (type === 'ORDER_STATUS_UPDATED') {
+          title = 'تم تحديث حالة الطلب';
+          message = orderCode ? `تم تحديث حالة الطلب رقم ${orderCode}` : 'تم تحديث حالة أحد الطلبات';
+        }
+      }
+
+      showAlert({ title, message, type: 'info', duration: 8000 });
+    });
+  }, [lang, showAlert]);
+
+  useEffect(() => {
+    const uid = user?.userInfo?.id || user?.id;
+    const token = user?.token;
+    if (!uid || !token) return;
+    const unsub = initNotificationService(uid, token, lang);
+    const handler = (e: any) => {
+      const n = e?.detail || {};
+      const title = lang === 'ar' ? (n.titleAr || n.titleEn || 'إشعار') : (n.titleEn || n.titleAr || 'Notification');
+      const message = lang === 'ar' ? (n.messageAr || n.messageEn || '') : (n.messageEn || n.messageAr || '');
+      showAlert({ title, message, type: 'info', duration: 8000 });
+    };
+    window.addEventListener('newNotification', handler as any);
+    const chatHandler = (e: any) => {
+      const d = e?.detail || {};
+      const m = d.message || {};
+      let shouldSuppress = false;
+      try {
+        const activeOrder = (window as any).__activeOrderChatId;
+        const activeComplaint = (window as any).__activeComplaintId;
+        const isSameChat = (d.kind === 'order' && activeOrder && activeOrder === d.orderId) ||
+          (d.kind === 'order-line' && activeOrder && activeOrder === d.lineId) ||
+          (d.kind === 'complaint' && activeComplaint && activeComplaint === d.complaintId);
+        const hasFocus = typeof document !== 'undefined' ? (!document.hidden && document.hasFocus && document.hasFocus()) : true;
+        if (isSameChat && hasFocus) shouldSuppress = true;
+      } catch { }
+      const from = m.userOrganizationName || m.userName || '';
+      const title = lang === 'ar' ? 'رسالة جديدة' : 'New message';
+      const body = lang === 'ar'
+        ? `${from ? from + ': ' : ''}${m.message || ''}`
+        : `${from ? from + ': ' : ''}${m.message || ''}`;
+      if (!shouldSuppress) {
+        try { playNotificationSound(); } catch { }
+        showAlert({ title, message: body, type: 'info', duration: 8000 });
+        try {
+          if (typeof Notification !== 'undefined') {
+            if (Notification.permission === 'granted') {
+              const tag = d.kind === 'order' ? `chat-order-${d.orderId}` : `chat-complaint-${d.complaintId}`;
+              const n = new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico', tag, silent: false });
+              try { n.onclick = () => { try { window.focus(); } catch { } try { n.close(); } catch { } }; } catch { }
+              setTimeout(() => { try { n.close(); } catch { } }, 5000);
+            }
+          }
+        } catch { }
+      }
+    };
+    window.addEventListener('newChatMessage', chatHandler as any);
+    return () => {
+      try { unsub && (unsub as any)(); } catch { }
+      window.removeEventListener('newNotification', handler as any);
+      window.removeEventListener('newChatMessage', chatHandler as any);
+      disconnectNotificationService();
+    };
+  }, [user?.userInfo?.id, user?.token, lang, showAlert]);
 
   const location = useLocation();
   const isAuthRoute = ['/', '/login', '/register', '/forgot-password'].includes(location.pathname);
@@ -173,6 +279,18 @@ const AppContent: React.FC = () => {
         }
       } else {
         try { console.debug('[Login] No web push token generated'); } catch { }
+        try {
+          if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            showAlert({
+              title: lang === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications',
+              message: lang === 'ar'
+                ? 'يرجى السماح بإشعارات المتصفح حتى تستقبل التنبيهات.'
+                : 'Please allow browser notifications to receive alerts.',
+              type: 'warning',
+              duration: 6000
+            });
+          }
+        } catch { }
       }
     })();
   };
@@ -189,6 +307,22 @@ const AppContent: React.FC = () => {
         }
       } else {
         try { console.debug('[Auto] No web push token generated'); } catch { }
+        try {
+          if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            const onceKey = 'rn_notif_prompted';
+            if (!sessionStorage.getItem(onceKey)) {
+              sessionStorage.setItem(onceKey, '1');
+              showAlert({
+                title: lang === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications',
+                message: lang === 'ar'
+                  ? 'يرجى السماح بإشعارات المتصفح حتى تستقبل التنبيهات.'
+                  : 'Please allow browser notifications to receive alerts.',
+                type: 'warning',
+                duration: 6000
+              });
+            }
+          }
+        } catch { }
       }
     })();
   }, [user?.token]);
@@ -360,19 +494,21 @@ const AppContent: React.FC = () => {
 
   return (
     <AppContext.Provider value={{ lang, setLang, t, isDarkMode, toggleDarkMode }}>
-      <Toast />
-      <SessionExpiredModal
-        isOpen={showSessionExpiredModal}
-        onClose={handleSessionExpiredClose}
-        lang={lang}
-      />
-      <Routes>
-        <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
-        <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
-        <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
-        <Route path="*" element={<PortalContent />} />
-      </Routes>
+      <ConfirmProvider>
+        <Toast />
+        <SessionExpiredModal
+          isOpen={showSessionExpiredModal}
+          onClose={handleSessionExpiredClose}
+          lang={lang}
+        />
+        <Routes>
+          <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
+          <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
+          <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
+          <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
+          <Route path="*" element={<PortalContent />} />
+        </Routes>
+      </ConfirmProvider>
     </AppContext.Provider>
   );
 };

@@ -9,21 +9,28 @@ let notificationSound: AudioBuffer | null = null;
 // Initialize audio context
 const initAudio = async () => {
   if (typeof window === 'undefined') return;
-  
+
   try {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // Create a simple notification sound (beep)
     const sampleRate = audioContext.sampleRate;
-    const duration = 0.2; // 200ms
-    const frequency = 800; // Hz
-    const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+    const duration = 0.5;
+    const buffer = audioContext.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
     const data = buffer.getChannelData(0);
-    
     for (let i = 0; i < buffer.length; i++) {
-      data[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+      const t = i / sampleRate;
+      const f1 = 660;
+      const f2 = 880;
+      const env =
+        t < 0.02 ? t / 0.02 :
+          t < 0.18 ? 1 :
+            t < 0.22 ? 1 - (t - 0.18) / 0.04 :
+              t < 0.26 ? (t - 0.22) / 0.04 :
+                Math.max(0, 1 - (t - 0.26) / 0.24);
+      const wave = t < 0.22
+        ? Math.sin(2 * Math.PI * f1 * t)
+        : Math.sin(2 * Math.PI * f2 * (t - 0.12));
+      data[i] = wave * env * 0.35;
     }
-    
     notificationSound = buffer;
   } catch (err) {
     console.warn('Failed to initialize audio context:', err);
@@ -31,12 +38,12 @@ const initAudio = async () => {
 };
 
 // Play notification sound
-const playNotificationSound = () => {
+export const playNotificationSound = () => {
   if (!audioContext || !notificationSound) {
     initAudio();
     return;
   }
-  
+
   try {
     const source = audioContext.createBufferSource();
     source.buffer = notificationSound;
@@ -85,7 +92,7 @@ const showPushNotification = (notification: NotificationMessage, lang: string) =
 
   try {
     const browserNotification = new Notification(title, options);
-    
+
     browserNotification.onclick = () => {
       window.focus();
       browserNotification.close();

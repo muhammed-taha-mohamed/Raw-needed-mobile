@@ -603,7 +603,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ embedded }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {selectedUser.organizationCRNImage && (
                           <div className="space-y-3">
-                            <p className="text-[12px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة السجل التجاري' : 'Commercial Registry'}</p>
+                            <p className="text-[12px] font-black text-slate-400 px-1">{lang === 'ar' ? 'شهادة البطاقة الضريبية' : 'Tax Card'}</p>
                             <div onClick={() => setSelectedReceipt(selectedUser.organizationCRNImage)} className="relative group cursor-pointer overflow-hidden rounded-3xl border-2 border-primary/10 shadow-lg h-40">
                               <img src={selectedUser.organizationCRNImage} className="size-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="CRN" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"><span className="material-symbols-outlined text-3xl">zoom_in</span></div>

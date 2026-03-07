@@ -1,22 +1,20 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../App';
 import { api } from '../api';
-import { OrderMessage } from '../types';
-import { fetchOrderMessages, subscribeToOrderMessages, sendOrderMessage } from '../services/realtimeChat';
+import { ComplaintMessage } from '../types';
+import { fetchComplaintMessages, subscribeToComplaintMessages, sendComplaintMessage } from '../services/realtimeChat';
 
-interface OrderChatProps {
-  orderId: string; // will carry lineId
-  parentOrderId?: string; // actual RFQ order id for push
-  orderNumber: string;
+interface ComplaintChatProps {
+  complaintId: string;
+  subject: string;
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  ticketRef?: string;
 }
 
-const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumber, isOpen, onClose, title }) => {
+const ComplaintChat: React.FC<ComplaintChatProps> = ({ complaintId, subject, isOpen, onClose, ticketRef }) => {
   const { lang, t } = useLanguage();
-  const [messages, setMessages] = useState<OrderMessage[]>([]);
+  const [messages, setMessages] = useState<ComplaintMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -36,17 +34,17 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
   useEffect(() => {
     try {
       if (isOpen) {
-        (window as any).__activeOrderChatId = orderId;
+        (window as any).__activeComplaintId = complaintId;
       }
     } catch { }
     return () => {
       try {
-        if ((window as any).__activeOrderChatId === orderId) {
-          (window as any).__activeOrderChatId = null;
+        if ((window as any).__activeComplaintId === complaintId) {
+          (window as any).__activeComplaintId = null;
         }
       } catch { }
     };
-  }, [isOpen, orderId]);
+  }, [isOpen, complaintId]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -67,11 +65,9 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
     setCurrentUserId(user.userInfo?.id || user.id || '');
     setIsLoading(true);
     loadedRef.current = false;
-    // Subscribe to live updates via Firebase (per line)
-    unsubscribeRef.current = subscribeToOrderMessages(orderId, (data: any) => {
-      // Full snapshot (array) on first load or subsequent changes
+    unsubscribeRef.current = subscribeToComplaintMessages(complaintId, (data: any) => {
       if (Array.isArray(data)) {
-        const list = data as OrderMessage[];
+        const list = data as ComplaintMessage[];
         setMessages(list);
         const ids = new Set<string>();
         for (const m of list) if (m?.id) ids.add(m.id);
@@ -82,7 +78,6 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
         if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
         return;
       }
-      // Incremental new message
       if (data && data.id && !seenIdsRef.current.has(data.id)) {
         seenIdsRef.current.add(data.id);
         setMessages(prev => [...prev, data]);
@@ -91,11 +86,11 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
         }
       }
     });
-    // Fallback fetch if snapshot didn't arrive in time
+    // Fallback fetch if snapshot delayed
     fetchFallbackRef.current = window.setTimeout(async () => {
       if (loadedRef.current) return;
       try {
-        const list = await fetchOrderMessages(orderId);
+        const list = await fetchComplaintMessages(complaintId);
         if (!loadedRef.current && list.length > 0) {
           setMessages(list);
           const ids = new Set<string>();
@@ -107,7 +102,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
           retryRef.current = window.setTimeout(async () => {
             if (loadedRef.current) return;
             try {
-              const list2 = await fetchOrderMessages(orderId);
+              const list2 = await fetchComplaintMessages(complaintId);
               setMessages(list2);
               const ids2 = new Set<string>();
               for (const m of list2) if (m?.id) ids2.add(m.id);
@@ -122,7 +117,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
         retryRef.current = window.setTimeout(async () => {
           if (loadedRef.current) return;
           try {
-            const list2 = await fetchOrderMessages(orderId);
+            const list2 = await fetchComplaintMessages(complaintId);
             setMessages(list2);
             const ids2 = new Set<string>();
             for (const m of list2) if (m?.id) ids2.add(m.id);
@@ -143,15 +138,11 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
       if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
       loadedRef.current = false;
     };
-  }, [isOpen, orderId]);
+  }, [isOpen, complaintId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
 
   const handleScroll = () => {
     const el = messagesContainerRef.current;
@@ -160,7 +151,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
     setShowScrollDown(!atBottom);
   };
 
-  const fetchMessages = async () => { /* no-op: handled by subscription & fallback */ };
+  const fetchMessages = async () => { /* handled by subscription */ };
 
   const playDing = (ms: number) => {
     try {
@@ -190,23 +181,23 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
   const handleSendMessage = async (e: React.FormEvent, imageUrl: string | null = null) => {
     if (e) e.preventDefault();
     if (!newMessage.trim() && !imageUrl) return;
-
     setIsSending(true);
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user.userInfo?.id || user.id || '';
       const userName = user.userInfo?.name || user.name || 'User';
-      const userOrganizationName = user.organizationName || user.userInfo?.organizationName || '';
-      await sendOrderMessage(orderId, {
+      const role = (user.userInfo?.role || user.role || '').toUpperCase();
+      const admin = role === 'SUPER_ADMIN' || role === 'ADMIN';
+      await sendComplaintMessage(complaintId, {
         userId,
         userName,
-        userOrganizationName,
+        admin,
         message: newMessage.trim(),
         image: imageUrl
-      }, { orderId: parentOrderId });
+      });
       setNewMessage('');
     } catch (err) {
-      console.error("Failed to send message", err);
+      console.error('Failed to send message', err);
     } finally {
       setIsSending(false);
     }
@@ -215,7 +206,6 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsSending(true);
     try {
       const formData = new FormData();
@@ -223,7 +213,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
       const imageUrl = await api.post<string>('/api/v1/image/upload', formData);
       await handleSendMessage(null as any, imageUrl);
     } catch (err) {
-      console.error("Image upload failed", err);
+      console.error('Image upload failed', err);
     } finally {
       setIsSending(false);
     }
@@ -242,11 +232,11 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/30 dark:bg-slate-800/20">
           <div className="flex items-center gap-3 min-w-0">
             <div className="size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow">
-              <span className="material-symbols-outlined text-xl">chat_bubble</span>
+              <span className="material-symbols-outlined text-xl">support_agent</span>
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-black text-slate-900 dark:text-white truncate">{title}</div>
-              <div className="text-[10px] font-bold text-slate-500 truncate">#{orderNumber}</div>
+              <div className="text-sm font-black text-slate-900 dark:text-white truncate">{subject}</div>
+              <div className="text-[10px] font-bold text-slate-500 truncate">#{(ticketRef || complaintId).slice(-8).toUpperCase()}</div>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -264,16 +254,16 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
             {isLoading ? (
               <div className="h-full flex flex-col items-center justify-center opacity-30">
                 <div className="size-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-                <p className="text-[10px] font-black ">Loading Conversation...</p>
+                <p className="text-[10px] font-black ">{lang === 'ar' ? 'جاري التحميل...' : 'Loading Conversation...'}</p>
               </div>
             ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                 <span className="material-symbols-outlined text-7xl mb-4">forum</span>
                 <h3 className="text-xl font-black">{lang === 'ar' ? 'ابدأ المحادثة' : 'Start the conversation'}</h3>
-                <p className="text-sm font-bold">{lang === 'ar' ? 'تواصل مباشرة مع الطرف الآخر بخصوص هذا الطلب.' : 'Connect directly about this order.'}</p>
+                <p className="text-sm font-bold">{lang === 'ar' ? 'تواصل مباشرة مع فريق الدعم.' : 'Connect directly with support.'}</p>
               </div>
             ) : (
-              messages.map((msg, i) => {
+              messages.map((msg) => {
                 const isOwn = msg.userId === currentUserId;
                 return (
                   <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
@@ -290,7 +280,7 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
                         )}
                       </div>
                       <div className="flex items-center gap-2 px-2">
-                        {!isOwn && <span className="text-[10px] font-bold text-primary">{msg.userOrganizationName || msg.userName}</span>}
+                        {!isOwn && <span className="text-[10px] font-bold text-primary">{msg.userName}</span>}
                         <span className="text-[10px] font-bold text-slate-400 tabular-nums">{formatTime(msg.createdAt)}</span>
                       </div>
                     </div>
@@ -366,4 +356,4 @@ const OrderChat: React.FC<OrderChatProps> = ({ orderId, parentOrderId, orderNumb
   );
 };
 
-export default OrderChat;
+export default ComplaintChat;

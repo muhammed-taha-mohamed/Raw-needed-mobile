@@ -20,6 +20,26 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
   }, []);
   const [fabOpen, setFabOpen] = useState(false);
 
+  const placeholderLogo = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40">
+      <rect width="120" height="40" rx="8" fill="%23e2e8f0"/>
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="%236b7280">LOGO</text>
+    </svg>
+  `);
+  const [brands, setBrands] = useState<{ id?: string; name: string; logo?: string | null }[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await (await import('../../api')).api.get<any>('/api/v1/public/landing-brands');
+        const list = (res?.data || res?.content?.data || res) as any[];
+        if (Array.isArray(list) && list.length) {
+          setBrands(list.map((b: any) => ({ id: b.id, name: b.name || '—', logo: b.logo || null })));
+        }
+      } catch { /* silent: show loader only */ }
+      finally { setBrandsLoading(false); }
+    })();
+  }, []);
   return (
     <div className="h-[100dvh] w-full bg-slate-50 dark:bg-[#020617] transition-colors duration-700 font-display overflow-hidden selection:bg-primary selection:text-white">
       <style>{`
@@ -36,6 +56,12 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
           33% { border-radius: 70% 30% 46% 54% / 30% 29% 71% 70%; }
           66% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
         }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-track { animation: marquee 18s linear infinite; }
+        .marquee-track-rtl { animation-direction: reverse; }
         .animate-float { animation: float 6s ease-in-out infinite; }
         .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
         .animate-blob { animation: blob 15s linear infinite; }
@@ -143,6 +169,8 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
                 <span className="material-symbols-outlined text-2xl">login</span>
               </button>
             </div>
+
+            {/* Marquee removed from landing per request */}
           </div>
 
           {/* Right Visual - Image/Logo */}
@@ -187,11 +215,11 @@ const Landing: React.FC<LandingProps> = ({ isLoggedIn }) => {
             </div>
           </div>
         </div>
-      </main >
+      </main>
 
       {/* Click-away to close tools */}
       {fabOpen && <div className="fixed inset-0 z-[100]" onClick={() => setFabOpen(false)} />}
-    </div >
+    </div>
   );
 };
 

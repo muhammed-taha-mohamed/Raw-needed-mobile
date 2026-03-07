@@ -17,6 +17,7 @@ const SupplierAdPackages: React.FC = () => {
   const [selectedPackage, setSelectedPackage] = useState<AdPackage | null>(null);
   const [numberOfAds, setNumberOfAds] = useState(1);
   const [featured, setFeatured] = useState(false);
+  const [marquee, setMarquee] = useState(false);
   const [paymentProofPath, setPaymentProofPath] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -87,32 +88,33 @@ const SupplierAdPackages: React.FC = () => {
 
   const pricePerAd = selectedPackage ? Number((selectedPackage as any).pricePerAd ?? (selectedPackage as any).price ?? 0) : 0;
   const featuredPrice = selectedPackage ? Number((selectedPackage as any).featuredPrice ?? 0) : 0;
+  const marqueePrice = selectedPackage ? Number((selectedPackage as any).marqueePrice ?? 0) : 0;
   const basePrice = numberOfAds * pricePerAd;
-  
+
   // Calculate discount based on special offers
   const calculateDiscount = (): number => {
     if (!selectedPackage?.specialOffers || selectedPackage.specialOffers.length === 0) {
       return 0;
     }
-    
+
     // Find the best applicable offer (highest discount for the given ad count)
     const applicableOffers = selectedPackage.specialOffers.filter(
       (offer: AdSpecialOffer) => numberOfAds >= offer.minAdCount
     );
-    
+
     if (applicableOffers.length === 0) {
       return 0;
     }
-    
-    const bestOffer = applicableOffers.reduce((best: AdSpecialOffer, current: AdSpecialOffer) => 
+
+    const bestOffer = applicableOffers.reduce((best: AdSpecialOffer, current: AdSpecialOffer) =>
       current.discountPercentage > best.discountPercentage ? current : best
     );
-    
+
     return (basePrice * bestOffer.discountPercentage) / 100;
   };
-  
+
   const discount = calculateDiscount();
-  const totalPrice = basePrice + (featured ? featuredPrice : 0) - discount;
+  const totalPrice = basePrice + (featured ? featuredPrice : 0) + (marquee ? marqueePrice : 0) - discount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +134,7 @@ const SupplierAdPackages: React.FC = () => {
         adPackageId: selectedPackage.id,
         numberOfAds,
         featured,
+        marquee,
         paymentProofPath: proofPath || undefined,
       });
       showToast(lang === 'ar' ? 'تم إرسال طلب الاشتراك. انتظر موافقة الأدمن.' : 'Subscription request sent. Wait for admin approval.', 'success');
@@ -384,12 +387,26 @@ const SupplierAdPackages: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mb-5 flex items-baseline gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="mb-3 flex items-baseline gap-2 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                 <span className="text-2xl font-black text-slate-700 dark:text-white tabular-nums">{pricePerAd}</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[11px] text-slate-500 font-black">ج.م</span>
                   <span className="text-[10px] text-slate-400 font-bold">/ {lang === 'ar' ? 'إعلان' : 'per ad'}</span>
                 </div>
+              </div>
+              <div className="mb-5 grid grid-cols-1 gap-2">
+                {Number((p as any).featuredPrice ?? 0) > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/20">
+                    <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'عرض أولاً' : 'Featured first'}</span>
+                    <span className="text-[11px] font-black text-primary">+{Number((p as any).featuredPrice).toLocaleString()} EGP</span>
+                  </div>
+                )}
+                {Number((p as any).marqueePrice ?? 0) > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/20">
+                    <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">{lang === 'ar' ? 'عرض مع الموزعين المميزين' : 'Premium distributors showcase'}</span>
+                    <span className="text-[11px] font-black text-primary">+{Number((p as any).marqueePrice).toLocaleString()} EGP</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 flex-grow mb-5">
@@ -400,9 +417,8 @@ const SupplierAdPackages: React.FC = () => {
                       e.stopPropagation();
                       setActiveFeatureId(activeFeatureId === p.id ? null : p.id);
                     }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${
-                      activeFeatureId === p.id ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 border-primary/20 hover:border-primary'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${activeFeatureId === p.id ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 border-primary/20 hover:border-primary'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">verified</span>
@@ -436,12 +452,11 @@ const SupplierAdPackages: React.FC = () => {
                       e.stopPropagation();
                       setActiveDiscountId(activeDiscountId === p.id ? null : p.id);
                     }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${
-                      activeDiscountId === p.id ? 'bg-amber-500 text-white border-amber-500' : 
-                      p.specialOffers && p.specialOffers.length > 0 
-                        ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:border-amber-500' 
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-[11px] font-black shadow-sm active:scale-95 w-full justify-between ${activeDiscountId === p.id ? 'bg-amber-500 text-white border-amber-500' :
+                      p.specialOffers && p.specialOffers.length > 0
+                        ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:border-amber-500'
                         : 'bg-white dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700'
-                    }`}
+                      }`}
                     disabled={!p.specialOffers || p.specialOffers.length === 0}
                   >
                     <div className="flex items-center gap-2">
@@ -563,9 +578,18 @@ const SupplierAdPackages: React.FC = () => {
                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-primary/20">
                       <div className="flex items-center gap-2">
                         <input type="checkbox" id="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="size-4 rounded-md border-slate-300 text-primary focus:ring-primary" />
-                        <label htmlFor="featured" className="text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">{lang === 'ar' ? 'عرض أولاً' : 'Featured'}</label>
+                        <label htmlFor="featured" className="text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">{lang === 'ar' ? 'عرض أولاً' : 'Featured first'}</label>
                       </div>
                       <span className="text-sm font-black text-primary">+{featuredPrice} EGP</span>
+                    </div>
+                  )}
+                  {marqueePrice > 0 && (
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-primary/20">
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id="marquee" checked={marquee} onChange={(e) => setMarquee(e.target.checked)} className="size-4 rounded-md border-slate-300 text-primary focus:ring-primary" />
+                        <label htmlFor="marquee" className="text-sm font-black text-slate-700 dark:text-slate-300 cursor-pointer">{lang === 'ar' ? 'عرض مع الموزعين المميزين' : 'Premium distributors showcase'}</label>
+                      </div>
+                      <span className="text-sm font-black text-primary">+{marqueePrice} EGP</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2">

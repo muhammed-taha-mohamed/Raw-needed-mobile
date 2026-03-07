@@ -930,7 +930,8 @@ const SupplierOrders: React.FC = () => {
         <OrderChat
           isOpen={!!chatOffer}
           onClose={() => setChatOffer(null)}
-          orderId={chatOffer.orderId}
+          orderId={chatOffer.id}
+          parentOrderId={chatOffer.orderId}
           orderNumber={(chatOffer.orderId || chatOffer.id).slice(-8).toUpperCase()}
           title={chatOffer.productName}
         />

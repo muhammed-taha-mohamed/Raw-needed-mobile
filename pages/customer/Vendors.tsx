@@ -9,6 +9,7 @@ import { getCountryOptions, getCountryName } from '../../utils/countries';
 import EmptyState from '../../components/EmptyState';
 import FloatingLabelInput, { FloatingLabelTextarea } from '../../components/FloatingLabelInput';
 import PaginationFooter from '../../components/PaginationFooter';
+import { Alerts } from '../../services/alerts';
 
 interface Supplier {
   id: string;
@@ -87,7 +88,6 @@ const Vendors: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -219,13 +219,6 @@ const Vendors: React.FC = () => {
     }
   }, [prodSearchCat]);
 
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
   const fetchCart = async () => {
     try {
       const userStr = localStorage.getItem('user');
@@ -295,7 +288,7 @@ const Vendors: React.FC = () => {
     try {
       await api.post(`/api/v1/cart/add-item?userId=${userId}&productId=${productId}&quantity=${qty}`, {});
       await fetchCart();
-      setToast({ message: lang === 'ar' ? 'تم تحديث العربة' : 'Cart updated', type: 'success' });
+      Alerts.success(lang === 'ar' ? 'تم تحديث العربة' : 'Cart updated', { title: lang === 'ar' ? 'نجاح' : 'Success', duration: 2500 });
     } catch (e) { } finally { setProcessingId(null); }
   };
 
@@ -503,11 +496,7 @@ const Vendors: React.FC = () => {
   return (
     <div className="w-full py-6 flex flex-col gap-6 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-      {toast && (
-        <div className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-xl shadow-2xl font-black text-sm animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white`}>
-          {toast.message}
-        </div>
-      )}
+
 
       {/* Mobile Cards View */}
       <div className="md:hidden space-y-4 mb-6">
@@ -749,7 +738,7 @@ const Vendors: React.FC = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="size-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 shrink-0"><span className="material-symbols-outlined text-lg">badge</span></div>
-                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البطاقة الضريبية' : 'CRN'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.organizationCRN || '---'}</p></div>
+                  <div className="min-w-0 flex-1"><p className="text-[10px] font-black text-slate-400 leading-none mb-0.5">{lang === 'ar' ? 'البطاقة الضريبية' : 'Tax Card'}</p><p className="text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{detailsModalVendor.organizationCRN || '---'}</p></div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="size-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 shrink-0"><span className="material-symbols-outlined text-lg">call</span></div>

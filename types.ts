@@ -114,6 +114,8 @@ export interface AdPackage {
   /** Price per ad (EGP) */
   pricePerAd: number;
   featuredPrice?: number;
+  /** Extra price for appearing in homepage brands marquee (EGP) */
+  marqueePrice?: number;
   /** Special offers based on number of ads (discounts) */
   specialOffers?: AdSpecialOffer[];
   active: boolean;
