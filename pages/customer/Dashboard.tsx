@@ -125,13 +125,88 @@ const CustomerDashboard: React.FC = () => {
     ? ((stats.respondedOrderLines / stats.totalOrderLines) * 100).toFixed(1) 
     : '0';
 
+  const placeholderLogo = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40">
+      <rect width="120" height="40" rx="8" fill="%23e2e8f0"/>
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="%236b7280">LOGO</text>
+    </svg>
+  `);
+  const [brands, setBrands] = useState<{ id?: string; name: string; logo?: string | null }[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get<any>('/api/v1/public/landing-brands');
+        const list = (res?.data || res?.content?.data || res) as any[];
+        if (Array.isArray(list) && list.length) {
+          setBrands(list.map((b: any) => ({ id: b.id, name: b.name || '—', logo: b.logo || null })));
+        }
+      } catch { }
+      finally { setBrandsLoading(false); }
+    })();
+  }, []);
+
   return (
     <div className="w-full py-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display text-slate-800 dark:text-slate-100 antialiased">
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-track { animation: marquee 18s linear infinite; }
+        .marquee-track-rtl { animation-direction: reverse; }
+      `}</style>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Main Column */}
         <div className="lg:col-span-8 space-y-8">
+          
+          {/* Premium Distributors */}
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:supports-[backdrop-filter]:bg-slate-900/40 overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-700 dark:text-slate-200">{lang === 'ar' ? 'الموزعون المميزون' : 'Premium Distributors'}</h3>
+              <span className="material-symbols-outlined text-primary text-base">workspace_premium</span>
+            </div>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-white dark:from-slate-900 to-transparent"></div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white dark:from-slate-900 to-transparent"></div>
+              <div className={`flex items-center py-4 pl-4 will-change-transform whitespace-nowrap ${brands.length ? 'marquee-track' : ''} ${lang === 'ar' ? 'marquee-track-rtl' : ''}`}>
+                {(brandsLoading || brands.length === 0)
+                  ? Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="flex items-center">
+                      <div className="flex flex-col items-center justify-center px-3 min-w-[110px]">
+                        <div className="h-8 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                        <span className="mt-1 h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                      </div>
+                      <span className="mx-2 text-slate-300">|</span>
+                    </div>
+                  ))
+                  : brands.concat(brands).map((c, i) => (
+                    <div key={i} className="flex items-center">
+                      <div className="flex flex-col items-center justify-center px-3 min-w-[110px]">
+                        {c.logo ? (
+                          <img
+                            src={c.logo}
+                            alt={c.name}
+                            className="h-8 w-auto object-contain opacity-80 dark:invert-0"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholderLogo; }}
+                          />
+                        ) : (
+                          <img
+                            src={placeholderLogo}
+                            alt={c.name}
+                            className="h-8 w-auto object-contain opacity-80"
+                          />
+                        )}
+                        <span className="mt-1 text-[11px] font-black text-slate-600 dark:text-slate-300">{c.name}</span>
+                      </div>
+                      <span className="mx-2 text-slate-300">|</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
           
           {/* Ads Section - Only for Customers */}
           <AdSlider />
