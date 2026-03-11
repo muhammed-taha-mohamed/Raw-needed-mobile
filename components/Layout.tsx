@@ -4,7 +4,6 @@ import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-do
 import { useApp } from '../App';
 import { api } from '../api';
 import RecentNotifications from './RecentNotifications';
-import { getWebPushToken, saveWebTokenToBackend } from '../services/fcm';
 
 interface LayoutProps {
   onLogout: () => void;
@@ -442,6 +441,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
               <button
                 className="mr-2 px-3 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 text-[11px] font-black shadow-sm hover:bg-primary/20 transition-colors hidden md:inline-flex items-center gap-1"
                 onClick={async () => {
+                  const { getWebPushToken, saveWebTokenToBackend } = await import('../services/fcm');
                   const token = await getWebPushToken();
                   if (token) {
                     await saveWebTokenToBackend(token);

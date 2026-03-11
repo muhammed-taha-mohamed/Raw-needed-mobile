@@ -1,6 +1,7 @@
 // Unified notification service for WebSocket, Push Notifications, and Sound
 
 import { websocketService, NotificationMessage } from './websocket';
+import { navigateToNotificationTarget } from '../utils/notificationNavigation';
 
 // Notification sound (using Web Audio API)
 let audioContext: AudioContext | null = null;
@@ -88,14 +89,16 @@ const showPushNotification = (notification: NotificationMessage, lang: string) =
     tag: notification.id, // Prevent duplicate notifications
     requireInteraction: false,
     silent: false, // Allow sound from browser
+    data: notification as any
   };
 
   try {
     const browserNotification = new Notification(title, options);
 
     browserNotification.onclick = () => {
-      window.focus();
-      browserNotification.close();
+      try { window.focus(); } catch { }
+      navigateToNotificationTarget(notification as any);
+      try { browserNotification.close(); } catch { }
     };
 
     // Auto close after 5 seconds

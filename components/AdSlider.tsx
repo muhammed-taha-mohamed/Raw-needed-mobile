@@ -12,6 +12,7 @@ const AdSlider: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>('');
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -38,6 +39,26 @@ const AdSlider: React.FC = () => {
       return () => clearInterval(timer);
     }
   }, [ads]);
+
+  useEffect(() => {
+    if (!isFullscreenOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFullscreenOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [isFullscreenOpen]);
 
   const fetchAds = async () => {
     try {
@@ -110,7 +131,17 @@ const AdSlider: React.FC = () => {
                 />
                 
                 {supplierId && (
-                  <div className={`absolute top-5 ${lang === 'ar' ? 'right-6' : 'left-6'} z-20`}>
+                  <div className={`absolute top-5 ${lang === 'ar' ? 'right-6' : 'left-6'} z-20 flex items-center gap-2`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFullscreenOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-md text-white text-[10px] font-black shadow-2xl border border-white/20 transition-all active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-sm">open_in_full</span>
+                      {lang === 'ar' ? 'عرض الصورة' : 'Full Screen'}
+                    </button>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -121,6 +152,21 @@ const AdSlider: React.FC = () => {
                       <span className="size-2 rounded-full bg-white group-hover/label:bg-primary animate-pulse transition-colors"></span>
                       {lang === 'ar' ? 'الكتالوج' : 'Catalog'}
                       <span className="material-symbols-outlined text-sm rtl-flip group-hover/label:translate-x-1 rtl:group-hover/label:-translate-x-1 transition-transform">arrow_forward</span>
+                    </button>
+                  </div>
+                )}
+
+                {!supplierId && (
+                  <div className={`absolute top-5 ${lang === 'ar' ? 'right-6' : 'left-6'} z-20`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFullscreenOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-md text-white text-[10px] font-black shadow-2xl border border-white/20 transition-all active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-sm">open_in_full</span>
+                      {lang === 'ar' ? 'عرض الصورة' : 'Full Screen'}
                     </button>
                   </div>
                 )}
@@ -170,6 +216,64 @@ const AdSlider: React.FC = () => {
           </>
         )}
       </div>
+
+      {isFullscreenOpen && ads[currentIndex] && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8"
+          onClick={() => setIsFullscreenOpen(false)}
+        >
+          <button
+            onClick={() => setIsFullscreenOpen(false)}
+            className={`absolute top-4 ${lang === 'ar' ? 'left-4' : 'right-4'} size-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors z-10`}
+            aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+
+          {ads.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
+                }}
+                className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'right-4' : 'left-4'} size-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors z-10`}
+                aria-label={lang === 'ar' ? 'السابق' : 'Previous'}
+              >
+                <span className="material-symbols-outlined rtl-flip">chevron_left</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex((prev) => (prev + 1) % ads.length);
+                }}
+                className={`absolute top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'left-4' : 'right-4'} size-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors z-10`}
+                aria-label={lang === 'ar' ? 'التالي' : 'Next'}
+              >
+                <span className="material-symbols-outlined rtl-flip">chevron_right</span>
+              </button>
+            </>
+          )}
+
+          <div
+            className="relative w-full max-w-7xl max-h-full flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={ads[currentIndex].image}
+              alt="Advertisement Full Screen"
+              className="max-w-full max-h-[82vh] object-contain rounded-[2rem] shadow-2xl"
+            />
+            {ads[currentIndex].text && (
+              <div className="w-full max-w-4xl rounded-[1.5rem] bg-white/10 border border-white/10 px-5 py-4 text-center">
+                <p className="text-white text-sm md:text-base font-black leading-relaxed">
+                  {ads[currentIndex].text}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

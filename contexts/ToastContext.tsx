@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -11,19 +11,31 @@ export interface Toast {
   actions?: Array<{ label: string; onClick?: () => void; role?: 'primary' | 'secondary' }>;
 }
 
-interface ToastContextType {
+interface ToastActionsContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
   showAlert: (options: { message: string; title?: string; type?: ToastType; duration?: number; actions?: Array<{ label: string; onClick?: () => void; role?: 'primary' | 'secondary' }> }) => void;
+}
+
+interface ToastStateContextType {
   toasts: Toast[];
   removeToast: (id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+const ToastActionsContext = createContext<ToastActionsContextType | undefined>(undefined);
+const ToastStateContext = createContext<ToastStateContextType | undefined>(undefined);
 
 export const useToast = () => {
-  const context = useContext(ToastContext);
+  const context = useContext(ToastActionsContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+};
+
+export const useToastState = () => {
+  const context = useContext(ToastStateContext);
+  if (!context) {
+    throw new Error('useToastState must be used within a ToastProvider');
   }
   return context;
 };
@@ -50,11 +62,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: ToastType = 'error', duration: number = 5000) => {
     showAlert({ message, type, duration });
-  }, [removeToast]);
+  }, [showAlert]);
+
+  const actionsValue = useMemo(
+    () => ({ showToast, showAlert }),
+    [showToast, showAlert]
+  );
+
+  const stateValue = useMemo(
+    () => ({ toasts, removeToast }),
+    [toasts, removeToast]
+  );
 
   return (
-    <ToastContext.Provider value={{ showToast, showAlert, toasts, removeToast }}>
-      {children}
-    </ToastContext.Provider>
+    <ToastActionsContext.Provider value={actionsValue}>
+      <ToastStateContext.Provider value={stateValue}>
+        {children}
+      </ToastStateContext.Provider>
+    </ToastActionsContext.Provider>
   );
 };

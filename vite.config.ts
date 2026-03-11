@@ -16,6 +16,21 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (!id.includes('node_modules')) return;
+              if (id.includes('react') || id.includes('scheduler')) return 'react-vendor';
+              if (id.includes('react-router')) return 'router-vendor';
+              if (id.includes('firebase')) return 'firebase-vendor';
+              if (id.includes('recharts') || id.includes('d3-')) return 'charts-vendor';
+              if (id.includes('xlsx') || id.includes('jspdf') || id.includes('html2canvas')) return 'export-vendor';
+              if (id.includes('@google/genai')) return 'ai-vendor';
+            }
+          }
+        }
+      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

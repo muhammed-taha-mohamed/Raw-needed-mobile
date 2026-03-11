@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { useToast, Toast as ToastType } from '../contexts/ToastContext';
+import { useToastState, Toast as ToastType } from '../contexts/ToastContext';
 import { useLanguage } from '../App';
 
 const Toast: React.FC = () => {
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast } = useToastState();
   const { lang } = useLanguage();
 
   if (toasts.length === 0) return null;
@@ -31,8 +31,6 @@ const SideToast: React.FC<{ toast: ToastType; onClose: () => void; lang: string 
     info: { accent: 'blue', label: lang === 'ar' ? 'معلومة' : 'Info' },
   } as const;
   const v = (variants as any)[toast.type] || variants.success;
-
-  useEffect(() => { }, [toast.id]);
 
   const AccentIcon = () => {
     if (toast.type === 'success') {

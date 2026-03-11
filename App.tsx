@@ -1,39 +1,6 @@
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { Suspense, lazy, useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Layout from './components/Layout';
-import Dashboard from './pages/super_admin/Dashboard';
-import Plans from './pages/super_admin/Plans';
-import Approvals from './pages/super_admin/Approvals';
-import Categories from './pages/super_admin/Categories';
-import Suppliers from './pages/super_admin/Suppliers';
-import Customers from './pages/super_admin/Customers';
-import AdPackages from './pages/super_admin/AdPackages';
-import AdminManagement from './pages/super_admin/AdminManagement';
-import PaymentInfo from './pages/super_admin/PaymentInfo';
-import Orders from './pages/shared/Orders';
-import SupplierOrders from './pages/supplier/SupplierOrders';
-import SpecialOffers from './pages/supplier/SpecialOffers';
-import Profile from './pages/shared/Profile';
-import Login from './pages/auth/Login';
-import Landing from './pages/auth/Landing';
-import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import PlanSelection from './pages/shared/PlanSelection';
-import CustomerDashboard from './pages/customer/Dashboard';
-import SupplierDashboard from './pages/supplier/Dashboard';
-import ViewSpecialOffers from './pages/customer/ViewSpecialOffers';
-import MyTeam from './pages/shared/MyTeam';
-import Products from './pages/supplier/Products';
-import PolicyManagement from './pages/super_admin/PolicyManagement';
-import SupplierAdPackages from './pages/supplier/AdPackages';
-import AdvancedReports from './pages/supplier/AdvancedReports';
-import Advertisements from './pages/shared/Advertisements';
-import Vendors from './pages/customer/Vendors';
-import ProductSearch from './pages/customer/ProductSearch';
-import Cart from './pages/customer/Cart';
-import MarketRequests from './pages/shared/MarketRequests';
-import Complaints from './pages/shared/Complaints';
 import { Language, translations } from './translations';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import Toast from './components/Toast';
@@ -41,11 +8,9 @@ import { setToastService, setSessionExpiredCallback } from './api';
 import { clearSubscriptionCache } from './utils/subscription';
 import { api } from './api';
 import SessionExpiredModal from './components/SessionExpiredModal';
-import { getWebPushToken, saveWebTokenToBackend } from './services/fcm';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { setAlertService } from './services/alerts';
-import { subscribeForegroundMessages } from './services/fcm';
-import { initNotificationService, disconnectNotificationService, playNotificationSound } from './services/notificationService';
+import { navigateToNotificationTarget } from './utils/notificationNavigation';
 
 interface UserData {
   token: string;
@@ -72,6 +37,40 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const Layout = lazy(() => import('./components/Layout'));
+const Dashboard = lazy(() => import('./pages/super_admin/Dashboard'));
+const Plans = lazy(() => import('./pages/super_admin/Plans'));
+const Approvals = lazy(() => import('./pages/super_admin/Approvals'));
+const Categories = lazy(() => import('./pages/super_admin/Categories'));
+const Suppliers = lazy(() => import('./pages/super_admin/Suppliers'));
+const Customers = lazy(() => import('./pages/super_admin/Customers'));
+const AdPackages = lazy(() => import('./pages/super_admin/AdPackages'));
+const AdminManagement = lazy(() => import('./pages/super_admin/AdminManagement'));
+const PaymentInfo = lazy(() => import('./pages/super_admin/PaymentInfo'));
+const Orders = lazy(() => import('./pages/shared/Orders'));
+const SupplierOrders = lazy(() => import('./pages/supplier/SupplierOrders'));
+const SpecialOffers = lazy(() => import('./pages/supplier/SpecialOffers'));
+const Profile = lazy(() => import('./pages/shared/Profile'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const Landing = lazy(() => import('./pages/auth/Landing'));
+const Register = lazy(() => import('./pages/auth/Register'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const PlanSelection = lazy(() => import('./pages/shared/PlanSelection'));
+const CustomerDashboard = lazy(() => import('./pages/customer/Dashboard'));
+const SupplierDashboard = lazy(() => import('./pages/supplier/Dashboard'));
+const ViewSpecialOffers = lazy(() => import('./pages/customer/ViewSpecialOffers'));
+const MyTeam = lazy(() => import('./pages/shared/MyTeam'));
+const Products = lazy(() => import('./pages/supplier/Products'));
+const PolicyManagement = lazy(() => import('./pages/super_admin/PolicyManagement'));
+const SupplierAdPackages = lazy(() => import('./pages/supplier/AdPackages'));
+const AdvancedReports = lazy(() => import('./pages/supplier/AdvancedReports'));
+const Advertisements = lazy(() => import('./pages/shared/Advertisements'));
+const Vendors = lazy(() => import('./pages/customer/Vendors'));
+const ProductSearch = lazy(() => import('./pages/customer/ProductSearch'));
+const Cart = lazy(() => import('./pages/customer/Cart'));
+const MarketRequests = lazy(() => import('./pages/shared/MarketRequests'));
+const Complaints = lazy(() => import('./pages/shared/Complaints'));
+
 export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) throw new Error('useApp must be used within an AppProvider');
@@ -90,6 +89,67 @@ const PlaceholderPage = ({ name }: { name: string }) => (
     <p className="text-slate-500 font-bold">This module is under development and will be available soon.</p>
   </div>
 );
+
+const AppLoader: React.FC = () => {
+  const lang = typeof document !== 'undefined'
+    ? (document.documentElement.lang || 'ar')
+    : 'ar';
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark px-6">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+          {lang === 'ar' ? 'جار تحميل التطبيق...' : 'Loading application...'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const scheduleBackgroundTask = (task: () => void | Promise<void>, delay = 800) => {
+  if (typeof window === 'undefined') {
+    void Promise.resolve().then(task);
+    return () => { };
+  }
+
+  let cancelled = false;
+  let timeoutId: number | undefined;
+  let idleId: number | undefined;
+
+  const runTask = () => {
+    if (cancelled) return;
+    void Promise.resolve().then(() => {
+      if (!cancelled) {
+        void task();
+      }
+    });
+  };
+
+  if ('requestIdleCallback' in window) {
+    idleId = window.requestIdleCallback(runTask, { timeout: Math.max(delay, 1500) });
+  } else {
+    timeoutId = window.setTimeout(runTask, delay);
+  }
+
+  return () => {
+    cancelled = true;
+    if (idleId !== undefined && 'cancelIdleCallback' in window) {
+      window.cancelIdleCallback(idleId);
+    }
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  };
+};
+
+const markNotificationAsRead = async (notificationId?: string) => {
+  if (!notificationId) return;
+  try {
+    await api.patch(`/api/v1/notifications/${notificationId}/mark-read`, {});
+    try { window.dispatchEvent(new CustomEvent('notificationRead')); } catch { }
+  } catch { }
+};
 
 const AppContent: React.FC = () => {
   const { showToast, showAlert } = useToast() as any;
@@ -144,101 +204,225 @@ const AppContent: React.FC = () => {
   }, [lang]);
 
   useEffect(() => {
-    subscribeForegroundMessages((payload: any) => {
-      const d = payload?.data || {};
-      const n = payload?.notification || {};
-      const titleAr = d.titleAr || d.title_ar || d['title-ar'];
-      const titleEn = d.titleEn || d.title_en || d['title-en'];
-      const messageAr = d.messageAr || d.bodyAr || d.message_ar || d['message-ar'] || d.body_ar || d['body-ar'];
-      const messageEn = d.messageEn || d.bodyEn || d.message_en || d['message-en'] || d.body_en || d['body-en'];
-      let title = (lang === 'ar' ? titleAr : titleEn) || n.title || (lang === 'ar' ? 'إشعار' : 'Notification');
-      let message = (lang === 'ar' ? messageAr : messageEn) || n.body || '';
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-      if (lang === 'ar' && (!titleAr || !messageAr)) {
-        const type = String(d.type || '').toUpperCase();
-        const supplier = d.supplierName || d.supplier || '';
-        const product = d.productName || d.product || '';
-        const orderCode = d.orderCode || d.orderId || '';
-        if (type === 'RFQ_RESPONSE') {
-          title = 'تلقي رد المورد';
-          message = supplier
-            ? `قام ${supplier} بالرد على طلبك${product ? ` لـ ${product}` : ''}`
-            : 'تم استلام رد من المورد على طلبك';
-        } else if (type === 'ORDER_CREATED') {
-          title = 'تم إنشاء الطلب';
-          message = orderCode ? `تم إنشاء الطلب رقم ${orderCode}` : 'تم إنشاء طلب جديد';
-        } else if (type === 'QUOTATION_SENT') {
-          title = 'تم إرسال عرض السعر';
-          message = supplier
-            ? `قام ${supplier} بإرسال عرض سعر${product ? ` لـ ${product}` : ''}`
-            : 'تم إرسال عرض سعر جديد';
-        } else if (type === 'QUOTATION_ACCEPTED') {
-          title = 'تم قبول عرض السعر';
-          message = supplier ? `تم قبول عرض ${supplier}` : 'تم قبول عرض السعر';
-        } else if (type === 'QUOTATION_REJECTED') {
-          title = 'تم رفض عرض السعر';
-          message = supplier ? `تم رفض عرض ${supplier}` : 'تم رفض عرض السعر';
-        } else if (type === 'ORDER_STATUS_UPDATED') {
-          title = 'تم تحديث حالة الطلب';
-          message = orderCode ? `تم تحديث حالة الطلب رقم ${orderCode}` : 'تم تحديث حالة أحد الطلبات';
-        }
-      }
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      const data = event?.data;
+      if (data?.type !== 'RN_NOTIFICATION_CLICK') return;
+      void markNotificationAsRead(data?.payload?.notificationId);
+      navigateToNotificationTarget(data?.payload);
+    };
 
-      showAlert({ title, message, type: 'info', duration: 8000 });
-    });
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    let isCancelled = false;
+
+    const setupForegroundMessages = async () => {
+      try {
+        const { subscribeForegroundMessages } = await import('./services/fcm');
+        if (isCancelled) return;
+
+        unsubscribe = subscribeForegroundMessages((payload: any) => {
+          const d = payload?.data || {};
+          const n = payload?.notification || {};
+          const titleAr = d.titleAr || d.title_ar || d['title-ar'];
+          const titleEn = d.titleEn || d.title_en || d['title-en'];
+          const messageAr = d.messageAr || d.bodyAr || d.message_ar || d['message-ar'] || d.body_ar || d['body-ar'];
+          const messageEn = d.messageEn || d.bodyEn || d.message_en || d['message-en'] || d.body_en || d['body-en'];
+          let title = (lang === 'ar' ? titleAr : titleEn) || n.title || (lang === 'ar' ? 'إشعار' : 'Notification');
+          let message = (lang === 'ar' ? messageAr : messageEn) || n.body || '';
+
+          if (lang === 'ar' && (!titleAr || !messageAr)) {
+            const type = String(d.type || '').toUpperCase();
+            const supplier = d.supplierName || d.supplier || '';
+            const product = d.productName || d.product || '';
+            const orderCode = d.orderCode || d.orderId || '';
+            if (type === 'RFQ_RESPONSE') {
+              title = 'تلقي رد المورد';
+              message = supplier
+                ? `قام ${supplier} بالرد على طلبك${product ? ` لـ ${product}` : ''}`
+                : 'تم استلام رد من المورد على طلبك';
+            } else if (type === 'ORDER_CREATED') {
+              title = 'تم إنشاء الطلب';
+              message = orderCode ? `تم إنشاء الطلب رقم ${orderCode}` : 'تم إنشاء طلب جديد';
+            } else if (type === 'QUOTATION_SENT') {
+              title = 'تم إرسال عرض السعر';
+              message = supplier
+                ? `قام ${supplier} بإرسال عرض سعر${product ? ` لـ ${product}` : ''}`
+                : 'تم إرسال عرض سعر جديد';
+            } else if (type === 'QUOTATION_ACCEPTED') {
+              title = 'تم قبول عرض السعر';
+              message = supplier ? `تم قبول عرض ${supplier}` : 'تم قبول عرض السعر';
+            } else if (type === 'QUOTATION_REJECTED') {
+              title = 'تم رفض عرض السعر';
+              message = supplier ? `تم رفض عرض ${supplier}` : 'تم رفض عرض السعر';
+            } else if (type === 'ORDER_STATUS_UPDATED') {
+              title = 'تم تحديث حالة الطلب';
+              message = orderCode ? `تم تحديث حالة الطلب رقم ${orderCode}` : 'تم تحديث حالة أحد الطلبات';
+            }
+          }
+
+          showAlert({
+            title,
+            message,
+            type: 'info',
+            duration: 8000,
+            actions: [
+              {
+                label: lang === 'ar' ? 'فتح' : 'Open',
+                onClick: () => {
+                  void markNotificationAsRead(payload?.data?.notificationId || payload?.notificationId);
+                  navigateToNotificationTarget({
+                    notificationId: payload?.data?.notificationId || payload?.notificationId,
+                    type: d.type || payload?.type,
+                    relatedEntityId: d.relatedEntityId || payload?.relatedEntityId,
+                    relatedEntityType: d.relatedEntityType || payload?.relatedEntityType,
+                    metadata: d.metadata || payload?.metadata,
+                    path: d.path || payload?.path,
+                    route: d.route || payload?.route,
+                    url: d.url || payload?.url,
+                    screen: d.screen || payload?.screen
+                  });
+                }
+              }
+            ]
+          });
+        });
+      } catch { }
+    };
+
+    const cancelScheduledSetup = scheduleBackgroundTask(setupForegroundMessages, 1200);
+
+    return () => {
+      isCancelled = true;
+      cancelScheduledSetup();
+      try { unsubscribe?.(); } catch { }
+    };
   }, [lang, showAlert]);
 
   useEffect(() => {
     const uid = user?.userInfo?.id || user?.id;
     const token = user?.token;
     if (!uid || !token) return;
-    const unsub = initNotificationService(uid, token, lang);
-    const handler = (e: any) => {
-      const n = e?.detail || {};
-      const title = lang === 'ar' ? (n.titleAr || n.titleEn || 'إشعار') : (n.titleEn || n.titleAr || 'Notification');
-      const message = lang === 'ar' ? (n.messageAr || n.messageEn || '') : (n.messageEn || n.messageAr || '');
-      showAlert({ title, message, type: 'info', duration: 8000 });
-    };
-    window.addEventListener('newNotification', handler as any);
-    const chatHandler = (e: any) => {
-      const d = e?.detail || {};
-      const m = d.message || {};
-      let shouldSuppress = false;
+    let teardown: (() => void) | undefined;
+    let isCancelled = false;
+
+    const setupNotificationService = async () => {
       try {
-        const activeOrder = (window as any).__activeOrderChatId;
-        const activeComplaint = (window as any).__activeComplaintId;
-        const isSameChat = (d.kind === 'order' && activeOrder && activeOrder === d.orderId) ||
-          (d.kind === 'order-line' && activeOrder && activeOrder === d.lineId) ||
-          (d.kind === 'complaint' && activeComplaint && activeComplaint === d.complaintId);
-        const hasFocus = typeof document !== 'undefined' ? (!document.hidden && document.hasFocus && document.hasFocus()) : true;
-        if (isSameChat && hasFocus) shouldSuppress = true;
-      } catch { }
-      const from = m.userOrganizationName || m.userName || '';
-      const title = lang === 'ar' ? 'رسالة جديدة' : 'New message';
-      const body = lang === 'ar'
-        ? `${from ? from + ': ' : ''}${m.message || ''}`
-        : `${from ? from + ': ' : ''}${m.message || ''}`;
-      if (!shouldSuppress) {
-        try { playNotificationSound(); } catch { }
-        showAlert({ title, message: body, type: 'info', duration: 8000 });
-        try {
-          if (typeof Notification !== 'undefined') {
-            if (Notification.permission === 'granted') {
-              const tag = d.kind === 'order' ? `chat-order-${d.orderId}` : `chat-complaint-${d.complaintId}`;
-              const n = new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico', tag, silent: false });
-              try { n.onclick = () => { try { window.focus(); } catch { } try { n.close(); } catch { } }; } catch { }
-              setTimeout(() => { try { n.close(); } catch { } }, 5000);
-            }
+        const {
+          initNotificationService,
+          disconnectNotificationService,
+          playNotificationSound
+        } = await import('./services/notificationService');
+        if (isCancelled) return;
+
+        const unsub = initNotificationService(uid, token, lang);
+        const handler = (e: any) => {
+          const n = e?.detail || {};
+          const title = lang === 'ar' ? (n.titleAr || n.titleEn || 'إشعار') : (n.titleEn || n.titleAr || 'Notification');
+          const message = lang === 'ar' ? (n.messageAr || n.messageEn || '') : (n.messageEn || n.messageAr || '');
+          showAlert({
+            title,
+            message,
+            type: 'info',
+            duration: 8000,
+            actions: [
+              {
+                label: lang === 'ar' ? 'فتح' : 'Open',
+                onClick: () => {
+                  void markNotificationAsRead(n.id);
+                  navigateToNotificationTarget(n);
+                }
+              }
+            ]
+          });
+        };
+        const chatHandler = (e: any) => {
+          const d = e?.detail || {};
+          const m = d.message || {};
+          let shouldSuppress = false;
+          try {
+            const activeOrder = (window as any).__activeOrderChatId;
+            const activeComplaint = (window as any).__activeComplaintId;
+            const isSameChat = (d.kind === 'order' && activeOrder && activeOrder === d.orderId) ||
+              (d.kind === 'order-line' && activeOrder && activeOrder === d.lineId) ||
+              (d.kind === 'complaint' && activeComplaint && activeComplaint === d.complaintId);
+            const hasFocus = typeof document !== 'undefined' ? (!document.hidden && document.hasFocus && document.hasFocus()) : true;
+            if (isSameChat && hasFocus) shouldSuppress = true;
+          } catch { }
+          const from = m.userOrganizationName || m.userName || '';
+          const title = lang === 'ar' ? 'رسالة جديدة' : 'New message';
+          const body = `${from ? `${from}: ` : ''}${m.message || ''}`;
+          if (!shouldSuppress) {
+            try { playNotificationSound(); } catch { }
+            showAlert({
+              title,
+              message: body,
+              type: 'info',
+              duration: 8000,
+              actions: [
+                {
+                  label: lang === 'ar' ? 'فتح' : 'Open',
+                  onClick: () => navigateToNotificationTarget({
+                    kind: d.kind,
+                    orderId: d.orderId,
+                    lineId: d.lineId,
+                    complaintId: d.complaintId
+                  })
+                }
+              ]
+            });
+            try {
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                const tag =
+                  d.kind === 'order-line'
+                    ? `chat-line-${d.lineId}`
+                    : d.kind === 'order'
+                      ? `chat-order-${d.orderId}`
+                      : `chat-complaint-${d.complaintId}`;
+                const n = new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico', tag, silent: false });
+                try {
+                  n.onclick = () => {
+                    try { window.focus(); } catch { }
+                    navigateToNotificationTarget({
+                      kind: d.kind,
+                      orderId: d.orderId,
+                      lineId: d.lineId,
+                      complaintId: d.complaintId
+                    });
+                    try { n.close(); } catch { }
+                  };
+                } catch { }
+                setTimeout(() => { try { n.close(); } catch { } }, 5000);
+              }
+            } catch { }
           }
-        } catch { }
-      }
+        };
+
+        window.addEventListener('newNotification', handler as any);
+        window.addEventListener('newChatMessage', chatHandler as any);
+
+        teardown = () => {
+          try { unsub && (unsub as any)(); } catch { }
+          window.removeEventListener('newNotification', handler as any);
+          window.removeEventListener('newChatMessage', chatHandler as any);
+          disconnectNotificationService();
+        };
+      } catch { }
     };
-    window.addEventListener('newChatMessage', chatHandler as any);
+
+    const cancelScheduledSetup = scheduleBackgroundTask(setupNotificationService, 1500);
+
     return () => {
-      try { unsub && (unsub as any)(); } catch { }
-      window.removeEventListener('newNotification', handler as any);
-      window.removeEventListener('newChatMessage', chatHandler as any);
-      disconnectNotificationService();
+      isCancelled = true;
+      cancelScheduledSetup();
+      try { teardown?.(); } catch { }
     };
   }, [user?.userInfo?.id, user?.token, lang, showAlert]);
 
@@ -269,35 +453,12 @@ const AppContent: React.FC = () => {
     localStorage.setItem('token', finalUser.token);
     localStorage.setItem('user', JSON.stringify(finalUser));
     setUser(finalUser);
-    (async () => {
-      try { console.debug('[Login] Attempting to obtain web push token...'); } catch { }
-      const token = await getWebPushToken();
-      if (token) {
-        try { console.debug('[Login] Web push token obtained, saving...'); } catch { }
-        try { await saveWebTokenToBackend(token); } finally {
-          try { console.debug('[Login] Save web token call finished'); } catch { }
-        }
-      } else {
-        try { console.debug('[Login] No web push token generated'); } catch { }
-        try {
-          if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
-            showAlert({
-              title: lang === 'ar' ? 'تفعيل الإشعارات' : 'Enable notifications',
-              message: lang === 'ar'
-                ? 'يرجى السماح بإشعارات المتصفح حتى تستقبل التنبيهات.'
-                : 'Please allow browser notifications to receive alerts.',
-              type: 'warning',
-              duration: 6000
-            });
-          }
-        } catch { }
-      }
-    })();
   };
 
   useEffect(() => {
     if (!user?.token) return;
-    (async () => {
+    const cancelScheduledTask = scheduleBackgroundTask(async () => {
+      const { getWebPushToken, saveWebTokenToBackend } = await import('./services/fcm');
       try { console.debug('[Auto] User available, attempting web push token...'); } catch { }
       const token = await getWebPushToken();
       if (token) {
@@ -324,7 +485,11 @@ const AppContent: React.FC = () => {
           }
         } catch { }
       }
-    })();
+    }, 2500);
+
+    return () => {
+      cancelScheduledTask();
+    };
   }, [user?.token]);
   const handleLogout = () => {
     api.post('/api/v1/user/auth/logout', {}).catch(() => { });
@@ -501,13 +666,15 @@ const AppContent: React.FC = () => {
           onClose={handleSessionExpiredClose}
           lang={lang}
         />
-        <Routes>
-          <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
-          <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
-          <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
-          <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
-          <Route path="*" element={<PortalContent />} />
-        </Routes>
+        <Suspense fallback={<AppLoader />}>
+          <Routes>
+            <Route path="/" element={!user ? <Landing isLoggedIn={!!user} /> : <PortalContent />} />
+            <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
+            <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
+            <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
+            <Route path="*" element={<PortalContent />} />
+          </Routes>
+        </Suspense>
       </ConfirmProvider>
     </AppContext.Provider>
   );

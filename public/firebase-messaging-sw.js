@@ -15,6 +15,61 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
+function buildNotificationHash(payload) {
+  const data = payload || {};
+  const type = String(data.type || '').toUpperCase();
+  const relatedEntityType = String(data.relatedEntityType || '').toUpperCase();
+  const relatedEntityId = String(data.relatedEntityId || '');
+  const complaintId = String(data.complaintId || (relatedEntityType === 'COMPLAINT' ? relatedEntityId : ''));
+  const lineId = String(data.lineId || '');
+  const orderId = String(data.orderId || ((relatedEntityType === 'ORDER' || relatedEntityType === 'RFQ_ORDER') ? relatedEntityId : ''));
+  const params = new URLSearchParams();
+  params.set('navTs', String(Date.now()));
+
+  if (complaintId || relatedEntityType === 'COMPLAINT') {
+    if (complaintId) params.set('complaintId', complaintId);
+    params.set('openChat', '1');
+    return `/#/support?${params.toString()}`;
+  }
+
+  if (lineId) {
+    if (orderId) params.set('orderId', orderId);
+    params.set('lineId', lineId);
+    params.set('openChat', '1');
+    return `/#/orders?${params.toString()}`;
+  }
+
+  if (orderId || relatedEntityType === 'ORDER' || relatedEntityType === 'RFQ_ORDER') {
+    if (orderId) params.set('orderId', orderId);
+    if (type === 'GENERAL' && relatedEntityType === 'ORDER') {
+      params.set('openChat', '1');
+    }
+    return `/#/orders?${params.toString()}`;
+  }
+
+  if (type.includes('ORDER') || type.includes('QUOTATION') || type.includes('RFQ')) {
+    return `/#/orders?${params.toString()}`;
+  }
+
+  if (relatedEntityType === 'AD_SUBSCRIPTION') {
+    if (relatedEntityId) params.set('adSubscriptionId', relatedEntityId);
+    return `/#/ad-packages?${params.toString()}`;
+  }
+
+  if (relatedEntityType === 'ADD_SEARCHES_REQUEST') {
+    if (relatedEntityId) params.set('addSearchesRequestId', relatedEntityId);
+    return `/#/plans?${params.toString()}`;
+  }
+
+  if (relatedEntityType === 'SUBSCRIPTION' || relatedEntityType === 'USER_SUBSCRIPTION' || type.includes('SUBSCRIPTION')) {
+    if (relatedEntityId) params.set('subscriptionId', relatedEntityId);
+    return `/#/subscription?${params.toString()}`;
+  }
+
+  if (data.notificationId) params.set('notificationId', String(data.notificationId));
+  return `/#/?${params.toString()}`;
+}
+
 onBackgroundMessage(messaging, (payload) => {
   try { console.debug('[SW] onBackgroundMessage payload', payload); } catch {}
   const n = payload?.notification || {};
@@ -50,10 +105,18 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification?.close?.();
   event.waitUntil((async () => {
+    const payload = event.notification?.data || {};
+    const targetUrl = buildNotificationHash(payload);
     const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     if (clientList && clientList.length > 0) {
-      try { await clientList[0].focus(); } catch {}
+      const client = clientList[0];
+      try { await client.focus(); } catch {}
+      try {
+        client.postMessage({ type: 'RN_NOTIFICATION_CLICK', payload });
+      } catch {}
+      return;
     }
+    try { await clients.openWindow(targetUrl); } catch {}
   })());
 });
 

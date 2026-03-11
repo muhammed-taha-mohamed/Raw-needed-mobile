@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import { Complaint, ComplaintMessage } from '../../types';
@@ -11,6 +12,7 @@ import { useToast } from '../../contexts/ToastContext';
 
 const Complaints: React.FC = () => {
   const { lang, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,6 +43,7 @@ const Complaints: React.FC = () => {
   const filterRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
   const [confirmAction, setConfirmAction] = useState<{ type: 'close' | 'delete'; id: string } | null>(null);
+  const lastHandledDeepLinkRef = useRef('');
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -239,6 +242,42 @@ const Complaints: React.FC = () => {
   };
 
   const AUTO_REPLY_KEY = 'COMPLAINT_AUTO_REPLY';
+
+  useEffect(() => {
+    const complaintId = searchParams.get('complaintId') || '';
+    const openChat = searchParams.get('openChat') === '1';
+    const navTs = searchParams.get('navTs') || '';
+
+    if (!complaintId) return;
+
+    const deepLinkKey = `${complaintId}|${openChat}|${navTs}`;
+    if (lastHandledDeepLinkRef.current === deepLinkKey) return;
+
+    const openDeepLinkedComplaint = async () => {
+      try {
+        let targetComplaint = complaints.find((complaint) => complaint.id === complaintId) || null;
+        if (!targetComplaint) {
+          targetComplaint = await api.get<Complaint>(`/api/v1/complaints/${complaintId}`);
+        }
+        if (!targetComplaint) return;
+
+        lastHandledDeepLinkRef.current = deepLinkKey;
+        markRead(targetComplaint.id);
+
+        if (openChat) {
+          setChatTicket(targetComplaint);
+          setSelectedTicket(null);
+        } else {
+          setSelectedTicket(targetComplaint);
+          setChatTicket(null);
+        }
+      } catch (err) {
+        console.error('Failed to open complaint deep link', err);
+      }
+    };
+
+    void openDeepLinkedComplaint();
+  }, [searchParams, complaints]);
 
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">

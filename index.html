@@ -137,6 +137,38 @@
         /* Auth pages: body same as auth panel so no white strip at bottom */
         body.auth-page { background: #20a7b2 !important; }
         .dark body.auth-page { background: #0f172a !important; }
+
+        .boot-loader {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: #f6f7f8;
+        }
+        .boot-loader__card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            text-align: center;
+        }
+        .boot-loader__spinner {
+            width: 44px;
+            height: 44px;
+            border-radius: 9999px;
+            border: 4px solid rgba(0, 154, 167, 0.18);
+            border-top-color: #009aa7;
+            animation: boot-spin 0.9s linear infinite;
+        }
+        .boot-loader__text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 <script type="importmap">
 {
@@ -153,7 +185,14 @@
 <link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 antialiased">
-    <div id="root"></div>
+    <div id="root">
+        <div class="boot-loader">
+            <div class="boot-loader__card">
+                <div class="boot-loader__spinner"></div>
+                <div class="boot-loader__text">جاري التحميل... Loading Raw Needed...</div>
+            </div>
+        </div>
+    </div>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>

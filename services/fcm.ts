@@ -70,14 +70,15 @@ export async function getWebPushToken(): Promise<string | null> {
   }
 }
 
-export function subscribeForegroundMessages(cb: (payload: any) => void) {
+export function subscribeForegroundMessages(cb: (payload: any) => void): (() => void) | undefined {
   try {
     if (typeof window === 'undefined') return;
     ensureApp();
     const messaging = getMessaging();
-    onMessage(messaging, cb);
+    return onMessage(messaging, cb);
   } catch {
     try { console.debug('[FCM] subscribeForegroundMessages error'); } catch { }
+    return;
   }
 }
 

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
@@ -52,6 +53,7 @@ interface PaginatedOffers {
 
 const SupplierOrders: React.FC = () => {
   const { lang, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [offers, setOffers] = useState<RFQOffer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +86,7 @@ const SupplierOrders: React.FC = () => {
   const coaFileInputRef = useRef<HTMLInputElement>(null);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const lastHandledDeepLinkRef = useRef('');
 
   useEffect(() => {
     fetchOffers(currentPage, statusFilter, pageSize);
@@ -221,6 +224,50 @@ const SupplierOrders: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  useEffect(() => {
+    const orderId = searchParams.get('orderId') || '';
+    const lineId = searchParams.get('lineId') || '';
+    const openChat = searchParams.get('openChat') === '1';
+    const navTs = searchParams.get('navTs') || '';
+
+    if (!orderId && !lineId) return;
+
+    const deepLinkKey = `${orderId}|${lineId}|${openChat}|${navTs}`;
+    if (lastHandledDeepLinkRef.current === deepLinkKey) return;
+    lastHandledDeepLinkRef.current = deepLinkKey;
+
+    const openDeepLinkedOffer = async () => {
+      try {
+        let targetOffer =
+          offers.find((offer) => (lineId ? offer.id === lineId : false)) ||
+          offers.find((offer) => (orderId ? offer.orderId === orderId : false));
+
+        if (!targetOffer) {
+          const response = await api.get<PaginatedOffers>('/api/v1/rfq/supplier/offers?page=0&size=100');
+          const list = response.content || [];
+          targetOffer =
+            list.find((offer) => (lineId ? offer.id === lineId : false)) ||
+            list.find((offer) => (orderId ? offer.orderId === orderId : false)) ||
+            null;
+        }
+
+        if (!targetOffer) return;
+
+        if (openChat) {
+          setChatOffer(targetOffer);
+          setDetailsOffer(null);
+        } else {
+          setDetailsOffer(targetOffer);
+          setChatOffer(null);
+        }
+      } catch (err) {
+        console.error('Failed to open supplier notification deep link', err);
+      }
+    };
+
+    void openDeepLinkedOffer();
+  }, [searchParams, offers]);
 
   const filterOptions = [
     { id: null, label: lang === 'ar' ? 'الكل' : 'All Offers' },

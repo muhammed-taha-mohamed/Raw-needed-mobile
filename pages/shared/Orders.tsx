@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../App';
 import { api } from '../../api';
 import OrderChat from '../../components/OrderChat';
@@ -66,6 +67,7 @@ interface PaginatedRFQ {
 
 const Orders: React.FC = () => {
   const { lang, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<RFQOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,7 @@ const Orders: React.FC = () => {
   const [orderToCancel, setOrderToCancel] = useState<RFQOrder | null>(null);
   const [lineToApprove, setLineToApprove] = useState<RFQLine | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const lastHandledDeepLinkRef = useRef('');
 
   useEffect(() => {
     fetchOrders(currentPage, statusFilter, pageSize);
@@ -129,15 +132,17 @@ const Orders: React.FC = () => {
     }
   };
 
-  const fetchOrderDetails = async (order: RFQOrder) => {
+  const fetchOrderDetails = async (order: RFQOrder): Promise<RFQLine[]> => {
     setSelectedOrder(order);
     setIsLoadingLines(true);
     setOrderLines([]);
     try {
       const data = await api.get<RFQLine[]>(`/api/v1/rfq/${order.id}/lines`);
       setOrderLines(data || []);
+      return data || [];
     } catch (err: any) {
       console.error("Failed to load line details", err);
+      return [];
     } finally {
       setIsLoadingLines(false);
     }
@@ -256,6 +261,39 @@ const Orders: React.FC = () => {
       return combinedName.toLowerCase().includes(term);
     });
   }, [orderLines, lineSearchName]);
+
+  useEffect(() => {
+    const orderId = searchParams.get('orderId') || '';
+    const lineId = searchParams.get('lineId') || '';
+    const openChat = searchParams.get('openChat') === '1';
+    const navTs = searchParams.get('navTs') || '';
+
+    if (!orderId && !lineId) return;
+
+    const deepLinkKey = `${orderId}|${lineId}|${openChat}|${navTs}`;
+    if (lastHandledDeepLinkRef.current === deepLinkKey) return;
+    lastHandledDeepLinkRef.current = deepLinkKey;
+
+    const openDeepLinkedOrder = async () => {
+      try {
+        const targetOrder = await api.get<RFQOrder>(`/api/v1/rfq/${orderId}`);
+        const lines = await fetchOrderDetails(targetOrder);
+
+        if (openChat && lineId) {
+          const targetLine = lines.find((line) => line.id === lineId);
+          if (targetLine) {
+            setChatOrderLine(targetLine);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to open notification deep link', err);
+      }
+    };
+
+    if (orderId) {
+      void openDeepLinkedOrder();
+    }
+  }, [searchParams]);
 
   return (
     <div className="w-full py-6 animate-in fade-in slide-in-from-bottom-4 duration-700 font-display relative pb-32 md:pb-8">
@@ -697,8 +735,12 @@ const Orders: React.FC = () => {
                             {(() => {
                               const approved = line.status === 'APPROVED';
                               const rejected = line.status === 'REJECTED';
-                              const deciding = !(approved || rejected);
-                              if (!deciding) {
+                              const hasSupplierResponse = !!line.supplierResponse;
+                              const canDecide = hasSupplierResponse && !(approved || rejected);
+                              if (approved || rejected) {
+                                if (!hasSupplierResponse) {
+                                  return null;
+                                }
                                 return (
                                   <button
                                     disabled
@@ -710,6 +752,9 @@ const Orders: React.FC = () => {
                                     {approved ? (lang === 'ar' ? 'تم الموافقة' : 'Approved') : (lang === 'ar' ? 'تم الرفض' : 'Rejected')}
                                   </button>
                                 );
+                              }
+                              if (!canDecide) {
+                                return null;
                               }
                               return (
                                 <>

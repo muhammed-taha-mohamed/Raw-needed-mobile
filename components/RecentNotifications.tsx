@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../App';
 import { api } from '../api';
+import { navigateToNotificationTarget } from '../utils/notificationNavigation';
 
 interface Notification {
   id: string;
@@ -12,6 +13,13 @@ interface Notification {
   messageAr: string;
   read: boolean;
   createdAt: string;
+  relatedEntityId?: string;
+  relatedEntityType?: string;
+  metadata?: string;
+  path?: string;
+  route?: string;
+  url?: string;
+  screen?: string;
 }
 
 interface PaginatedNotifications {
@@ -83,6 +91,23 @@ const RecentNotifications: React.FC = () => {
     });
   };
 
+  const openNotification = async (notification: Notification) => {
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    navigateToNotificationTarget({
+      notificationId: notification.id,
+      type: notification.type,
+      relatedEntityId: notification.relatedEntityId,
+      relatedEntityType: notification.relatedEntityType,
+      metadata: notification.metadata,
+      path: notification.path,
+      route: notification.route,
+      url: notification.url,
+      screen: notification.screen
+    });
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden h-[480px] flex flex-col group transition-all hover:border-primary/20 animate-in fade-in duration-500">
       <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/20 shrink-0">
@@ -129,7 +154,7 @@ const RecentNotifications: React.FC = () => {
             {notifications.map((n, idx) => (
               <div 
                 key={n.id} 
-                onClick={() => !n.read && markAsRead(n.id)}
+                onClick={() => void openNotification(n)}
                 className={`group/item relative flex gap-3.5 p-4 rounded-2xl border transition-all duration-300 animate-in slide-in-from-bottom-2 cursor-pointer ${
                   !n.read 
                   ? 'bg-primary/5 border-primary/10 hover:bg-primary/10' 
