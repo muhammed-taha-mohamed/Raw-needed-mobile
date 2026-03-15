@@ -24,6 +24,7 @@ const Register: React.FC = () => {
   const { lang, setLang, t, isDarkMode, toggleDarkMode } = useApp();
   const navigate = useNavigate();
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +99,17 @@ const Register: React.FC = () => {
       }
     };
     fetchPolicies();
+  }, []);
+
+  useEffect(() => {
+    const updateIsMobile = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768);
+      }
+    };
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
   }, []);
 
   const fetchCategories = async () => {
@@ -195,11 +207,13 @@ const Register: React.FC = () => {
         setError(lang === 'ar' ? 'كلمة المرور وتأكيدها غير متطابقين' : 'Password and confirm password do not match');
         return;
       }
-      // Phone validation: 11 digits and starts with 010/011/012
-      const phone = String(formData.phoneNumber || '').trim();
-      if (!/^01(0|1|2)\d{8}$/.test(phone)) {
-        setError(lang === 'ar' ? 'رقم الهاتف غير صحيح: يجب أن يبدأ 010 أو 011 أو 012 ويتكون من 11 رقم' : 'Invalid phone number: must start with 010/011/012 and be 11 digits');
-        return;
+      // Phone validation (web only): 11 digits and starts with 010/011/012
+      if (!isMobile) {
+        const phone = String(formData.phoneNumber || '').trim();
+        if (!/^01(0|1|2)\d{8}$/.test(phone)) {
+          setError(lang === 'ar' ? 'رقم الهاتف غير صحيح: يجب أن يبدأ 010 أو 011 أو 012 ويتكون من 11 رقم' : 'Invalid phone number: must start with 010/011/012 and be 11 digits');
+          return;
+        }
       }
       let profileUrl = '';
       let crnUrl = '';
@@ -210,12 +224,14 @@ const Register: React.FC = () => {
       if (profileFile) profileUrl = await uploadImage(profileFile);
       if (crnFile) crnUrl = await uploadImage(crnFile);
       if (formData.role === 'SUPPLIER_OWNER') {
-        if (!taxCardFile) {
-          setError(lang === 'ar' ? 'صورة شهادة البطاقة الضريبية مطلوبة' : 'Tax card image is required');
-          setIsLoading(false);
-          return;
+        if (!isMobile) {
+          if (!taxCardFile) {
+            setError(lang === 'ar' ? 'صورة شهادة البطاقة الضريبية مطلوبة' : 'Tax card image is required');
+            setIsLoading(false);
+            return;
+          }
+          taxCardUrl = await uploadImage(taxCardFile);
         }
-        taxCardUrl = await uploadImage(taxCardFile);
         for (const f of drugFiles) {
           drugUrls.push(await uploadImage(f));
         }
@@ -251,25 +267,33 @@ const Register: React.FC = () => {
   const isStepValid = () => {
     if (step === 1) return !!formData.role;
     if (step === 2) {
-      return (
+      const baseValid =
         formData.name.trim() !== '' &&
         isEmailValid(formData.email) &&
         formData.password.length >= 6 &&
-        formData.password === formData.confirmPassword &&
+        formData.password === formData.confirmPassword;
+      if (isMobile) return baseValid;
+      return (
+        baseValid &&
         formData.phoneNumber.trim() !== '' &&
         isPhoneValid(formData.phoneNumber)
       );
     }
     if (step === 3) {
-      const orgValid =
-        formData.organizationName.trim() !== '' &&
+      const orgNameValid = formData.organizationName.trim() !== '';
+      const orgValidWeb =
+        orgNameValid &&
         formData.organizationCRN.trim() !== '';
+      const orgValid = isMobile ? orgNameValid : orgValidWeb;
       if (formData.role === 'SUPPLIER_OWNER') {
         return !!formData.categoryId && orgValid;
       }
       return orgValid;
     }
     if (step === 4) {
+      if (isMobile) {
+        return agreePolicy;
+      }
       const docsOk = !!crnPreview && (formData.role !== 'SUPPLIER_OWNER' || !!taxCardPreview);
       return docsOk && agreePolicy;
     }
@@ -294,32 +318,43 @@ const Register: React.FC = () => {
         .animate-fade-up { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
       `}</style>
 
-      {/* Floating Auth Header (match ForgotPassword style) */}
-      <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none">
-        <div className="pointer-events-auto">
+      {/* Side Tools FAB (home / theme / lang) */}
+      <div className={`fixed z-[220] top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'left-3' : 'right-3'} pointer-events-none`}>
+        <div className="relative pointer-events-auto">
           <button
-            onClick={() => navigate('/')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'العودة للرئيسية' : 'Back to landing'}
+            onClick={() => setToolsOpen((o) => !o)}
+            className="size-11 flex items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-full text-white border border-white/40 shadow-2xl transition-all active:scale-95 hover:bg-slate-900/80"
+            aria-label="Tools"
           >
-            <span className="material-symbols-outlined text-lg">home</span>
+            <span className="material-symbols-outlined text-xl">{toolsOpen ? 'close' : 'apps'}</span>
           </button>
-        </div>
-        <div className="flex gap-2 pointer-events-auto">
-          <button
-            onClick={toggleDarkMode}
-            className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'الوضع' : 'Theme'}
+          <div
+            className={`absolute ${lang === 'ar' ? 'left-14' : 'right-14'} top-1/2 -translate-y-1/2 flex flex-col gap-2 transition-all duration-200 ${
+              toolsOpen ? 'opacity-100 translate-x-0' : lang === 'ar' ? 'opacity-0 -translate-x-2 pointer-events-none' : 'opacity-0 translate-x-2 pointer-events-none'
+            }`}
           >
-            <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button
-            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'EN/AR' : 'AR/EN'}
-          >
-            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
-          </button>
+            <button
+              onClick={() => navigate('/')}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">home</span>
+              {lang === 'ar' ? 'الرئيسية' : 'Home'}
+            </button>
+            <button
+              onClick={toggleDarkMode}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+              {lang === 'ar' ? 'الوضع' : 'Theme'}
+            </button>
+            <button
+              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">translate</span>
+              {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -376,7 +411,9 @@ const Register: React.FC = () => {
                 </div>
                 <div className="space-y-4">
                   <InputGroup icon="person" type="text" lang={lang} value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Full Name'} required />
-                  <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder={lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'} required />
+                  {!isMobile && (
+                    <InputGroup icon="call" type="tel" lang={lang} value={formData.phoneNumber} onChange={(e: any) => setFormData({ ...formData, phoneNumber: e.target.value })} placeholder={lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'} required />
+                  )}
                   <div className="space-y-1">
                     <InputGroup icon="mail" type="email" lang={lang} value={formData.email} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'} required />
                     {formData.email.length > 0 && !isEmailValid(formData.email) && (
@@ -385,7 +422,7 @@ const Register: React.FC = () => {
                       </p>
                     )}
                   </div>
-                  {formData.phoneNumber.length > 0 && !isPhoneValid(formData.phoneNumber) && (
+                  {!isMobile && formData.phoneNumber.length > 0 && !isPhoneValid(formData.phoneNumber) && (
                     <p className="text-[10px] text-red-300 font-bold px-4 animate-in fade-in slide-in-from-top-1">
                       {lang === 'ar' ? 'رقم الهاتف يجب أن يبدأ 010 أو 011 أو 012 ويتكون من 11 رقم' : 'Phone must start with 010/011/012 and be 11 digits'}
                     </p>
@@ -409,7 +446,9 @@ const Register: React.FC = () => {
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500 pb-4">
                 <InputGroup icon="corporate_fare" type="text" lang={lang} value={formData.organizationName} onChange={(e: any) => setFormData({ ...formData, organizationName: e.target.value })} placeholder={lang === 'ar' ? 'اسم المؤسسة' : 'Organization Name'} required />
-                <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({ ...formData, organizationCRN: e.target.value })} placeholder={lang === 'ar' ? 'رقم البطاقة الضريبية' : 'Tax Card Number'} required />
+                {!isMobile && (
+                  <InputGroup icon="badge" type="text" lang={lang} value={formData.organizationCRN} onChange={(e: any) => setFormData({ ...formData, organizationCRN: e.target.value })} placeholder={lang === 'ar' ? 'رقم البطاقة الضريبية' : 'Tax Card Number'} required />
+                )}
                 {/* Documents moved to step 4 */}
                 {formData.role === 'SUPPLIER_OWNER' && (
                   <>
@@ -423,86 +462,90 @@ const Register: React.FC = () => {
 
             {step === 4 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-500 pb-4">
-                {/* Row 1: CRN + Tax (if supplier) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* CRN tile */}
-                  <div onClick={() => crnInputRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${crnPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>
-                    {crnPreview ? (
-                      <img src={crnPreview} className="size-full object-contain p-2" alt="CRN" />
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-2xl text-white/50 mb-1">cloud_upload</span>
-                        <span className="text-[10px] font-black text-white/60">{lang === 'ar' ? 'شهادة القيد بالسجل التجاري' : 'Commercial Registry Certificate'}</span>
-                      </>
-                    )}
-                  </div>
-                  <input type="file" ref={crnInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'crn')} />
-
-                  {/* Tax tile (suppliers only) */}
-                  {formData.role === 'SUPPLIER_OWNER' && (
-                    <>
-                      <div onClick={() => taxCardRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${taxCardPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>
-                        {taxCardPreview ? (
-                          <img src={taxCardPreview} className="size-full object-contain p-2" alt="TaxCard" />
+                {!isMobile && (
+                  <>
+                    {/* Row 1: CRN + Tax (if supplier) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* CRN tile */}
+                      <div onClick={() => crnInputRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${crnPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>
+                        {crnPreview ? (
+                          <img src={crnPreview} className="size-full object-contain p-2" alt="CRN" />
                         ) : (
                           <>
-                            <span className="material-symbols-outlined text-2xl text-white/50 mb-1">picture_as_pdf</span>
-                            <span className="text-[10px] font-black text-white/60">{lang === 'ar' ? 'شهادة البطاقة الضريبية (إلزامي)' : 'Tax Card Certificate (Required)'}</span>
+                            <span className="material-symbols-outlined text-2xl text-white/50 mb-1">cloud_upload</span>
+                            <span className="text-[10px] font-black text-white/60">{lang === 'ar' ? 'شهادة القيد بالسجل التجاري' : 'Commercial Registry Certificate'}</span>
                           </>
                         )}
                       </div>
-                      <input type="file" ref={taxCardRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'tax')} />
-                    </>
-                  )}
-                </div>
+                      <input type="file" ref={crnInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'crn')} />
 
-                {/* Row 2: Drug + Food (suppliers only) */}
-                {formData.role === 'SUPPLIER_OWNER' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Drug Authority registry */}
-                    <div
-                      onClick={() => drugRef.current?.click()}
-                      className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${drugPreviews.length > 0 ? 'border-white' : 'border-white/30 hover:border-white'}`}
-                    >
-                      {drugPreviews.length > 0 ? (
-                        <div className="w-full h-full p-2 grid grid-cols-4 gap-2 overflow-hidden">
-                          {drugPreviews.map((src, i) => (
-                            <div key={i} className="rounded-lg overflow-hidden border border-white/30">
-                              <img src={src} className="size-full object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-white/70">
-                          <span className="material-symbols-outlined text-2xl mb-1">cloud_upload</span>
-                          <span className="text-[10px] font-black">{lang === 'ar' ? 'سجل المورد لدى هيئة الدواء (اختياري)' : 'Drug Authority Registry (Optional)'}</span>
-                        </div>
+                      {/* Tax tile (suppliers only) */}
+                      {formData.role === 'SUPPLIER_OWNER' && (
+                        <>
+                          <div onClick={() => taxCardRef.current?.click()} className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${taxCardPreview ? 'border-white' : 'border-white/30 hover:border-white'}`}>
+                            {taxCardPreview ? (
+                              <img src={taxCardPreview} className="size-full object-contain p-2" alt="TaxCard" />
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined text-2xl text-white/50 mb-1">picture_as_pdf</span>
+                                <span className="text-[10px] font-black text-white/60">{lang === 'ar' ? 'شهادة البطاقة الضريبية (إلزامي)' : 'Tax Card Certificate (Required)'}</span>
+                              </>
+                            )}
+                          </div>
+                          <input type="file" ref={taxCardRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'tax')} />
+                        </>
                       )}
                     </div>
-                    <input type="file" ref={drugRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'drug')} />
 
-                    {/* Food Safety registry */}
-                    <div
-                      onClick={() => foodRef.current?.click()}
-                      className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${foodPreviews.length > 0 ? 'border-white' : 'border-white/30 hover:border-white'}`}
-                    >
-                      {foodPreviews.length > 0 ? (
-                        <div className="w-full h-full p-2 grid grid-cols-4 gap-2 overflow-hidden">
-                          {foodPreviews.map((src, i) => (
-                            <div key={i} className="rounded-lg overflow-hidden border border-white/30">
-                              <img src={src} className="size-full object-cover" />
+                    {/* Row 2: Drug + Food (suppliers only) */}
+                    {formData.role === 'SUPPLIER_OWNER' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Drug Authority registry */}
+                        <div
+                          onClick={() => drugRef.current?.click()}
+                          className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${drugPreviews.length > 0 ? 'border-white' : 'border-white/30 hover:border-white'}`}
+                        >
+                          {drugPreviews.length > 0 ? (
+                            <div className="w-full h-full p-2 grid grid-cols-4 gap-2 overflow-hidden">
+                              {drugPreviews.map((src, i) => (
+                                <div key={i} className="rounded-lg overflow-hidden border border-white/30">
+                                  <img src={src} className="size-full object-cover" />
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-white/70">
+                              <span className="material-symbols-outlined text-2xl mb-1">cloud_upload</span>
+                              <span className="text-[10px] font-black">{lang === 'ar' ? 'سجل المورد لدى هيئة الدواء (اختياري)' : 'Drug Authority Registry (Optional)'}</span>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-white/70">
-                          <span className="material-symbols-outlined text-2xl mb-1">cloud_upload</span>
-                          <span className="text-[10px] font-black">{lang === 'ar' ? 'سجل المورد لدى هيئة سلامة الغذاء (اختياري)' : 'Food Safety Registry (Optional)'}</span>
+                        <input type="file" ref={drugRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'drug')} />
+
+                        {/* Food Safety registry */}
+                        <div
+                          onClick={() => foodRef.current?.click()}
+                          className={`relative h-28 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex items-center justify-center bg-white/10 dark:bg-slate-800/40 group ${foodPreviews.length > 0 ? 'border-white' : 'border-white/30 hover:border-white'}`}
+                        >
+                          {foodPreviews.length > 0 ? (
+                            <div className="w-full h-full p-2 grid grid-cols-4 gap-2 overflow-hidden">
+                              {foodPreviews.map((src, i) => (
+                                <div key={i} className="rounded-lg overflow-hidden border border-white/30">
+                                  <img src={src} className="size-full object-cover" />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-white/70">
+                              <span className="material-symbols-outlined text-2xl mb-1">cloud_upload</span>
+                              <span className="text-[10px] font-black">{lang === 'ar' ? 'سجل المورد لدى هيئة سلامة الغذاء (اختياري)' : 'Food Safety Registry (Optional)'}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <input type="file" ref={foodRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'food')} />
-                  </div>
+                        <input type="file" ref={foodRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'food')} />
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <label className="flex items-start gap-3 bg-white/10 dark:bg-slate-800/40 rounded-2xl p-3 border border-white/20">

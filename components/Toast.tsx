@@ -11,7 +11,7 @@ const Toast: React.FC = () => {
   const isRtl = lang === 'ar';
 
   return (
-    <div className={`fixed z-[1000] top-4 ${isRtl ? 'left-4' : 'right-4'} w-[92%] max-w-sm pointer-events-none`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className={`fixed z-[1000] top-16 md:top-4 ${isRtl ? 'left-4' : 'right-4'} w-[92%] max-w-sm pointer-events-none`} dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col gap-3">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto animate-in slide-in-from-right fade-in duration-300">

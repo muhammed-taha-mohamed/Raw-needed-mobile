@@ -80,32 +80,43 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         .animate-fade-up { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
       `}</style>
 
-      {/* Floating Auth Header (match ForgotPassword style) */}
-      <div className="fixed top-4 left-4 right-4 z-[200] flex justify-between items-center pointer-events-none mobile-top-offset">
-        <div className="pointer-events-auto">
+      {/* Side Tools FAB (home / theme / lang) */}
+      <div className={`fixed z-[220] top-1/2 -translate-y-1/2 ${lang === 'ar' ? 'left-3' : 'right-3'} pointer-events-none`}>
+        <div className="relative pointer-events-auto">
           <button
-            onClick={() => navigate('/')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'العودة للرئيسية' : 'Back to landing'}
+            onClick={() => setToolsOpen((o) => !o)}
+            className="size-11 flex items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-full text-white border border-white/40 shadow-2xl transition-all active:scale-95 hover:bg-slate-900/80"
+            aria-label="Tools"
           >
-            <span className="material-symbols-outlined text-lg">home</span>
+            <span className="material-symbols-outlined text-xl">{toolsOpen ? 'close' : 'apps'}</span>
           </button>
-        </div>
-        <div className="flex gap-2 pointer-events-auto">
-          <button
-            onClick={toggleDarkMode}
-            className="size-11 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'الوضع' : 'Theme'}
+          <div
+            className={`absolute ${lang === 'ar' ? 'left-14' : 'right-14'} top-1/2 -translate-y-1/2 flex flex-col gap-2 transition-all duration-200 ${
+              toolsOpen ? 'opacity-100 translate-x-0' : lang === 'ar' ? 'opacity-0 -translate-x-2 pointer-events-none' : 'opacity-0 translate-x-2 pointer-events-none'
+            }`}
           >
-            <span className="material-symbols-outlined text-[20px]">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button
-            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="size-11 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-black text-white border border-white/30 shadow-2xl transition-all active:scale-90 hover:bg-slate-900/60"
-            title={lang === 'ar' ? 'EN/AR' : 'AR/EN'}
-          >
-            {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
-          </button>
+            <button
+              onClick={() => navigate('/')}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">home</span>
+              {lang === 'ar' ? 'الرئيسية' : 'Home'}
+            </button>
+            <button
+              onClick={toggleDarkMode}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+              {lang === 'ar' ? 'الوضع' : 'Theme'}
+            </button>
+            <button
+              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+              className="h-9 px-3 rounded-full bg-white/95 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-lg text-[11px] font-black flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">translate</span>
+              {lang === 'en' ? t.common.langSwitchAr : t.common.langSwitchEn}
+            </button>
+          </div>
         </div>
       </div>
 
